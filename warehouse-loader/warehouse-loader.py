@@ -1,3 +1,4 @@
+from io import BytesIO
 import json
 import hashlib
 import os
@@ -121,33 +122,25 @@ def process_image(obj):
     :rtype: (boto3.resource('s3').ObjectSummary, string)
     """
     result = (None, None)
-    tmp = tempfile.NamedTemporaryFile(suffix=".dcm", delete=False)
-    with open(tmp.name, "wb") as fd:
-        obj.Object().download_file(tmp.name)
-    with open(tmp.name, "rb") as fd:
-        image_data = pydicom.dcmread(fd)
-        patient_id = image_data["PatientID"].value
-        date = get_date_from_key(obj.key, RAW_PREFIX)
-        if date:
-            training_set = patient_in_training_set(patient_id)
-            prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
-            new_key = f"{prefix}{patient_id}/images/{date}/{Path(obj.key).name}"
-            image_uuid = Path(obj.key).stem
-            metadata_key = (
-                f"{prefix}{patient_id}/images_metadata/{date}/{image_uuid}.json"
+    tmp = BytesIO()
+    obj.Object().download_fileobj(tmp)
+    tmp.seek(0)
+    image_data = pydicom.dcmread(tmp)
+    patient_id = image_data["PatientID"].value
+    date = get_date_from_key(obj.key, RAW_PREFIX)
+    if date:
+        training_set = patient_in_training_set(patient_id)
+        prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
+        new_key = f"{prefix}{patient_id}/images/{date}/{Path(obj.key).name}"
+        image_uuid = Path(obj.key).stem
+        metadata_key = f"{prefix}{patient_id}/images_metadata/{date}/{image_uuid}.json"
+        if not object_exists(metadata_key):
+            # upload metadata
+            bucket.put_object(
+                Body=json.dumps(image_data.to_json_dict()), Key=metadata_key
             )
-            if not object_exists(metadata_key):
-                # upload metadata
-                bucket.put_object(
-                    Body=json.dumps(image_data.to_json_dict()), Key=metadata_key
-                )
-            if not object_exists(new_key):
-                result = (obj, new_key)
-    # Delete the temporary file
-    try:
-        os.unlink(tmp.name)
-    except:
-        pass
+        if not object_exists(new_key):
+            result = (obj, new_key)
     return result
 
 
