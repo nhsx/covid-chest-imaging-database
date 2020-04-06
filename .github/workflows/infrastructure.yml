@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       working-directory: ./infrastructure
+      region: eu-west-2
 
     steps:
     - uses: actions/checkout@v2
@@ -22,4 +23,4 @@ jobs:
     - name: Lint with cfn-lint
       working-directory: ${{ env.working-directory }}
       run: |
-        cfn-lint -I templates/*.yaml
+        cfn-lint -I --regions ${{ env.region }} -- templates/*.yaml
