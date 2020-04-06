@@ -1,0 +1,35 @@
+Resources:
+  WarehouseBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: nccid-data-warehouse
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+        IgnorePublicAcls: true
+  UploadToRawPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: upload-to-warehouse-raw
+      Description: Allow uploading to the raw prefix in the warehouse bucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - "s3:PutObject"
+            Resource:
+              !Join ["", [!GetAtt [WarehouseBucket, Arn], "/raw/*"]]
+  DataUploaderGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      ManagedPolicyArns:
+        - !Ref UploadToRawPolicy
