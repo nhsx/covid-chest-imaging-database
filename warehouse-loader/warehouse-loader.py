@@ -23,14 +23,6 @@ VALIDATION_PREFIX = "validation/"
 TRAINING_PERCENTAGE = 60
 
 
-# :param arg1: description
-# :param arg2: description
-# :type arg1: type description
-# :type arg1: type description
-# :return: return description
-# :rtype: the return type description
-
-
 def object_exists(key):
     """ Checking whether a given object exists in our work bucket
     
