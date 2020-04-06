@@ -33,7 +33,8 @@ def create_warehouse():
         StackName="warehouse",
         TemplateBody=template_body,
         ChangeSetName=changeset_name,
-        ChangeSetType=changeset_type
+        ChangeSetType=changeset_type,
+        Capabilities=["CAPABILITY_NAMED_IAM"]
     )
     changeset_arn = response["Id"]
     return changeset_arn
