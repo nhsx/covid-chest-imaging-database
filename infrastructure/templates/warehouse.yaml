@@ -1,0 +1,19 @@
+Resources:
+  WarehouseBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: nccid-data-warehouse
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+Outputs:
+  WarehouseBucketArn:
+    Value: !GetAtt [WarehouseBucket, Arn]
