@@ -1,4 +1,6 @@
 Resources:
+
+  # Main bucket
   WarehouseBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -15,6 +17,8 @@ Resources:
         BlockPublicPolicy: true
         RestrictPublicBuckets: true
         IgnorePublicAcls: true
+
+  # IAM
   UploadToRawPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
@@ -33,3 +37,52 @@ Resources:
     Properties:
       ManagedPolicyArns:
         - !Ref UploadToRawPolicy
+
+  # CloudTrail
+  CloudTrailLogsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: nccid-data-warehouse-object-logs
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+        IgnorePublicAcls: true
+  CloudTrailLogsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CloudTrailLogsBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action: s3:GetBucketAcl
+            Resource: !GetAtt [CloudTrailLogsBucket, Arn]
+          - Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action: s3:PutObject
+            Resource: !Join ["", [!GetAtt [CloudTrailLogsBucket, Arn], "/AWSLogs/",!Ref "AWS::AccountId", "/*"]]
+            Condition:
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
+  CloudTrailLogs:
+    Type: AWS::CloudTrail::Trail
+    DependsOn:
+      # Have to explicitly pass the dependency on the bucket policy, otherwise
+      # they both get created at the same time and the trail creation fails
+      - CloudTrailLogsBucketPolicy
+    Properties:
+      IsLogging: true
+      S3BucketName: !Ref CloudTrailLogsBucket
+      EventSelectors:
+        - DataResources:
+            - Type: AWS::S3::Object
+              Values:
+                - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/"]]
