@@ -30,7 +30,7 @@ def create_warehouse():
     stack_name = "warehouse"
     changeset_type = "UPDATE" if _stack_exists(stack_name) else "CREATE"
     response = CLIENT.create_change_set(
-        StackName="warehouse",
+        StackName=stack_name,
         TemplateBody=template_body,
         ChangeSetName=changeset_name,
         ChangeSetType=changeset_type,
