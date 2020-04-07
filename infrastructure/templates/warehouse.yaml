@@ -1,3 +1,9 @@
+Parameters:
+  BucketNameParameter:
+    Type: String
+    Default: nccid-data-warehouse
+    Description: The base name of the storage bucket
+
 Resources:
 
   # Main bucket
@@ -5,7 +11,7 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       AccessControl: Private
-      BucketName: nccid-data-warehouse
+      BucketName: !Ref "BucketNameParameter"
       VersioningConfiguration:
         Status: Enabled
       BucketEncryption:
@@ -22,7 +28,7 @@ Resources:
   UploadToRawPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      ManagedPolicyName: upload-to-warehouse-raw
+      ManagedPolicyName: !Join ["", ["upload-to-", !Ref "BucketNameParameter", "-raw"]]
       Description: Allow uploading to the raw prefix in the warehouse bucket
       PolicyDocument:
         Version: 2012-10-17
@@ -42,7 +48,7 @@ Resources:
   CloudTrailLogsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: nccid-data-warehouse-object-logs
+      BucketName: !Join ["", [!Ref "BucketNameParameter", "-object-logs"]]
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
