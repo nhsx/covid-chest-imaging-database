@@ -38,6 +38,16 @@ Resources:
               - "s3:PutObject"
             Resource:
               !Join ["", [!GetAtt [WarehouseBucket, Arn], "/raw/*"]]
+          - Effect: Allow
+            Action:
+              - "s3:ListBucket"
+            Resource:
+              !GetAtt [WarehouseBucket, Arn]
+            Condition:
+              ForAllValues:StringLike:
+                "s3:prefix":
+                  - "raw/*"
+
   DataUploaderGroup:
     Type: AWS::IAM::Group
     Properties:
