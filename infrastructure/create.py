@@ -46,6 +46,10 @@ def create_warehouse(suffix=None, allowed_cidr=None):
                 "ParameterValue": ",".join(allowed_cidr),
             }
         ]
+    elif changeset_type == "UPDATE":
+        parameters += [
+            {"ParameterKey": "WarehouseUploadCIDRParameter", "UsePreviousValue": True,}
+        ]
 
     # Submit the change set
     response = CLIENT.create_change_set(
