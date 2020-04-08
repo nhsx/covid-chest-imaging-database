@@ -44,6 +44,30 @@ Resources:
       ManagedPolicyArns:
         - !Ref UploadToRawPolicy
 
+  ReadOnlyAccessWholeBucketPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Join ["", ["read-only-", !Ref "BucketNameParameter"]]
+      Description: Allow read-only view of the warehouse bucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - "s3:ListBucket"
+            Resource:
+              !GetAtt [WarehouseBucket, Arn]
+          - Effect: Allow
+            Action:
+              - "s3:GetObject"
+            Resource:
+              !Join ["", [!GetAtt [WarehouseBucket, Arn], "/*"]]
+  DataVerifierGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      ManagedPolicyArns:
+        - !Ref ReadOnlyAccessWholeBucketPolicy
+
   # CloudTrail
   CloudTrailLogsBucket:
     Type: AWS::S3::Bucket
