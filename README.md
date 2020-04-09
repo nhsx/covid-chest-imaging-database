@@ -5,5 +5,6 @@ Chest Image Database (NCCID).
 
 ## Components
 
+* [documentation site source code](docs)
 * [infrastructure setup](infrastructure)
-* [date warehouse preprocessing and loading tools](warehouse-loader)
+* [data warehouse preprocessing and loading tools](warehouse-loader)
