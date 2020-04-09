@@ -5,4 +5,5 @@ database.
 
 ## Components
 
+* [documentation site source code](docs)
 * [date warehouse preprocessing and loading tools](warehouse-loader)
