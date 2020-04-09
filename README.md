@@ -1,9 +1,10 @@
 # COVID-19 Chest Imaging Database
 
-This repository contains tooling related to the NHSx COVID-19 Chest Image
-database. 
+This repository contains tooling related to the NHSx  National COVID-19
+Chest Image Database (NCCID).
 
 ## Components
 
 * [documentation site source code](docs)
-* [date warehouse preprocessing and loading tools](warehouse-loader)
+* [infrastructure setup](infrastructure)
+* [data warehouse preprocessing and loading tools](warehouse-loader)
