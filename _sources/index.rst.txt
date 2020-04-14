@@ -10,6 +10,13 @@ The chest image database aims to make available chest X-rays and CT
 scans to software developers and academics to test and develop AI
 models.
 
+
+Instructions for data collection sites
+--------------------------------------
+
+If you are interested contributing to this dataset, please
+`get in touch here<https://medphys.royalsurrey.nhs.uk/nccid/index.php>`_!
+
 Requesting access
 -----------------
 
