@@ -84,8 +84,6 @@ context of the COVID-19 pandemic, support:
 - Patient triage and management
 - Decision making
 
-We expect the data will be used to:
-
 We expect the data will be used as follows:
 
 - Image processing software. *Example*: An AI model that determines
