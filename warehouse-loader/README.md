@@ -44,5 +44,5 @@ $ python warehouse-loader.py
 To get this image, install the Python dependencies, [Graphviz](https://www.graphviz.org/), and run:
 
 ```shell
-bonobo inspect --graph warehouse-loader.py | dot -o warehouse_loader.png -T png
+bonobo inspect --graph warehouse-loader.py | dot -o warehouse-loader-pipeline.png -T png
 ```
