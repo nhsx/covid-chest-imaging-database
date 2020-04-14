@@ -25,10 +25,14 @@ We are working to set up processes and infrastructure for data access. We
 will update this page as soon as these are finalised.
 
 In the meantime, users (researchers, developers, clinicians...) who would
-like to access the database can submit their “Expression of interest” by
+like to access the database can submit their “Expression of Interest” by
 filling in :download:`this form <docs/NCCID_Expression_of_Interest_Form.docx>`,
 and sending it to imaging@nhsx.nhs.uk. We will register all expressions
 of interest, and send notifications as soon as data access becomes possible.
+
+.. note::
+   The Expression of Interest form is different from the
+   Data Access Request form, which we will make available at a later stage.
 
 
 Instructions for data collection sites
