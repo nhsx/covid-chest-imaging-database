@@ -311,14 +311,17 @@ def process_patient_data(*args):
         # Not a data file, don't do anything with it
         return
 
-    patient_id = Path(obj.key).stem.replace("_data", "").replace("_status", "")
-    training_set = patient_in_training_set(patient_id)
-    prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
-    date = get_date_from_key(obj.key, RAW_PREFIX)
-    if date:
-        new_key = f"{prefix}{patient_id}/data/{date}/data.json"
-        if not object_exists(new_key):
-            yield "copy", obj, new_key
+    m = re.match("^(?P<patient_id>.*)_(?P<outcome>data|status)$", Path(obj.key).stem)
+    if m:
+        patient_id = m.group("patient_id")
+        outcome = m.group("outcome")
+        training_set = patient_in_training_set(patient_id)
+        prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
+        date = get_date_from_key(obj.key, RAW_PREFIX)
+        if date:
+            new_key = f"{prefix}{patient_id}/data/{date}/{outcome}.json"
+            if not object_exists(new_key):
+                yield "copy", obj, new_key
 
 
 def data_copy(*args):
