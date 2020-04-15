@@ -112,7 +112,7 @@ def patient_in_training_set(patient_id, training_percent=TRAINING_PERCENTAGE):
     :rtype: boolean
     """
     return (
-        int(hashlib.sha512(patient_id.encode("utf-8")).hexdigest(), 16) % 100
+        int(hashlib.sha512(patient_id.upper().encode("utf-8")).hexdigest(), 16) % 100
         < training_percent
     )
 
