@@ -27,6 +27,11 @@ Resources:
         BlockPublicPolicy: true
         RestrictPublicBuckets: true
         IgnorePublicAcls: true
+      LifecycleConfiguration:
+        Rules:
+          - AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+            Status: Enabled
   WarehouseBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
