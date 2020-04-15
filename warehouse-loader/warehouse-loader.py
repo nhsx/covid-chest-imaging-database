@@ -226,35 +226,41 @@ def process_image(*args, keycache):
     :return: a task name, the original object, and a new key where it should be copied within the bucket
     :rtype: (string, boto3.resource('s3').ObjectSummary, string)
     """
-    # print(args)
+    # check file type
     (obj,) = args
     if Path(obj.key).suffix.lower() != ".dcm":
-        # Not an image, don't do anything with it
+        # not an image, don't do anything with it
         return
 
+    # check if work is already done
     image_in_cache = keycache.exists(obj.key)
     image_uuid = Path(obj.key).stem
     metadata_in_cache = keycache.exists(f"{image_uuid}.json")
+    if metadata_in_cache and image_in_cache:
+        # files exist, nothing to do here
+        return
 
-    if not metadata_in_cache:
-        tmp = BytesIO()
-        obj.Object().download_fileobj(tmp)
-        tmp.seek(0)
-        image_data = pydicom.dcmread(tmp, stop_before_pixels=True)
-        patient_id = image_data["PatientID"].value
-        image_type = MODALITY.get(image_data["Modality"].value, "unknown")
-        date = get_date_from_key(obj.key, RAW_PREFIX)
-        if date:
-            training_set = patient_in_training_set(patient_id)
-            prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
-            new_key = f"{prefix}{patient_id}/{image_type}/{Path(obj.key).name}"
-            metadata_key = (
-                f"{prefix}{patient_id}/{image_type}-metadata/{image_uuid}.json"
-            )
-            if not object_exists(metadata_key):
-                yield "metadata", metadata_key, image_data
-    if not metadata_in_cache and not object_exists(new_key):
+    # download the image
+    tmp = BytesIO()
+    obj.Object().download_fileobj(tmp)
+    tmp.seek(0)
+    image_data = pydicom.dcmread(tmp, stop_before_pixels=True)
+
+    # extract the required data from the image
+    patient_id = image_data["PatientID"].value
+    image_type = MODALITY.get(image_data["Modality"].value, "unknown")
+    training_set = patient_in_training_set(patient_id)
+    prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
+
+    # the location of the new files
+    new_key = f"{prefix}{patient_id}/{image_type}/{Path(obj.key).name}"
+    metadata_key = f"{prefix}{patient_id}/{image_type}-metadata/{image_uuid}.json"
+
+    # send off to copy or upload steps
+    if not object_exists(new_key):
         yield "copy", obj, new_key
+    if not object_exists(metadata_key):
+        yield "metadata", metadata_key, image_data
 
 
 def process_dicom_data(*args):
