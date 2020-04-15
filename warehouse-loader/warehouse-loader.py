@@ -24,6 +24,12 @@ VALIDATION_PREFIX = "validation/"
 
 TRAINING_PERCENTAGE = 60
 
+MODALITY = {
+    "DX": "x-ray",
+    "CR": "x-ray",
+    "MR": "mri",
+    "CT": "ct",
+}
 
 ###
 # Services
@@ -236,13 +242,14 @@ def process_image(*args, keycache):
         tmp.seek(0)
         image_data = pydicom.dcmread(tmp, stop_before_pixels=True)
         patient_id = image_data["PatientID"].value
+        image_type = MODALITY.get(image_data["Modality"].value, "unknown")
         date = get_date_from_key(obj.key, RAW_PREFIX)
         if date:
             training_set = patient_in_training_set(patient_id)
             prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
-            new_key = f"{prefix}{patient_id}/images/{date}/{Path(obj.key).name}"
+            new_key = f"{prefix}{patient_id}/{image_type}/{Path(obj.key).name}"
             metadata_key = (
-                f"{prefix}{patient_id}/images_metadata/{date}/{image_uuid}.json"
+                f"{prefix}{patient_id}/{image_type}_metadata/{image_uuid}.json"
             )
             if not object_exists(metadata_key):
                 yield "metadata", metadata_key, image_data
