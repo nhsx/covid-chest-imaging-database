@@ -1,5 +1,7 @@
 import hashlib
+import itertools
 import json
+import logging
 import os
 import re
 from io import BytesIO
@@ -8,8 +10,11 @@ from pathlib import Path
 import bonobo
 import boto3
 import pydicom
-from bonobo.config import use
+from bonobo.config import Configurable, ContextProcessor, use
 from botocore.exceptions import ClientError
+
+# set up logging
+logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
 s3_resource = boto3.resource("s3")
 s3_client = boto3.client("s3")
@@ -190,8 +195,13 @@ def extract_raw_folders():
     result = s3_client.list_objects(
         Bucket=BUCKET_NAME, Prefix=RAW_PREFIX, Delimiter="/"
     )
-    for subfolder in result.get("CommonPrefixes"):
-        yield subfolder.get("Prefix")
+    # list folders in reverse order, and since the folders are dates, that will
+    # return newer folders first, which are less likely to be already processed
+    folders = iter(
+        sorted([p.get("Prefix") for p in result.get("CommonPrefixes")], reverse=True)
+    )
+    for f in folders:
+        yield f
 
 
 def extract_raw_files_from_folder(folder):
@@ -254,10 +264,8 @@ def process_image(*args, keycache):
     date = get_date_from_key(obj.key, RAW_PREFIX)
     if date:
         # the location of the new files
-        new_key = f"{prefix}{image_type}/{patient_id}/{date}/{Path(obj.key).name}"
-        metadata_key = (
-            f"{prefix}{image_type}-metadata/{patient_id}/{date}/{image_uuid}.json"
-        )
+        new_key = f"{prefix}{image_type}/{patient_id}/{Path(obj.key).name}"
+        metadata_key = f"{prefix}{image_type}-metadata/{patient_id}/{image_uuid}.json"
         # send off to copy or upload steps
         if not object_exists(new_key):
             yield "copy", obj, new_key
@@ -280,21 +288,23 @@ def process_dicom_data(*args):
     task, metadata_key, image_data, = args
     if task == "metadata":
         scrubbed_image_data = scrub_dicom(image_data)
-        yield metadata_key, scrubbed_image_data
+        yield "upload", metadata_key, json.dumps(scrubbed_image_data)
 
 
-def upload_extracted_dicom_data(*args):
-    """Upload the extracted DICOM data to the correct bucket
-    location.
+def upload_text_data(*args):
+    """Upload the text data to the correct bucket location.
 
-    :param metadata_key: location to upload the extracted metadata later
-    :type metadata_key: string
-    :param image_data: scrubbed DICOM image data
-    :type image_data: dict
+    :param task: selector to run this task or not, needs to be "upload" to process a file
+    :type task: string
+    :param outgoing_key: location to upload the data
+    :type outgoing_key: string
+    :param outgoing_data: text to file content to upload
+    :type outgoing_data: string
     """
-    metadata_key, scrubbed_image_data, = args
-    bucket.put_object(Body=json.dumps(scrubbed_image_data), Key=metadata_key)
-    return bonobo.constants.NOT_MODIFIED
+    task, outgoing_key, outgoing_data, = args
+    if task == "upload" and outgoing_key is not None and outgoing_data is not None:
+        bucket.put_object(Body=outgoing_data, Key=outgoing_key)
+        return bonobo.constants.NOT_MODIFIED
 
 
 def process_patient_data(*args):
@@ -314,7 +324,7 @@ def process_patient_data(*args):
         # Not a data file, don't do anything with it
         return
 
-    m = re.match("^(?P<patient_id>.*)_(?P<outcome>data|status)$", Path(obj.key).stem)
+    m = re.match(r"^(?P<patient_id>.*)_(?P<outcome>data|status)$", Path(obj.key).stem)
     if m:
         patient_id = m.group("patient_id")
         outcome = m.group("outcome")
@@ -322,7 +332,7 @@ def process_patient_data(*args):
         prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
         date = get_date_from_key(obj.key, RAW_PREFIX)
         if date:
-            new_key = f"{prefix}data/{patient_id}/{date}/{outcome}.json"
+            new_key = f"{prefix}data/{patient_id}/{outcome}_{date}.json"
             if not object_exists(new_key):
                 yield "copy", obj, new_key
 
@@ -347,6 +357,109 @@ def data_copy(*args):
         return bonobo.constants.NOT_MODIFIED
 
 
+def get_summary_date(cache, key):
+    """ Get date for a given file from the relevant sources
+
+    :param cache: the cache of the "raw input to look things up in
+    :type cache: dict
+    :param key: object key to process
+    :type key: string
+    :return: the extracted date if any
+    :rtype: string or None
+    """
+    datamatch = re.match(
+        r"^(?P<outcome>data|status)_(?P<date>\d{4}-\d{2}-\d{2})\.json$",
+        Path(key).name.lower(),
+    )
+    if datamatch:
+        # it's a data file, get date from the filename
+        return datamatch.group("date")
+
+    if Path(key).suffix.lower() == ".json":
+        # it's a metadata file, look things up by the original DICOM image
+        lookup_key = Path(key).stem.lower() + ".dcm"
+    else:
+        # it's an image
+        lookup_key = Path(key).name.lower()
+    return cache.get(lookup_key)
+
+
+def prepare_summary(cache, prefix, modality):
+    """
+
+    :param cache: the cache of the "raw input to look things up in
+    :type cache: dict
+    :param prefix: the prefix to act on (usually "training/" and "validation/"), needs trailing slash
+    :type prefix: string
+    :param modality: subfolder to look in (such as "ct", "data", ...)
+    :type modality: string
+    :return: file summary the extracted from the bucket structure
+    :rtype: list[dict]
+    """
+    prefix = prefix + modality + "/"
+    modality_files = bucket.objects.filter(Prefix=prefix)
+    modality_list = []
+    for obj in modality_files:
+        file_key = obj.key
+        file_name = Path(file_key).name
+        date = get_summary_date(cache, file_key)
+        patient_match = re.match(rf"^{prefix}(?P<patient_id>[\d-]*)/.*", file_key)
+        if date and patient_match:
+            patient_id = patient_match.group("patient_id")
+            modality_list += [
+                {
+                    "patient_id": patient_id,
+                    "modality": modality,
+                    "file_name": file_name,
+                    "file_key": file_key,
+                    "upload_date": date,
+                }
+            ]
+    return modality_list
+
+
+class SummaryFile(Configurable):
+    """ Get unique channel names from the raw messages. """
+
+    @ContextProcessor
+    def processor(self, context, *args):
+        """Run at the very end of processing and upload summary
+        files to all relevant directories.
+        """
+        yield
+
+        # When everything else finished, kick off real computation
+        cache = {}
+        raw_files = bucket.objects.filter(Prefix=RAW_PREFIX)
+        for f in raw_files:
+            cache[Path(f.key).name.lower()] = get_date_from_key(f.key, RAW_PREFIX)
+
+        modalities = (
+            set(["data"])
+            | set(MODALITY.values())
+            | set([m + "-metadata" for m in MODALITY.values()])
+        )
+        prefixes = [TRAINING_PREFIX, VALIDATION_PREFIX]
+
+        for prefix, modality in itertools.product(prefixes, modalities):
+            summary = json.dumps(prepare_summary(cache, prefix, modality))
+            summarykey = prefix + modality + "/summary.json"
+            upload = True
+            if object_exists(summarykey):
+                obj = bucket.Object(summarykey).get()
+                contents = obj["Body"].read().decode("utf-8")
+                if contents == summary:
+                    upload = False
+                    logging.debug(
+                        f"{summarykey}: already exists and content is current."
+                    )
+            if upload:
+                upload_text_data("upload", summarykey, summary)
+
+    def __call__(self, *args):
+        pass
+
+
 ###
 # Graph setup
 ###
@@ -362,7 +475,9 @@ def get_graph(**options):
         load_existing_files, extract_raw_folders, extract_raw_files_from_folder,
     )
 
-    graph.add_chain(data_copy, _input=None, _name="copy")
+    graph.add_chain(SummaryFile(), _input=None, _name="metadata")
+
+    graph.add_chain(data_copy, _input=None, _output="metadata", _name="copy")
 
     graph.add_chain(
         # bonobo.Limit(30),
@@ -379,7 +494,7 @@ def get_graph(**options):
     )
 
     graph.add_chain(
-        process_dicom_data, upload_extracted_dicom_data, _input=process_image
+        process_dicom_data, upload_text_data, _input=process_image, _output="metadata"
     )
 
     return graph
