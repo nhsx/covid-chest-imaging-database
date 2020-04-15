@@ -1,16 +1,15 @@
-from io import BytesIO
-import json
 import hashlib
+import json
 import os
-from pathlib import Path
 import re
-import tempfile
+from io import BytesIO
+from pathlib import Path
 
 import bonobo
-from bonobo.config import use
 import boto3
-from botocore.exceptions import ClientError
 import pydicom
+from bonobo.config import use
+from botocore.exceptions import ClientError
 
 s3_resource = boto3.resource("s3")
 s3_client = boto3.client("s3")
@@ -63,9 +62,9 @@ class KeyCache:
 ###
 def object_exists(key):
     """ Checking whether a given object exists in our work bucket
-    
-    :param key: the object key in queustion
-    :type key: string 
+
+    :param key: the object key in question
+    :type key: string
     :raises botocore.exceptions.ClientError: if there's any transfer error
     :return: True if object exists in the work bucket
     :rtype: boolean
@@ -84,10 +83,10 @@ def object_exists(key):
 def get_date_from_key(key, prefix):
     """ Extract date from an object key from the bucket's directory pattern,
     for a given prefix
-    
+
     :param key: the object key in queustion
-    :type key: string 
-    :param prefix: the prefix to use, e.g. `raw/`, including the 
+    :type key: string
+    :param prefix: the prefix to use, e.g. `raw/`, including the
     :type prefix: string
     :return: the extracted date if found
     :rtype: string or None
@@ -105,7 +104,7 @@ def patient_in_training_set(patient_id, training_percent=TRAINING_PERCENTAGE):
     and do the cut-off with a set percentage.
 
     :param patient_id: the candidate patient ID
-    :type patient_id: string 
+    :type patient_id: string
     :param training_percent: the percentage of patience to assign to the training set (defaults to the global TRAINING_PERCENTAGE)
     :type training_percent: int
     :return: True if the patient ID should fall into the training set
@@ -197,9 +196,9 @@ def extract_raw_folders():
 
 def extract_raw_files_from_folder(folder):
     """ Extract files from a givem date folder in the data dump
-    
+
     :param folder: the folder to process
-    :type key: string 
+    :type key: string
     :return: each object (yield)
     :rtype: boto3.resource('s3').ObjectSummary
     """
@@ -218,7 +217,7 @@ def process_image(*args, keycache):
 
     If the image file already exists at the correct location, it's not passed
     on to the next step.
-    
+
     :param obj: the object in question
     :type obj: boto3.resource('s3').ObjectSummary
     :param keycache: the key cache service (provided by bonobo)
@@ -301,9 +300,9 @@ def process_patient_data(*args):
     Get the patient ID from the filename, do a training/validation
     test split, and create the key for the new location for the
     next processing step to copy things to.
-    
-    :param obj: the object in queustion
-    :type obj: boto3.resource('s3').ObjectSummary 
+
+    :param obj: the object in question
+    :type obj: boto3.resource('s3').ObjectSummary
     :return: a task name, the original object, and a new key where it should be copied within the bucket
     :rtype: (string, boto3.resource('s3').ObjectSummary, string)
     """
@@ -326,7 +325,7 @@ def data_copy(*args):
     """Copy objects within the bucket
 
     Only if both original object and new key is provided.
-    
+
     :param task: selector to run this task or not, needs to be "copy" to process a file
     :type task: string
     :param obj: the object key in question
