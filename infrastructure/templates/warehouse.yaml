@@ -62,6 +62,37 @@ Resources:
       ManagedPolicyArns:
         - !Ref UploadToRawPolicy
 
+  ETLPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Join ["", ["etl", !Ref "BucketNameParameter"]]
+      Description: Allow ETL operations on the non-raw prefixes in the warehouse bucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - "s3:ListBucket"
+              - "s3:GetBucketLocation"
+            Resource:
+              !GetAtt [WarehouseBucket, Arn]
+          - Effect: Allow
+            Action:
+              - "s3:GetObject"
+            Resource:
+              !Join ["", [!GetAtt [WarehouseBucket, Arn], "/*"]]
+          - Effect: Allow
+            Action:
+              - "s3:PutObject"
+            Resource:
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/*"]]
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/validation/*"]]
+  ETLGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      ManagedPolicyArns:
+        - !Ref ETLPolicy
+
   ReadOnlyAccessWholeBucketPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
