@@ -195,7 +195,7 @@ def extract_raw_folders():
 
 
 def extract_raw_files_from_folder(folder):
-    """ Extract files from a givem date folder in the data dump
+    """ Extract files from a given date folder in the data dump
 
     :param folder: the folder to process
     :type key: string
