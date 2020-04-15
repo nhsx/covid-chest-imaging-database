@@ -249,7 +249,7 @@ def process_image(*args, keycache):
             prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
             new_key = f"{prefix}{patient_id}/{image_type}/{Path(obj.key).name}"
             metadata_key = (
-                f"{prefix}{patient_id}/{image_type}_metadata/{image_uuid}.json"
+                f"{prefix}{patient_id}/{image_type}-metadata/{image_uuid}.json"
             )
             if not object_exists(metadata_key):
                 yield "metadata", metadata_key, image_data
