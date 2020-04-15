@@ -252,8 +252,8 @@ def process_image(*args, keycache):
     prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
 
     # the location of the new files
-    new_key = f"{prefix}{patient_id}/{image_type}/{Path(obj.key).name}"
-    metadata_key = f"{prefix}{patient_id}/{image_type}-metadata/{image_uuid}.json"
+    new_key = f"{prefix}{image_type}/{patient_id}/{Path(obj.key).name}"
+    metadata_key = f"{prefix}{image_type}-metadata/{patient_id}/{image_uuid}.json"
 
     # send off to copy or upload steps
     if not object_exists(new_key):
@@ -319,7 +319,7 @@ def process_patient_data(*args):
         prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
         date = get_date_from_key(obj.key, RAW_PREFIX)
         if date:
-            new_key = f"{prefix}{patient_id}/data/{date}/{outcome}.json"
+            new_key = f"{prefix}data/{patient_id}/{date}/{outcome}.json"
             if not object_exists(new_key):
                 yield "copy", obj, new_key
 
