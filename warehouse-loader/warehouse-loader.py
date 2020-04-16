@@ -342,12 +342,9 @@ def data_copy(*args):
     :rtype: bonobo.constants.NOT_MODIFIED
     """
     task, obj, new_key, = args
-    if task != "copy":
-        return bonobo.constants.NOT_MODIFIED
-
-    if obj is not None and new_key is not None:
+    if task == "copy" and obj is not None and new_key is not None:
         bucket.copy({"Bucket": obj.bucket_name, "Key": obj.key}, new_key)
-    return bonobo.constants.NOT_MODIFIED
+        return bonobo.constants.NOT_MODIFIED
 
 
 ###
