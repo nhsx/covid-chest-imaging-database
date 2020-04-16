@@ -240,10 +240,10 @@ def process_image(*args, keycache):
         return
 
     # download the image
-    tmp = BytesIO()
-    obj.Object().download_fileobj(tmp)
-    tmp.seek(0)
-    image_data = pydicom.dcmread(tmp, stop_before_pixels=True)
+    with BytesIO() as tmp:
+        obj.Object().download_fileobj(tmp)
+        tmp.seek(0)
+        image_data = pydicom.dcmread(tmp, stop_before_pixels=True)
 
     # extract the required data from the image
     patient_id = image_data["PatientID"].value
