@@ -251,15 +251,18 @@ def process_image(*args, keycache):
     training_set = patient_in_training_set(patient_id)
     prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
 
-    # the location of the new files
-    new_key = f"{prefix}{image_type}/{patient_id}/{Path(obj.key).name}"
-    metadata_key = f"{prefix}{image_type}-metadata/{patient_id}/{image_uuid}.json"
-
-    # send off to copy or upload steps
-    if not object_exists(new_key):
-        yield "copy", obj, new_key
-    if not object_exists(metadata_key):
-        yield "metadata", metadata_key, image_data
+    date = get_date_from_key(obj.key, RAW_PREFIX)
+    if date:
+        # the location of the new files
+        new_key = f"{prefix}{image_type}/{patient_id}/{date}/{Path(obj.key).name}"
+        metadata_key = (
+            f"{prefix}{image_type}-metadata/{patient_id}/{date}/{image_uuid}.json"
+        )
+        # send off to copy or upload steps
+        if not object_exists(new_key):
+            yield "copy", obj, new_key
+        if not object_exists(metadata_key):
+            yield "metadata", metadata_key, image_data
 
 
 def process_dicom_data(*args):
