@@ -405,7 +405,7 @@ def prepare_summary(cache, prefix, modality):
         file_key = obj.key
         file_name = Path(file_key).name
         date = get_summary_date(cache, file_key)
-        patient_match = re.match(rf"^{prefix}(?P<patient_id>[\d-]*)/.*", file_key)
+        patient_match = re.match(rf"^{prefix}(?P<patient_id>.+?)\/.*", file_key)
         if date and patient_match:
             patient_id = patient_match.group("patient_id")
             modality_list += [
