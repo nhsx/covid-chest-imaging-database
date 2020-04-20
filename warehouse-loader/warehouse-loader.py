@@ -9,12 +9,14 @@ from pathlib import Path
 
 import bonobo
 import boto3
+import mondrian
 import pydicom
 from bonobo.config import Configurable, ContextProcessor, use
 from botocore.exceptions import ClientError
 
 # set up logging
-logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+mondrian.setup(excepthook=True)
+logger = logging.getLogger()
 
 s3_resource = boto3.resource("s3")
 s3_client = boto3.client("s3")
@@ -450,7 +452,7 @@ class SummaryFile(Configurable):
                 contents = obj["Body"].read().decode("utf-8")
                 if contents == summary:
                     upload = False
-                    logging.debug(
+                    logger.debug(
                         f"{summarykey}: already exists and content is current."
                     )
             if upload:
