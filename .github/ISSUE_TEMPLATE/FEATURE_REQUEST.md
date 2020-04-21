@@ -1,6 +1,10 @@
 ---
 name: Feature request
 about: Suggest an idea to improve the National COVID-19 Chest Imaging Database
+title: ''
+labels: ''
+assignees: imrehg
+
 ---
 
 ### Describe the feature request

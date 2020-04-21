@@ -1,6 +1,10 @@
 ---
 name: Bug report
 about: Report a bug to help us improve the National COVID-19 Chest Imaging Database
+title: ''
+labels: ''
+assignees: imrehg
+
 ---
 
 ### Bug description
