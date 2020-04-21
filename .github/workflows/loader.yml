@@ -26,5 +26,4 @@ jobs:
     - name: Lint with flake8
       working-directory: ${{ env.working-directory }}
       run: |
-        flake8 . --count --select=BLK --show-source --statistics
-
+        flake8 . --count --show-source --statistics

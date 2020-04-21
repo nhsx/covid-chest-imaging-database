@@ -24,17 +24,22 @@ export BUCKET_NAME=my-warehouse-bucket
 then run the script directly.
 
 ```shell
-python warehouse-loader.py
+bonobo run warehouse-loader.py
 ```
 
 The results of the pipeline will be shown in the terminal, for example:
 
 ```shell
-$ python warehouse-loader.py 
- - extract_raw_folders in=1 out=1 [done] 
- - extract_raw_files_from_folder in=1 out=385 [done] 
- - process_file in=385 out=385 [done] 
- - data_copy in=385 out=385 [done] 
+$ bonobo run warehouse-loader.py --env WAREHOUSE_BUCKET=bucketname
+- load_existing_files in=1 out=1 [done]
+- extract_raw_folders in=1 out=2 [done]
+- extract_raw_files_from_folder in=2 out=55954 [done]
+- process_image in=55954 out=111782 err=2 [done]
+- process_dicom_data in=111782 out=55891 [done]
+- upload_text_data in=55891 out=55891 [done]
+- process_patient_data in=55954 out=61 [done]
+- data_copy in=111843 out=55952 [done]
+- SummaryFile in=111843 [done]
  ```
 
 ## Pipeline overview
@@ -44,5 +49,46 @@ $ python warehouse-loader.py
 To get this image, install the Python dependencies, [Graphviz](https://www.graphviz.org/), and run:
 
 ```shell
-bonobo inspect --graph warehouse-loader.py | dot -o warehouse_loader.png -T png
+bonobo inspect --graph warehouse-loader.py | dot -o warehouse-loader-pipeline.png -T png
+```
+
+## Warehouse structure
+
+The warehouse training data is organised into subfolders based on image types, patient ID,
+and date, as follows:
+
+```shell
+/training/ct/PATIENT_ID/IMAGE_UUID.dcm
+/training/ct/summary.json
+/training/ct-metadata/PATIENT_ID/IMAGE_UUID.json
+/training/ct-metadata/summary.json
+/training/mri/PATIENT_ID/IMAGE_UUID.dcm
+/training/mri/summary.json
+/training/mri-metadata/PATIENT_ID/IMAGE_UUID.json
+/training/mri-metadata/summary.json
+/training/x-ray/PATIENT_ID/IMAGE_UUID.dcm
+/training/x-ray/summary.json
+/training/x-ray-metadata/PATIENT_ID/IMAGE_UUID.json
+/training/x-ray-metadata/summary.json
+/training/data/PATIENT_ID/status_DATE.json
+/training/data/PATIENT_ID/data_DATE.json
+/training/data/summary.json
+```
+
+* The `ct`, `mri`, `x-ray` folders hold the DICOM images of the relevant kind.
+* The `...-metadata` folders hold the DICOM tags exported as `json` from the corresponding `IMAGE_UUID.dcm`
+* The `data` folder holds the patient medical data, `status_DATE.json` files for negative results, and `data_DATE.json` file/files for positive results. The `DATE` is formatted as `YYYY-MM-DD`, such as `2020-04-21`.
+* Each of the `summary.json` files contain exported data that can help filtering files that you might want to download. The file's structure is:
+
+```json
+[
+  {
+    "patient_id": "PATIENT_ID",
+    "modality": "ct",
+    "file_name": "IMAGE_UUID.dcm",
+    "file_key": "training/ct/PATIENT_ID/IMAGE_UUID.dcm",
+    "upload_date": "DATE"
+  },
+  ...
+]
 ```

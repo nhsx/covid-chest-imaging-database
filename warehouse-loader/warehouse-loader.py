@@ -1,15 +1,22 @@
-from io import BytesIO
-import json
 import hashlib
+import itertools
+import json
+import logging
 import os
-from pathlib import Path
 import re
-import tempfile
+from io import BytesIO
+from pathlib import Path
 
 import bonobo
 import boto3
-from botocore.exceptions import ClientError
+import mondrian
 import pydicom
+from bonobo.config import Configurable, ContextProcessor, use
+from botocore.exceptions import ClientError
+
+# set up logging
+mondrian.setup(excepthook=True)
+logger = logging.getLogger()
 
 s3_resource = boto3.resource("s3")
 s3_client = boto3.client("s3")
@@ -23,12 +30,48 @@ VALIDATION_PREFIX = "validation/"
 
 TRAINING_PERCENTAGE = 60
 
+MODALITY = {
+    "DX": "x-ray",
+    "CR": "x-ray",
+    "MR": "mri",
+    "CT": "ct",
+}
 
+###
+# Services
+###
+class KeyCache:
+    """ Basic cache for looking up existing files in the bucket
+    """
+
+    def __init__(self):
+        self.store = set()
+
+    def add(self, key):
+        """ Add a key to store in the cache, both the full
+        key, and the "filename" part, for different lookups
+        """
+        self.store.add(key)
+        self.store.add(Path(key).name)
+
+    def exists(self, key, fullpath=False):
+        """ Look up a key in the cache, either the "filename"
+        alone (default), or the full path
+        """
+        if fullpath:
+            return Path(key) in self.store
+        else:
+            return Path(key).name in self.store
+
+
+###
+# Helper functions
+###
 def object_exists(key):
     """ Checking whether a given object exists in our work bucket
-    
-    :param key: the object key in queustion
-    :type key: string 
+
+    :param key: the object key in question
+    :type key: string
     :raises botocore.exceptions.ClientError: if there's any transfer error
     :return: True if object exists in the work bucket
     :rtype: boolean
@@ -47,10 +90,10 @@ def object_exists(key):
 def get_date_from_key(key, prefix):
     """ Extract date from an object key from the bucket's directory pattern,
     for a given prefix
-    
+
     :param key: the object key in queustion
-    :type key: string 
-    :param prefix: the prefix to use, e.g. `raw/`, including the 
+    :type key: string
+    :param prefix: the prefix to use, e.g. `raw/`, including the
     :type prefix: string
     :return: the extracted date if found
     :rtype: string or None
@@ -68,16 +111,81 @@ def patient_in_training_set(patient_id, training_percent=TRAINING_PERCENTAGE):
     and do the cut-off with a set percentage.
 
     :param patient_id: the candidate patient ID
-    :type patient_id: string 
+    :type patient_id: string
     :param training_percent: the percentage of patience to assign to the training set (defaults to the global TRAINING_PERCENTAGE)
     :type training_percent: int
     :return: True if the patient ID should fall into the training set
     :rtype: boolean
     """
     return (
-        int(hashlib.sha512(patient_id.encode("utf-8")).hexdigest(), 16) % 100
+        int(hashlib.sha512(patient_id.upper().encode("utf-8")).hexdigest(), 16) % 100
         < training_percent
     )
+
+
+def inplace_nullify(d, key):
+    """
+    Recurse through a dictionary and set the value `key` to `None`
+
+    Extracted from https://bitbucket.org/scicomcore/dcm2slimjson/src/master/dcm2slimjson/main.py
+
+    :param d: dict to modify
+    :type d: dict
+    :param key: specific key to modify
+    :type key: anything that can be a dict key
+    """
+    if isinstance(d, list):
+        [inplace_nullify(_, key) for _ in d]
+
+    if isinstance(d, dict):
+        for k, v in d.items():
+
+            if k == key:
+                d[k] = None
+
+            if isinstance(v, (dict, list)):
+                inplace_nullify(v, key)
+
+
+def scrub_dicom(fd):
+    """Remove binary data and other unusuaed sections from a DICOM image.
+
+    Extracted from https://bitbucket.org/scicomcore/dcm2slimjson/src/master/dcm2slimjson/main.py
+
+    :param fd: image data to scrub
+    :type fd: pydicom.FileDataset
+    :return: the scrubbed image data
+    :rtype: dict
+    """
+
+    # Use a large value to bypass binary data handler
+    out = fd.to_json_dict(bulk_data_threshold=1e20)
+
+    # Drop binary data
+    inplace_nullify(out, "InlineBinary")
+
+    # Remove Value of Interest (VOI) transform data
+    inplace_nullify(out, "00283010")
+
+    return out
+
+
+###
+# Transformation steps
+###
+@use("keycache")
+def load_existing_files(keycache):
+    """ Loading existing files from the training and
+    validation sets into the keycache.
+
+    :param keycache: the key cache service (provided by bonobo)
+    :type keycache: Keycache
+    """
+    for obj in bucket.objects.filter(Prefix=TRAINING_PREFIX):
+        keycache.add(obj.key)
+    for obj in bucket.objects.filter(Prefix=VALIDATION_PREFIX):
+        keycache.add(obj.key)
+    return bonobo.constants.NOT_MODIFIED
 
 
 def extract_raw_folders():
@@ -89,15 +197,20 @@ def extract_raw_folders():
     result = s3_client.list_objects(
         Bucket=BUCKET_NAME, Prefix=RAW_PREFIX, Delimiter="/"
     )
-    for subfolder in result.get("CommonPrefixes"):
-        yield subfolder.get("Prefix")
+    # list folders in reverse order, and since the folders are dates, that will
+    # return newer folders first, which are less likely to be already processed
+    folders = iter(
+        sorted([p.get("Prefix") for p in result.get("CommonPrefixes")], reverse=True)
+    )
+    for f in folders:
+        yield f
 
 
 def extract_raw_files_from_folder(folder):
-    """ Extract files from a givem date folder in the data dump
-    
+    """ Extract files from a given date folder in the data dump
+
     :param folder: the folder to process
-    :type key: string 
+    :type key: string
     :return: each object (yield)
     :rtype: boto3.resource('s3').ObjectSummary
     """
@@ -105,7 +218,8 @@ def extract_raw_files_from_folder(folder):
         yield obj
 
 
-def process_image(obj):
+@use("keycache")
+def process_image(*args, keycache):
     """ Processing images from the raw dump
 
     Takes a single image, downloads it into temporary storage
@@ -115,100 +229,274 @@ def process_image(obj):
 
     If the image file already exists at the correct location, it's not passed
     on to the next step.
-    
-    :param obj: the object in queustion
-    :type key: boto3.resource('s3').ObjectSummary
-    :return: the original object, and a new key where it should be copied within the bucket
-    :rtype: (boto3.resource('s3').ObjectSummary, string)
+
+    :param obj: the object in question
+    :type obj: boto3.resource('s3').ObjectSummary
+    :param keycache: the key cache service (provided by bonobo)
+    :type keycache: Keycache
+    :return: a task name, the original object, and a new key where it should be copied within the bucket
+    :rtype: (string, boto3.resource('s3').ObjectSummary, string)
     """
-    result = (None, None)
-    tmp = BytesIO()
-    obj.Object().download_fileobj(tmp)
-    tmp.seek(0)
-    image_data = pydicom.dcmread(tmp)
+    # check file type
+    (obj,) = args
+    if Path(obj.key).suffix.lower() != ".dcm":
+        # not an image, don't do anything with it
+        return
+
+    # check if work is already done
+    image_in_cache = keycache.exists(obj.key)
+    image_uuid = Path(obj.key).stem
+    metadata_in_cache = keycache.exists(f"{image_uuid}.json")
+    if metadata_in_cache and image_in_cache:
+        # files exist, nothing to do here
+        return
+
+    # download the image
+    with BytesIO() as tmp:
+        obj.Object().download_fileobj(tmp)
+        tmp.seek(0)
+        image_data = pydicom.dcmread(tmp, stop_before_pixels=True)
+
+    # extract the required data from the image
     patient_id = image_data["PatientID"].value
+    image_type = MODALITY.get(image_data["Modality"].value, "unknown")
+    training_set = patient_in_training_set(patient_id)
+    prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
+
     date = get_date_from_key(obj.key, RAW_PREFIX)
     if date:
-        training_set = patient_in_training_set(patient_id)
-        prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
-        new_key = f"{prefix}{patient_id}/images/{date}/{Path(obj.key).name}"
-        image_uuid = Path(obj.key).stem
-        metadata_key = f"{prefix}{patient_id}/images_metadata/{date}/{image_uuid}.json"
-        if not object_exists(metadata_key):
-            # upload metadata
-            bucket.put_object(
-                Body=json.dumps(image_data.to_json_dict()), Key=metadata_key
-            )
+        # the location of the new files
+        new_key = f"{prefix}{image_type}/{patient_id}/{Path(obj.key).name}"
+        metadata_key = f"{prefix}{image_type}-metadata/{patient_id}/{image_uuid}.json"
+        # send off to copy or upload steps
         if not object_exists(new_key):
-            result = (obj, new_key)
-    return result
+            yield "copy", obj, new_key
+        if not object_exists(metadata_key):
+            yield "metadata", metadata_key, image_data
 
 
-def process_patient_data(obj):
-    """ Processing patient data from the raw dump
+def process_dicom_data(*args):
+    """Process DICOM images, by scrubbing the image data
+
+    :param task: task informatiomn, needs to be equal to "metadata" to be processed here
+    :type task: string
+    :param metadata_key: location to upload the extracted metadata later
+    :type metadata_key: string
+    :param image_data: DICOM image data
+    :type image_data: pydicom.FileDataset
+    :return: metadata key and scrubbed image data, if processed
+    :rtype: tuple
+    """
+    task, metadata_key, image_data, = args
+    if task == "metadata":
+        scrubbed_image_data = scrub_dicom(image_data)
+        yield "upload", metadata_key, json.dumps(scrubbed_image_data)
+
+
+def upload_text_data(*args):
+    """Upload the text data to the correct bucket location.
+
+    :param task: selector to run this task or not, needs to be "upload" to process a file
+    :type task: string
+    :param outgoing_key: location to upload the data
+    :type outgoing_key: string
+    :param outgoing_data: text to file content to upload
+    :type outgoing_data: string
+    """
+    task, outgoing_key, outgoing_data, = args
+    if task == "upload" and outgoing_key is not None and outgoing_data is not None:
+        bucket.put_object(Body=outgoing_data, Key=outgoing_key)
+        return bonobo.constants.NOT_MODIFIED
+
+
+def process_patient_data(*args):
+    """Processing patient data from the raw dump
 
     Get the patient ID from the filename, do a training/validation
     test split, and create the key for the new location for the
     next processing step to copy things to.
-    
-    :param obj: the object in queustion
-    :type obj: boto3.resource('s3').ObjectSummary 
-    :return: the original object, and a new key where it should be copied within the bucket
-    :rtype: (boto3.resource('s3').ObjectSummary, string)
+
+    :param obj: the object in question
+    :type obj: boto3.resource('s3').ObjectSummary
+    :return: a task name, the original object, and a new key where it should be copied within the bucket
+    :rtype: (string, boto3.resource('s3').ObjectSummary, string)
     """
-    result = (None, None)
-    filename = Path(obj.key).name
-    patient_id = Path(obj.key).stem
-    training_set = patient_in_training_set(patient_id)
-    prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
-    date = get_date_from_key(obj.key, RAW_PREFIX)
-    if date:
-        new_key = f"{prefix}{patient_id}/data/{date}/data.json"
-        if not object_exists(new_key):
-            result = (obj, new_key)
-    return result
+    (obj,) = args
+    if Path(obj.key).suffix.lower() != ".json":
+        # Not a data file, don't do anything with it
+        return
+
+    m = re.match(r"^(?P<patient_id>.*)_(?P<outcome>data|status)$", Path(obj.key).stem)
+    if m:
+        patient_id = m.group("patient_id")
+        outcome = m.group("outcome")
+        training_set = patient_in_training_set(patient_id)
+        prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
+        date = get_date_from_key(obj.key, RAW_PREFIX)
+        if date:
+            new_key = f"{prefix}data/{patient_id}/{outcome}_{date}.json"
+            if not object_exists(new_key):
+                yield "copy", obj, new_key
 
 
-def process_files(obj):
-    """ Generic file processing step
-
-    Split the processing according to the file type,
-    and pass on the results to the next step
-    
-    :param obj: the object in queustion
-    :type obj: boto3.resource('s3').ObjectSummary 
-    :return: the original object, and a new key where it should be copied within the bucket
-    :rtype: (boto3.resource('s3').ObjectSummary, string)
-    """
-    if Path(obj.key).suffix.lower() == ".dcm":
-        yield process_image(obj)
-    elif Path(obj.key).suffix.lower() == ".json":
-        yield process_patient_data(obj)
-
-
-def data_copy(obj, new_key):
-    """ Copy objects within the bucket
+def data_copy(*args):
+    """Copy objects within the bucket
 
     Only if both original object and new key is provided.
-    
-    :param obj: the object key in queustion
+
+    :param task: selector to run this task or not, needs to be "copy" to process a file
+    :type task: string
+    :param obj: the object key in question
     :type obj: boto3.resource('s3').ObjectSummary
+    :param obj: the new key to copy data to
+    :type obj: string
     :return: standard constant for bonobo "load" steps, so they can be chained
     :rtype: bonobo.constants.NOT_MODIFIED
     """
-    if obj is not None and new_key is not None:
+    task, obj, new_key, = args
+    if task == "copy" and obj is not None and new_key is not None:
         bucket.copy({"Bucket": obj.bucket_name, "Key": obj.key}, new_key)
-    return bonobo.constants.NOT_MODIFIED
+        return bonobo.constants.NOT_MODIFIED
 
 
+def get_summary_date(cache, key):
+    """ Get date for a given file from the relevant sources
+
+    :param cache: the cache of the "raw input to look things up in
+    :type cache: dict
+    :param key: object key to process
+    :type key: string
+    :return: the extracted date if any
+    :rtype: string or None
+    """
+    datamatch = re.match(
+        r"^(?P<outcome>data|status)_(?P<date>\d{4}-\d{2}-\d{2})\.json$",
+        Path(key).name.lower(),
+    )
+    if datamatch:
+        # it's a data file, get date from the filename
+        return datamatch.group("date")
+
+    if Path(key).suffix.lower() == ".json":
+        # it's a metadata file, look things up by the original DICOM image
+        lookup_key = Path(key).stem.lower() + ".dcm"
+    else:
+        # it's an image
+        lookup_key = Path(key).name.lower()
+    return cache.get(lookup_key)
+
+
+def prepare_summary(cache, prefix, modality):
+    """
+
+    :param cache: the cache of the "raw input to look things up in
+    :type cache: dict
+    :param prefix: the prefix to act on (usually "training/" and "validation/"), needs trailing slash
+    :type prefix: string
+    :param modality: subfolder to look in (such as "ct", "data", ...)
+    :type modality: string
+    :return: file summary the extracted from the bucket structure
+    :rtype: list[dict]
+    """
+    prefix = prefix + modality + "/"
+    modality_files = bucket.objects.filter(Prefix=prefix)
+    modality_list = []
+    for obj in modality_files:
+        file_key = obj.key
+        file_name = Path(file_key).name
+        date = get_summary_date(cache, file_key)
+        patient_match = re.match(rf"^{prefix}(?P<patient_id>.+?)\/.*", file_key)
+        if date and patient_match:
+            patient_id = patient_match.group("patient_id")
+            modality_list += [
+                {
+                    "patient_id": patient_id,
+                    "modality": modality,
+                    "file_name": file_name,
+                    "file_key": file_key,
+                    "upload_date": date,
+                }
+            ]
+    return modality_list
+
+
+class SummaryFile(Configurable):
+    """ Get unique channel names from the raw messages. """
+
+    @ContextProcessor
+    def processor(self, context, *args):
+        """Run at the very end of processing and upload summary
+        files to all relevant directories.
+        """
+        yield
+
+        # When everything else finished, kick off real computation
+        cache = {}
+        raw_files = bucket.objects.filter(Prefix=RAW_PREFIX)
+        for f in raw_files:
+            cache[Path(f.key).name.lower()] = get_date_from_key(f.key, RAW_PREFIX)
+
+        modalities = (
+            set(["data"])
+            | set(MODALITY.values())
+            | set([m + "-metadata" for m in MODALITY.values()])
+        )
+        prefixes = [TRAINING_PREFIX, VALIDATION_PREFIX]
+
+        for prefix, modality in itertools.product(prefixes, modalities):
+            summary = json.dumps(prepare_summary(cache, prefix, modality))
+            summarykey = prefix + modality + "/summary.json"
+            upload = True
+            if object_exists(summarykey):
+                obj = bucket.Object(summarykey).get()
+                contents = obj["Body"].read().decode("utf-8")
+                if contents == summary:
+                    upload = False
+                    logger.debug(
+                        f"{summarykey}: already exists and content is current."
+                    )
+            if upload:
+                upload_text_data("upload", summarykey, summary)
+
+    def __call__(self, *args):
+        pass
+
+
+###
+# Graph setup
+###
 def get_graph(**options):
     """
     This function builds the graph that needs to be executed.
 
     :return: bonobo.Graph
     """
-    graph = bonobo.Graph(
-        extract_raw_folders, extract_raw_files_from_folder, process_files, data_copy,
+    graph = bonobo.Graph()
+
+    graph.add_chain(
+        load_existing_files, extract_raw_folders, extract_raw_files_from_folder,
+    )
+
+    graph.add_chain(SummaryFile(), _input=None, _name="metadata")
+
+    graph.add_chain(data_copy, _input=None, _output="metadata", _name="copy")
+
+    graph.add_chain(
+        # bonobo.Limit(30),
+        process_image,
+        _input=extract_raw_files_from_folder,
+        _output="copy",
+    )
+
+    graph.add_chain(
+        # bonobo.Limit(30),
+        process_patient_data,
+        _input=extract_raw_files_from_folder,
+        _output="copy",
+    )
+
+    graph.add_chain(
+        process_dicom_data, upload_text_data, _input=process_image, _output="metadata"
     )
 
     return graph
@@ -224,7 +512,8 @@ def get_services(**options):
 
     :return: dict
     """
-    return {}
+    keycache = KeyCache()
+    return {"keycache": keycache}
 
 
 # The __main__ block actually execute the graph.
