@@ -13,6 +13,8 @@ Resources:
   # Main bucket
   WarehouseBucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       AccessControl: Private
       BucketName: !Ref "BucketNameParameter"
@@ -27,6 +29,11 @@ Resources:
         BlockPublicPolicy: true
         RestrictPublicBuckets: true
         IgnorePublicAcls: true
+      LifecycleConfiguration:
+        Rules:
+          - AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+            Status: Enabled
   WarehouseBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
@@ -120,6 +127,8 @@ Resources:
   # CloudTrail
   CloudTrailLogsBucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       BucketName: !Join ["", [!Ref "BucketNameParameter", "-object-logs"]]
       BucketEncryption:
