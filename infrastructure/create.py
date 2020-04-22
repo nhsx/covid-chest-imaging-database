@@ -46,7 +46,16 @@ def create_warehouse(suffix=None, allowed_cidr=None):
                 "ParameterValue": ",".join(allowed_cidr),
             }
         ]
-    elif changeset_type == "UPDATE":
+    elif changeset_type == "CREATE":
+        # If no value specified at creation time
+        parameters += [
+            {
+                "ParameterKey": "WarehouseUploadCIDRParameter",
+                "ParameterValue": "0.0.0.0/0",
+            }
+        ]
+    else:
+        # If no value specified at update time
         parameters += [
             {"ParameterKey": "WarehouseUploadCIDRParameter", "UsePreviousValue": True,}
         ]
