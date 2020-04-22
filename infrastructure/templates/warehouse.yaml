@@ -124,6 +124,127 @@ Resources:
       ManagedPolicyArns:
         - !Ref ReadOnlyAccessWholeBucketPolicy
 
+  TrainingCTPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Join ["", ["training-ct-", !Ref "BucketNameParameter"]]
+      Description: Allow reading the CT and patient data sections of the training set
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - "s3:ListBucket"
+              - "s3:HeadBucket"
+            Resource:
+              !GetAtt [WarehouseBucket, Arn]
+            Condition:
+              StringLike:
+                s3:prefix: ["training/ct/*", "training/ct-metadata/*", "training/data/*"]
+                s3:delimiter: "/"
+          - Effect: Allow
+            Action:
+              - "s3:GetObject"
+            Resource:
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/ct/*"]]
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/ct-metadata/*"]]
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/data/*"]]
+  TrainingCTGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      ManagedPolicyArns:
+        - !Ref TrainingCTPolicy
+
+  TrainingMRIPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Join ["", ["training-mri-", !Ref "BucketNameParameter"]]
+      Description: Allow reading the MRI and patient data sections of the training set
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - "s3:ListBucket"
+              - "s3:HeadBucket"
+            Resource:
+              !GetAtt [WarehouseBucket, Arn]
+            Condition:
+              StringLike:
+                s3:prefix: ["training/mri/*", "training/mri-metadata/*", "training/data/*"]
+                s3:delimiter: "/"
+          - Effect: Allow
+            Action:
+              - "s3:GetObject"
+            Resource:
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/mri/*"]]
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/mri-metadata/*"]]
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/data/*"]]
+  TrainingMRIGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      ManagedPolicyArns:
+        - !Ref TrainingMRIPolicy
+
+  TrainingXrayPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Join ["", ["training-xray-", !Ref "BucketNameParameter"]]
+      Description: Allow reading the X-ray and patient data sections of the training set
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - "s3:ListBucket"
+              - "s3:HeadBucket"
+            Resource:
+              !GetAtt [WarehouseBucket, Arn]
+            Condition:
+              StringLike:
+                s3:prefix: ["training/x-ray/*", "training/x-ray-metadata/*", "training/data/*"]
+                s3:delimiter: "/"
+          - Effect: Allow
+            Action:
+              - "s3:GetObject"
+            Resource:
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/x-ray/*"]]
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/x-ray-metadata/*"]]
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/data/*"]]
+  TrainingXrayGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      ManagedPolicyArns:
+        - !Ref TrainingXrayPolicy
+
+  TrainingAllPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Join ["", ["training-all-", !Ref "BucketNameParameter"]]
+      Description: Allow reading all data in the training set
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - "s3:ListBucket"
+              - "s3:HeadBucket"
+            Resource:
+              !GetAtt [WarehouseBucket, Arn]
+            Condition:
+              StringLike:
+                s3:prefix: ["training/*"]
+          - Effect: Allow
+            Action:
+              - "s3:GetObject"
+            Resource:
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/*"]]
+  TrainingAllGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      ManagedPolicyArns:
+        - !Ref TrainingAllPolicy
+
   # CloudTrail
   CloudTrailLogsBucket:
     Type: AWS::S3::Bucket
