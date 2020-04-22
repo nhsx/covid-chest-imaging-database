@@ -72,7 +72,7 @@ Resources:
   ETLPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      ManagedPolicyName: !Join ["", ["etl", !Ref "BucketNameParameter"]]
+      ManagedPolicyName: !Join ["", ["etl-", !Ref "BucketNameParameter"]]
       Description: Allow ETL operations on the non-raw prefixes in the warehouse bucket
       PolicyDocument:
         Version: 2012-10-17
