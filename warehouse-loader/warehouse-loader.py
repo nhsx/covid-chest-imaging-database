@@ -28,7 +28,7 @@ TRAINING_PREFIX = "training/"
 VALIDATION_PREFIX = "validation/"
 CONFIG_KEY = "config.json"
 
-TRAINING_PERCENTAGE = 50
+TRAINING_PERCENTAGE = 0
 
 MODALITY = {
     "DX": "x-ray",
@@ -52,8 +52,11 @@ class PipelineConfig:
     def set_config(self, input_config):
         self.config = input_config
 
-    def get_training_validation_list(self):
-        return self.config["raw-uploads"]["training-validation"]
+    def get_raw_prefixes(self):
+        return self.config.get('raw-prefixes', [])
+
+    def get_training_percentage(self):
+        return self.config.get('training_percentage', TRAINING_PERCENTAGE)
 
 
 class KeyCache:
@@ -227,7 +230,7 @@ def extract_raw_folders(config):
     :return: subfolders within the `raw/` prefix (yield)
     :rtype: string
     """
-    for site_raw_prefix in config.get_training_validation_list():
+    for site_raw_prefix in config.get_raw_prefixes():
         result = s3_client.list_objects(
             Bucket=BUCKET_NAME, Prefix=site_raw_prefix, Delimiter="/"
         )
@@ -254,8 +257,10 @@ def extract_raw_files_from_folder(folder):
         yield obj
 
 
+
 @use("keycache")
-def process_image(*args, keycache):
+@use("config")
+def process_image(*args, keycache, config):
     """ Processing images from the raw dump
 
     Takes a single image, downloads it into temporary storage
@@ -296,7 +301,7 @@ def process_image(*args, keycache):
     # extract the required data from the image
     patient_id = image_data["PatientID"].value
     image_type = MODALITY.get(image_data["Modality"].value, "unknown")
-    training_set = patient_in_training_set(patient_id)
+    training_set = patient_in_training_set(patient_id, config.get_training_percentage())
     prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
 
     date = get_date_from_key(obj.key)
@@ -344,8 +349,8 @@ def upload_text_data(*args):
         bucket.put_object(Body=outgoing_data, Key=outgoing_key)
         return bonobo.constants.NOT_MODIFIED
 
-
-def process_patient_data(*args):
+@use("config")
+def process_patient_data(config, *args):
     """Processing patient data from the raw dump
 
     Get the patient ID from the filename, do a training/validation
@@ -366,7 +371,7 @@ def process_patient_data(*args):
     if m:
         patient_id = m.group("patient_id")
         outcome = m.group("outcome")
-        training_set = patient_in_training_set(patient_id)
+        training_set = patient_in_training_set(patient_id, config.get_training_percentage())
         prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
         date = get_date_from_key(obj.key)
         if date:
