@@ -51,12 +51,13 @@ class PipelineConfig:
 
     def set_config(self, input_config):
         self.config = input_config
+        logger.debug(f"Training percentage: {self.get_training_percentage()}%")
 
     def get_raw_prefixes(self):
-        return self.config.get('raw-prefixes', [])
+        return self.config.get("raw_prefixes", [])
 
     def get_training_percentage(self):
-        return self.config.get('training_percentage', TRAINING_PERCENTAGE)
+        return self.config.get("training_percentage", TRAINING_PERCENTAGE)
 
 
 class KeyCache:
@@ -257,7 +258,6 @@ def extract_raw_files_from_folder(folder):
         yield obj
 
 
-
 @use("keycache")
 @use("config")
 def process_image(*args, keycache, config):
@@ -349,8 +349,9 @@ def upload_text_data(*args):
         bucket.put_object(Body=outgoing_data, Key=outgoing_key)
         return bonobo.constants.NOT_MODIFIED
 
+
 @use("config")
-def process_patient_data(config, *args):
+def process_patient_data(*args, config):
     """Processing patient data from the raw dump
 
     Get the patient ID from the filename, do a training/validation
@@ -371,7 +372,9 @@ def process_patient_data(config, *args):
     if m:
         patient_id = m.group("patient_id")
         outcome = m.group("outcome")
-        training_set = patient_in_training_set(patient_id, config.get_training_percentage())
+        training_set = patient_in_training_set(
+            patient_id, config.get_training_percentage()
+        )
         prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
         date = get_date_from_key(obj.key)
         if date:
@@ -475,7 +478,7 @@ class SummaryFile(Configurable):
 
         # When everything else finished, kick off real computation
         cache = {}
-        for raw_prefix in config.get_training_validation_list():
+        for raw_prefix in config.get_raw_prefixes():
             raw_files = bucket.objects.filter(Prefix=raw_prefix)
             for f in raw_files:
                 cache[Path(f.key).name.lower()] = get_date_from_key(f.key)
