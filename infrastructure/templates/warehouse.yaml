@@ -44,7 +44,7 @@ Resources:
           - Effect: Deny
             Principal: "*"
             Action: s3:PutObject
-            Resource: !Join ["", [!GetAtt [WarehouseBucket, Arn], "/raw/*"]]
+            Resource: !Join ["", [!GetAtt [WarehouseBucket, Arn], "/raw-*"]]
             Condition:
               NotIpAddress:
                 aws:SourceIp: !Ref "WarehouseUploadCIDRParameter"
@@ -62,7 +62,7 @@ Resources:
             Action:
               - "s3:PutObject"
             Resource:
-              !Join ["", [!GetAtt [WarehouseBucket, Arn], "/raw/*"]]
+              !Join ["", [!GetAtt [WarehouseBucket, Arn], "/raw-${aws:username}/*"]]
   DataUploaderGroup:
     Type: AWS::IAM::Group
     Properties:
