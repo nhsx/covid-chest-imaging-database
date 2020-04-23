@@ -19,6 +19,6 @@ assignees: imrehg
 [ ] User Experience
 [ ] Other (please describe)
 
-### Expected behavior
+### Expected behaviour
 
 ### Steps to reproduce the bug
