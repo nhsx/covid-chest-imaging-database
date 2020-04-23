@@ -28,7 +28,7 @@ TRAINING_PREFIX = "training/"
 VALIDATION_PREFIX = "validation/"
 CONFIG_KEY = "config.json"
 
-TRAINING_PERCENTAGE = 60
+TRAINING_PERCENTAGE = 50
 
 MODALITY = {
     "DX": "x-ray",
