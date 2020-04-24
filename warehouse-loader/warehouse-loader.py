@@ -11,7 +11,7 @@ import bonobo
 import boto3
 import mondrian
 import pydicom
-from bonobo.config import Configurable, ContextProcessor, use
+from bonobo.config import Configurable, ContextProcessor, Service, use
 from botocore.exceptions import ClientError
 
 # set up logging
@@ -24,11 +24,11 @@ s3_client = boto3.client("s3")
 BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default="chest-data-warehouse")
 bucket = s3_resource.Bucket(BUCKET_NAME)
 
-RAW_PREFIX = "raw/"
 TRAINING_PREFIX = "training/"
 VALIDATION_PREFIX = "validation/"
+CONFIG_KEY = "config.json"
 
-TRAINING_PERCENTAGE = 60
+TRAINING_PERCENTAGE = 0
 
 MODALITY = {
     "DX": "x-ray",
@@ -40,6 +40,26 @@ MODALITY = {
 ###
 # Services
 ###
+class PipelineConfig:
+    """ Basic cache for looking up existing files in the bucket
+    """
+
+    def __init__(self):
+        self.config = {
+            "raw-uploads": {"training-validation": [], "validation-only": []}
+        }
+
+    def set_config(self, input_config):
+        self.config = input_config
+        logger.debug(f"Training percentage: {self.get_training_percentage()}%")
+
+    def get_raw_prefixes(self):
+        return self.config.get("raw_prefixes", [])
+
+    def get_training_percentage(self):
+        return self.config.get("training_percentage", TRAINING_PERCENTAGE)
+
+
 class KeyCache:
     """ Basic cache for looking up existing files in the bucket
     """
@@ -87,18 +107,16 @@ def object_exists(key):
         return True
 
 
-def get_date_from_key(key, prefix):
+def get_date_from_key(key):
     """ Extract date from an object key from the bucket's directory pattern,
     for a given prefix
 
-    :param key: the object key in queustion
+    :param key: the object key in question
     :type key: string
-    :param prefix: the prefix to use, e.g. `raw/`, including the
-    :type prefix: string
     :return: the extracted date if found
     :rtype: string or None
     """
-    date_match = re.match(rf"^{prefix}(?P<date>[\d-]*)/.*", key)
+    date_match = re.match(r"^.+/(?P<date>\d{4}-\d{2}-\d{2})/.+", key)
     if date_match:
         return date_match.group("date")
 
@@ -173,6 +191,24 @@ def scrub_dicom(fd):
 ###
 # Transformation steps
 ###
+@use("config")
+def load_config(config):
+    """Load configuration from the bucket
+    """
+    try:
+        obj = bucket.Object(CONFIG_KEY).get()
+        contents = json.loads(obj["Body"].read().decode("utf-8"))
+        config.set_config(contents)
+        yield
+    except ClientError as ex:
+        if ex.response["Error"]["Code"] == "NoSuchKey":
+            logger.warning(
+                "No configuration found in the bucket! (not going to do any loading)"
+            )
+        else:
+            raise
+
+
 @use("keycache")
 def load_existing_files(keycache):
     """ Loading existing files from the training and
@@ -188,22 +224,26 @@ def load_existing_files(keycache):
     return bonobo.constants.NOT_MODIFIED
 
 
-def extract_raw_folders():
+@use("config")
+def extract_raw_folders(config):
     """ Extractor: get all date folders within the `raw/` data drop
 
     :return: subfolders within the `raw/` prefix (yield)
     :rtype: string
     """
-    result = s3_client.list_objects(
-        Bucket=BUCKET_NAME, Prefix=RAW_PREFIX, Delimiter="/"
-    )
-    # list folders in reverse order, and since the folders are dates, that will
-    # return newer folders first, which are less likely to be already processed
-    folders = iter(
-        sorted([p.get("Prefix") for p in result.get("CommonPrefixes")], reverse=True)
-    )
-    for f in folders:
-        yield f
+    for site_raw_prefix in config.get_raw_prefixes():
+        result = s3_client.list_objects(
+            Bucket=BUCKET_NAME, Prefix=site_raw_prefix, Delimiter="/"
+        )
+        # list folders in reverse order, and since the folders are dates, that will
+        # return newer folders first, which are less likely to be already processed
+        folders = iter(
+            sorted(
+                [p.get("Prefix") for p in result.get("CommonPrefixes")], reverse=True
+            )
+        )
+        for f in folders:
+            yield f
 
 
 def extract_raw_files_from_folder(folder):
@@ -219,7 +259,8 @@ def extract_raw_files_from_folder(folder):
 
 
 @use("keycache")
-def process_image(*args, keycache):
+@use("config")
+def process_image(*args, keycache, config):
     """ Processing images from the raw dump
 
     Takes a single image, downloads it into temporary storage
@@ -260,10 +301,10 @@ def process_image(*args, keycache):
     # extract the required data from the image
     patient_id = image_data["PatientID"].value
     image_type = MODALITY.get(image_data["Modality"].value, "unknown")
-    training_set = patient_in_training_set(patient_id)
+    training_set = patient_in_training_set(patient_id, config.get_training_percentage())
     prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
 
-    date = get_date_from_key(obj.key, RAW_PREFIX)
+    date = get_date_from_key(obj.key)
     if date:
         # the location of the new files
         new_key = f"{prefix}{image_type}/{patient_id}/{Path(obj.key).name}"
@@ -309,7 +350,8 @@ def upload_text_data(*args):
         return bonobo.constants.NOT_MODIFIED
 
 
-def process_patient_data(*args):
+@use("config")
+def process_patient_data(*args, config):
     """Processing patient data from the raw dump
 
     Get the patient ID from the filename, do a training/validation
@@ -330,9 +372,11 @@ def process_patient_data(*args):
     if m:
         patient_id = m.group("patient_id")
         outcome = m.group("outcome")
-        training_set = patient_in_training_set(patient_id)
+        training_set = patient_in_training_set(
+            patient_id, config.get_training_percentage()
+        )
         prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
-        date = get_date_from_key(obj.key, RAW_PREFIX)
+        date = get_date_from_key(obj.key)
         if date:
             new_key = f"{prefix}data/{patient_id}/{outcome}_{date}.json"
             if not object_exists(new_key):
@@ -423,8 +467,10 @@ def prepare_summary(cache, prefix, modality):
 class SummaryFile(Configurable):
     """ Get unique channel names from the raw messages. """
 
+    config = Service("config")
+
     @ContextProcessor
-    def processor(self, context, *args):
+    def processor(self, context, config, *args):
         """Run at the very end of processing and upload summary
         files to all relevant directories.
         """
@@ -432,9 +478,10 @@ class SummaryFile(Configurable):
 
         # When everything else finished, kick off real computation
         cache = {}
-        raw_files = bucket.objects.filter(Prefix=RAW_PREFIX)
-        for f in raw_files:
-            cache[Path(f.key).name.lower()] = get_date_from_key(f.key, RAW_PREFIX)
+        for raw_prefix in config.get_raw_prefixes():
+            raw_files = bucket.objects.filter(Prefix=raw_prefix)
+            for f in raw_files:
+                cache[Path(f.key).name.lower()] = get_date_from_key(f.key)
 
         modalities = (
             set(["data"])
@@ -458,7 +505,8 @@ class SummaryFile(Configurable):
             if upload:
                 upload_text_data("upload", summarykey, summary)
 
-    def __call__(self, *args):
+    def __call__(self, *args, **kwargs):
+        # this should be a total no-op
         pass
 
 
@@ -474,7 +522,10 @@ def get_graph(**options):
     graph = bonobo.Graph()
 
     graph.add_chain(
-        load_existing_files, extract_raw_folders, extract_raw_files_from_folder,
+        load_config,
+        load_existing_files,
+        extract_raw_folders,
+        extract_raw_files_from_folder,
     )
 
     graph.add_chain(SummaryFile(), _input=None, _name="metadata")
@@ -513,7 +564,8 @@ def get_services(**options):
     :return: dict
     """
     keycache = KeyCache()
-    return {"keycache": keycache}
+    config = PipelineConfig()
+    return {"keycache": keycache, "config": config}
 
 
 # The __main__ block actually execute the graph.

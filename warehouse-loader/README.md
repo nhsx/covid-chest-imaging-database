@@ -31,13 +31,14 @@ The results of the pipeline will be shown in the terminal, for example:
 
 ```shell
 $ bonobo run warehouse-loader.py --env WAREHOUSE_BUCKET=bucketname
+- load_config in=1 out=1 [done]
 - load_existing_files in=1 out=1 [done]
-- extract_raw_folders in=1 out=2 [done]
-- extract_raw_files_from_folder in=2 out=55954 [done]
-- process_image in=55954 out=111782 err=2 [done]
+- extract_raw_folders in=1 out=3 [done]
+- extract_raw_files_from_folder in=3 out=55957 [done]
+- process_image in=55957 out=111782 err=2 [done]
 - process_dicom_data in=111782 out=55891 [done]
 - upload_text_data in=55891 out=55891 [done]
-- process_patient_data in=55954 out=61 [done]
+- process_patient_data in=55957 out=61 [done]
 - data_copy in=111843 out=55952 [done]
 - SummaryFile in=111843 [done]
  ```
