@@ -49,6 +49,45 @@ Resources:
               NotIpAddress:
                 aws:SourceIp: !Ref "WarehouseUploadCIDRParameter"
 
+  # Validation-only bucket
+  WarehouseValidationOnlyBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AccessControl: Private
+      BucketName: !Join ["-", [!Ref "BucketNameParameter", "validation-only"]]
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+        IgnorePublicAcls: true
+      LifecycleConfiguration:
+        Rules:
+          - AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+            Status: Enabled
+  WarehouseValidationOnlyBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WarehouseValidationOnlyBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Deny
+            Principal: "*"
+            Action: s3:PutObject
+            Resource: !Join ["", [!GetAtt [WarehouseValidationOnlyBucket, Arn], "/raw-*"]]
+            Condition:
+              NotIpAddress:
+                aws:SourceIp: !Ref "WarehouseUploadCIDRParameter"
+
   # IAM
   UploadToRawPolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -62,7 +101,8 @@ Resources:
             Action:
               - "s3:PutObject"
             Resource:
-              !Join ["", [!GetAtt [WarehouseBucket, Arn], "/raw-${aws:username}/*"]]
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/raw-${aws:username}/*"]]
+              - !Join ["", [!GetAtt [WarehouseValidationOnlyBucket, Arn], "/raw-${aws:username}/*"]]
   DataUploaderGroup:
     Type: AWS::IAM::Group
     Properties:
@@ -82,18 +122,22 @@ Resources:
               - "s3:ListBucket"
               - "s3:GetBucketLocation"
             Resource:
-              !GetAtt [WarehouseBucket, Arn]
+              - !GetAtt [WarehouseBucket, Arn]
+              - !GetAtt [WarehouseValidationOnlyBucket, Arn]
           - Effect: Allow
             Action:
               - "s3:GetObject"
             Resource:
-              !Join ["", [!GetAtt [WarehouseBucket, Arn], "/*"]]
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/*"]]
+              - !Join ["", [!GetAtt [WarehouseValidationOnlyBucket, Arn], "/*"]]
           - Effect: Allow
             Action:
               - "s3:PutObject"
             Resource:
               - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/*"]]
               - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/validation/*"]]
+              - !Join ["", [!GetAtt [WarehouseValidationOnlyBucket, Arn], "/training/*"]]
+              - !Join ["", [!GetAtt [WarehouseValidationOnlyBucket, Arn], "/validation/*"]]
   ETLGroup:
     Type: AWS::IAM::Group
     Properties:
@@ -112,12 +156,14 @@ Resources:
             Action:
               - "s3:ListBucket"
             Resource:
-              !GetAtt [WarehouseBucket, Arn]
+              - !GetAtt [WarehouseBucket, Arn]
+              - !GetAtt [WarehouseValidationOnlyBucket, Arn]
           - Effect: Allow
             Action:
               - "s3:GetObject"
             Resource:
-              !Join ["", [!GetAtt [WarehouseBucket, Arn], "/*"]]
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/*"]]
+              - !Join ["", [!GetAtt [WarehouseValidationOnlyBucket, Arn], "/*"]]
   DataVerifierGroup:
     Type: AWS::IAM::Group
     Properties:
@@ -295,3 +341,4 @@ Resources:
             - Type: AWS::S3::Object
               Values:
                 - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/"]]
+                - !Join ["", [!GetAtt [WarehouseValidationOnlyBucket, Arn], "/"]]
