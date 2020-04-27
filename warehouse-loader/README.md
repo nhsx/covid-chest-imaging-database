@@ -24,13 +24,13 @@ export BUCKET_NAME=my-warehouse-bucket
 then run the script directly.
 
 ```shell
-bonobo run warehouse-loader.py
+bonobo run warehouseloader.py
 ```
 
 The results of the pipeline will be shown in the terminal, for example:
 
 ```shell
-$ bonobo run warehouse-loader.py --env WAREHOUSE_BUCKET=bucketname
+$ bonobo run warehouseloader.py --env WAREHOUSE_BUCKET=bucketname
 - load_config in=1 out=1 [done]
 - load_existing_files in=1 out=1 [done]
 - extract_raw_folders in=1 out=3 [done]
@@ -50,7 +50,7 @@ $ bonobo run warehouse-loader.py --env WAREHOUSE_BUCKET=bucketname
 To get this image, install the Python dependencies, [Graphviz](https://www.graphviz.org/), and run:
 
 ```shell
-bonobo inspect --graph warehouse-loader.py | dot -o warehouse-loader-pipeline.png -T png
+bonobo inspect --graph warehouseloader.py | dot -o warehouse-loader-pipeline.png -T png
 ```
 
 ## Warehouse structure

@@ -1,3 +1,4 @@
 # dev pieces
 .vscode
 .python-version
+__pycache__

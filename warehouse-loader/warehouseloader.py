@@ -136,7 +136,8 @@ def patient_in_training_set(patient_id, training_percent=TRAINING_PERCENTAGE):
     :rtype: boolean
     """
     return (
-        int(hashlib.sha512(patient_id.upper().encode("utf-8")).hexdigest(), 16) % 100
+        int(hashlib.sha512(patient_id.strip().upper().encode("utf-8")).hexdigest(), 16)
+        % 100
         < training_percent
     )
 
@@ -406,7 +407,7 @@ def data_copy(*args):
 def get_summary_date(cache, key):
     """ Get date for a given file from the relevant sources
 
-    :param cache: the cache of the "raw input to look things up in
+    :param cache: the cache of the "raw" input to look things up in
     :type cache: dict
     :param key: object key to process
     :type key: string
@@ -414,8 +415,7 @@ def get_summary_date(cache, key):
     :rtype: string or None
     """
     datamatch = re.match(
-        r"^(?P<outcome>data|status)_(?P<date>\d{4}-\d{2}-\d{2})\.json$",
-        Path(key).name.lower(),
+        r"^.+_(?P<date>\d{4}-\d{2}-\d{2})\.json$", Path(key).name.lower(),
     )
     if datamatch:
         # it's a data file, get date from the filename
