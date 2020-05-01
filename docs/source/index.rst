@@ -54,9 +54,9 @@ relevant documentation.
 
 The hospitals and trusts already contributing data to NCCID are listed below:
 
-- Royal United Hospitals Bath NHS Foundation Trust
-- Brighton and Sussex University Hospitals NHS Trust
-- London North West University Healthcare NHS Trust
+- `Royal United Hospitals Bath NHS Foundation Trust <https://www.ruh.nhs.uk/>`_
+- `Brighton and Sussex University Hospitals NHS Trust <https://www.bsuh.nhs.uk/>`_
+- `London North West University Healthcare NHS Trust <https://www.lnwh.nhs.uk/>`_
 
 All participating hospitals and trusts will be cited in any publication
 resulting from the use of NCCID data.
