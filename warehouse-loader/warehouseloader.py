@@ -505,13 +505,16 @@ class SummaryFile(Configurable):
         prefixes = [TRAINING_PREFIX, VALIDATION_PREFIX]
 
         for prefix, modality in itertools.product(prefixes, modalities):
-            summary = json.dumps(prepare_summary(cache, prefix, modality))
+            summary = prepare_summary(cache, prefix, modality)
+            if not summary:
+                continue  # if there's an empty summary, do not upload
+            summary_json = json.dumps(summary)
             summarykey = prefix + modality + "/summary.json"
             upload = True
             if object_exists(summarykey):
                 obj = bucket.Object(summarykey).get()
                 contents = obj["Body"].read().decode("utf-8")
-                if contents == summary:
+                if contents == summary_json:
                     upload = False
                     logger.debug(
                         f"{summarykey}: already exists and content is current."
@@ -520,7 +523,7 @@ class SummaryFile(Configurable):
                 if DRY_RUN:
                     logger.info(f"Would upload: {summarykey}")
                 else:
-                    upload_text_data("upload", summarykey, summary)
+                    upload_text_data("upload", summarykey, summary_json)
 
     def __call__(self, *args, **kwargs):
         # this should be a total no-op
