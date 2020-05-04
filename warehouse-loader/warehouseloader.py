@@ -37,6 +37,8 @@ MODALITY = {
     "CT": "ct",
 }
 
+DRY_RUN = bool(os.getenv("DRY_RUN", default=False))
+
 ###
 # Services
 ###
@@ -347,7 +349,11 @@ def upload_text_data(*args):
     """
     task, outgoing_key, outgoing_data, = args
     if task == "upload" and outgoing_key is not None and outgoing_data is not None:
-        bucket.put_object(Body=outgoing_data, Key=outgoing_key)
+        if DRY_RUN:
+            logger.info(f"Would upload to key: {outgoing_key}")
+        else:
+            bucket.put_object(Body=outgoing_data, Key=outgoing_key)
+
         return bonobo.constants.NOT_MODIFIED
 
 
@@ -400,7 +406,11 @@ def data_copy(*args):
     """
     task, obj, new_key, = args
     if task == "copy" and obj is not None and new_key is not None:
-        bucket.copy({"Bucket": obj.bucket_name, "Key": obj.key}, new_key)
+        if DRY_RUN:
+            logger.info(f"Would copy: {obj.key} -> {new_key}")
+        else:
+            bucket.copy({"Bucket": obj.bucket_name, "Key": obj.key}, new_key)
+
         return bonobo.constants.NOT_MODIFIED
 
 
@@ -503,7 +513,10 @@ class SummaryFile(Configurable):
                         f"{summarykey}: already exists and content is current."
                     )
             if upload:
-                upload_text_data("upload", summarykey, summary)
+                if DRY_RUN:
+                    logger.info(f"Would upload: {summarykey}")
+                else:
+                    upload_text_data("upload", summarykey, summary)
 
     def __call__(self, *args, **kwargs):
         # this should be a total no-op
