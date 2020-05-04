@@ -73,8 +73,12 @@ class KeyCache:
         """ Add a key to store in the cache, both the full
         key, and the "filename" part, for different lookups
         """
-        self.store.add(key)
-        self.store.add(Path(key).name)
+        filename = Path(key).name
+        if filename in self.store():
+            logger.error(f"{filename} seems duplicate, danger of overwriting things!")
+        else:
+            self.store.add(key)
+            self.store.add(filename)
 
     def exists(self, key, fullpath=False):
         """ Look up a key in the cache, either the "filename"
