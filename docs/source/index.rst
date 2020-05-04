@@ -94,9 +94,11 @@ We expect the data will be used to:
 How to request access to data
 -----------------------------
 
-Users (including software vendors, academics and clinicians) requiring access
-to the database should fill in :download:`this form <docs/NCCID_Data_Access_Request_Form.docx>`
-and send it to NHSX by contacting imaging@nhsx.nhs.uk.
+Users (including software vendors, academics and clinicians) requiring access to
+the database should fill in :download:`this form <docs/NCCID_Data_Access_Request_Form.docx>`
+and provide a signed copy of the :download:`Data Access Framework Contract <docs/NCCID_Data_Access_Framework_Contract.docx>`
+(if first time applying) and a :download:`Data Access Agreement <docs/NCCID_Data_Access_Agreement.docx>`.
+All documents should be sent to NHSX by contacting imaging@nhsx.nhs.uk.
 
 
 How requests are assessed
