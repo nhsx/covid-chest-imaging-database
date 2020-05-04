@@ -33,6 +33,12 @@ Resources:
         Rules:
           - AbortIncompleteMultipartUpload:
               DaysAfterInitiation: 7
+            Transition:
+              StorageClass: INTELLIGENT_TIERING
+              TransitionInDays: 30
+            NoncurrentVersionTransition:
+              StorageClass: INTELLIGENT_TIERING
+              TransitionInDays: 30
             Status: Enabled
   WarehouseBucketPolicy:
     Type: AWS::S3::BucketPolicy
