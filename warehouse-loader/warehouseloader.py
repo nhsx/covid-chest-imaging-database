@@ -349,7 +349,8 @@ def process_image(*args, keycache, config, patientcache):
 
     # extract the required data from the image
     patient_id = image_data["PatientID"].value
-    if group := patientcache.get_group(patient_id):
+    group = patientcache.get_group(patient_id)
+    if group is not None:
         training_set = group == "training"
     else:
         logger.error(f"Image without patient data: {obj.key}, skipping!")
@@ -431,7 +432,8 @@ def process_patient_data(*args, config, patientcache):
         patient_id = m.group("patient_id")
         outcome = m.group("outcome")
 
-        if group := patientcache.get_group(patient_id):
+        group = patientcache.get_group(patient_id)
+        if group is not None:
             training_set = group == "training"
         else:
             # patient group is not cached
