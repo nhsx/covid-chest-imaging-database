@@ -1,4 +1,9 @@
 {
   "raw_prefixes": [],
-  "training_percentage": 50
+  "training_percentage": 50,
+  "sites": {
+    "split": [],
+    "training": [],
+    "validation": []
+  }
 }
