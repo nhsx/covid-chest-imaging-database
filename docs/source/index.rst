@@ -38,7 +38,7 @@ The categories of data collected are:
 The full list of clinical data points collected for positive and negative
 patients can found in the documents below:
 
-- `Covid-19 Data (Positive) Template v1.4 (Excel) <https://medphys.royalsurrey.nhs.uk/nccid/guidance/COVID-19_NCCID_covid_positive_data_template_v1_4.xlsx>`_
+- `Covid-19 Data (Positive) Template v1.5 (Excel) <https://medphys.royalsurrey.nhs.uk/nccid/guidance/COVID-19_NCCID_covid_positive_data_template_v1_5.xlsx>`_
 - `Covid-19 Status (Negative) Template v1.0 (Excel) <https://medphys.royalsurrey.nhs.uk/nccid/guidance/COVID-19_NCCID_covid_status_negative_data_template_v1_0.xlsx>`_
 
 
