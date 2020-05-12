@@ -37,6 +37,8 @@ MODALITY = {
     "CT": "ct",
 }
 
+DRY_RUN = bool(os.getenv("DRY_RUN", default=False))
+
 ###
 # Services
 ###
@@ -71,8 +73,12 @@ class KeyCache:
         """ Add a key to store in the cache, both the full
         key, and the "filename" part, for different lookups
         """
-        self.store.add(key)
-        self.store.add(Path(key).name)
+        filename = Path(key).name
+        if filename in self.store():
+            logger.error(f"{filename} seems duplicate, danger of overwriting things!")
+        else:
+            self.store.add(key)
+            self.store.add(filename)
 
     def exists(self, key, fullpath=False):
         """ Look up a key in the cache, either the "filename"
@@ -347,7 +353,11 @@ def upload_text_data(*args):
     """
     task, outgoing_key, outgoing_data, = args
     if task == "upload" and outgoing_key is not None and outgoing_data is not None:
-        bucket.put_object(Body=outgoing_data, Key=outgoing_key)
+        if DRY_RUN:
+            logger.info(f"Would upload to key: {outgoing_key}")
+        else:
+            bucket.put_object(Body=outgoing_data, Key=outgoing_key)
+
         return bonobo.constants.NOT_MODIFIED
 
 
@@ -400,7 +410,11 @@ def data_copy(*args):
     """
     task, obj, new_key, = args
     if task == "copy" and obj is not None and new_key is not None:
-        bucket.copy({"Bucket": obj.bucket_name, "Key": obj.key}, new_key)
+        if DRY_RUN:
+            logger.info(f"Would copy: {obj.key} -> {new_key}")
+        else:
+            bucket.copy({"Bucket": obj.bucket_name, "Key": obj.key}, new_key)
+
         return bonobo.constants.NOT_MODIFIED
 
 
@@ -491,19 +505,25 @@ class SummaryFile(Configurable):
         prefixes = [TRAINING_PREFIX, VALIDATION_PREFIX]
 
         for prefix, modality in itertools.product(prefixes, modalities):
-            summary = json.dumps(prepare_summary(cache, prefix, modality))
+            summary = prepare_summary(cache, prefix, modality)
+            if not summary:
+                continue  # if there's an empty summary, do not upload
+            summary_json = json.dumps(summary)
             summarykey = prefix + modality + "/summary.json"
             upload = True
             if object_exists(summarykey):
                 obj = bucket.Object(summarykey).get()
                 contents = obj["Body"].read().decode("utf-8")
-                if contents == summary:
+                if contents == summary_json:
                     upload = False
                     logger.debug(
                         f"{summarykey}: already exists and content is current."
                     )
             if upload:
-                upload_text_data("upload", summarykey, summary)
+                if DRY_RUN:
+                    logger.info(f"Would upload: {summarykey}")
+                else:
+                    upload_text_data("upload", summarykey, summary_json)
 
     def __call__(self, *args, **kwargs):
         # this should be a total no-op
