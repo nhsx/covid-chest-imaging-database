@@ -1,6 +1,6 @@
 # pipeline
 bonobo==0.6.4
 # s3
-boto3==1.12.32
+boto3==1.13.8
 # image data
 pydicom==1.4.2

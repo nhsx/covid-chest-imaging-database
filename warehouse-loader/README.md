@@ -33,21 +33,25 @@ The results of the pipeline will be shown in the terminal, for example:
 $ bonobo run warehouseloader.py --env WAREHOUSE_BUCKET=bucketname
 - load_config in=1 out=1 [done]
 - load_existing_files in=1 out=1 [done]
-- extract_raw_folders in=1 out=3 [done]
-- extract_raw_files_from_folder in=3 out=55957 [done]
-- process_image in=55957 out=111782 err=2 [done]
-- process_dicom_data in=111782 out=55891 [done]
-- upload_text_data in=55891 out=55891 [done]
-- process_patient_data in=55957 out=61 [done]
-- data_copy in=111843 out=55952 [done]
-- SummaryFile in=111843 [done]
+- extract_raw_folders in=1 out=5 [done]
+- extract_raw_files_from_folder in=5 out=56294 [done]
+- process_patient_data in=56294 out=56294 [done]
+- process_image in=56294 out=111835 err=2 [done]
+- process_dicom_data in=111835 out=55916 [done]
+- upload_text_data in=55916 out=55916 [done]
+- data_copy in=168129 out=56243 [done]
+- SummaryFile in=112159 [done]
  ```
+
+## Warehouse / Pipeline configuration
+
+
 
 ## Pipeline overview
 
 ![Data warehouse loader pipeline overview](warehouse-loader-pipeline.png)
 
-To get this image, install the Python dependencies, [Graphviz](https://www.graphviz.org/), and run:
+To generate the pipeline flow above, install the Python dependencies, [Graphviz](https://www.graphviz.org/), and run:
 
 ```shell
 bonobo inspect --graph warehouseloader.py | dot -o warehouse-loader-pipeline.png -T png
