@@ -23,7 +23,7 @@ def _stack_exists(stack_name):
     return stack_name in stack_names
 
 
-def create_warehouse(suffix=None, allowed_cidr=None):
+def create_warehouse(suffix=None):
     suffix_string = "" if suffix is None else f"-{suffix}"
     template_body = (TEMPLATES_DIRECTORY / "warehouse.yaml").read_text()
     timestamp_suffix = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -39,26 +39,6 @@ def create_warehouse(suffix=None, allowed_cidr=None):
     parameters = [
         {"ParameterKey": "BucketNameParameter", "ParameterValue": bucket_name}
     ]
-    if allowed_cidr is not None:
-        parameters += [
-            {
-                "ParameterKey": "WarehouseUploadCIDRParameter",
-                "ParameterValue": ",".join(allowed_cidr),
-            }
-        ]
-    elif changeset_type == "CREATE":
-        # If no value specified at creation time
-        parameters += [
-            {
-                "ParameterKey": "WarehouseUploadCIDRParameter",
-                "ParameterValue": "0.0.0.0/0",
-            }
-        ]
-    else:
-        # If no value specified at update time
-        parameters += [
-            {"ParameterKey": "WarehouseUploadCIDRParameter", "UsePreviousValue": True,}
-        ]
 
     # Submit the change set
     response = CLIENT.create_change_set(
@@ -73,20 +53,14 @@ def create_warehouse(suffix=None, allowed_cidr=None):
     return changeset_arn
 
 
-def main(suffix=None, allowed_cidr=None):
-    changeset_arn = create_warehouse(suffix, allowed_cidr)
+def main(suffix=None):
+    changeset_arn = create_warehouse(suffix)
     logging.info(f"Created changeset for warehouse with ARN: {changeset_arn}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--suffix", help="suffix to use for templates and names")
-    parser.add_argument(
-        "-a",
-        "--allowed-cidr",
-        action="append",
-        help="allowed CIDR block for 'raw/' uploads, can specify multiple times",
-    )
     args = parser.parse_args()
 
-    main(args.suffix, args.allowed_cidr)
+    main(args.suffix)
