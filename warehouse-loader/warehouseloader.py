@@ -353,7 +353,11 @@ def process_image(*args, keycache, config, patientcache):
     if group is not None:
         training_set = group == "training"
     else:
-        logger.error(f"Image without patient data: {obj.key}, skipping!")
+        logger.error(
+            f"Image without patient data: {obj.key}; "
+            + f"included patient ID: {patient_id}; "
+            + "skipping!"
+        )
         return
     prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
     image_type = MODALITY.get(image_data["Modality"].value, "unknown")
