@@ -3,10 +3,6 @@ Parameters:
     Type: String
     Default: nccid-data-warehouse
     Description: The base name of the storage bucket
-  WarehouseUploadCIDRParameter:
-    Type: CommaDelimitedList
-    Default: "0.0.0.0/0"
-    Description: Comma delimited list of CIDR blocks from where upload to the "raw/" folder is allowed
 
 Resources:
 
@@ -34,20 +30,6 @@ Resources:
           - AbortIncompleteMultipartUpload:
               DaysAfterInitiation: 7
             Status: Enabled
-  WarehouseBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref WarehouseBucket
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Deny
-            Principal: "*"
-            Action: s3:PutObject
-            Resource: !Join ["", [!GetAtt [WarehouseBucket, Arn], "/raw-*"]]
-            Condition:
-              NotIpAddress:
-                aws:SourceIp: !Ref "WarehouseUploadCIDRParameter"
 
   # IAM
   UploadToRawPolicy:
