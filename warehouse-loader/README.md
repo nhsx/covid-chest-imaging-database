@@ -30,7 +30,7 @@ bonobo run warehouseloader.py
 The results of the pipeline will be shown in the terminal, for example:
 
 ```shell
-$ bonobo run warehouseloader.py --env WAREHOUSE_BUCKET=bucketname
+$ bonobo run warehouseloader.py --env WAREHOUSE_BUCKET=my-warehouse-bucket
 - load_config in=1 out=1 [done]
 - load_existing_files in=1 out=1 [done]
 - extract_raw_folders in=1 out=5 [done]
@@ -43,9 +43,25 @@ $ bonobo run warehouseloader.py --env WAREHOUSE_BUCKET=bucketname
 - SummaryFile in=112159 [done]
  ```
 
+To run the code, have have AWS programmatic access credentials loaded in the environment
+for a user that is a member of the relevant ETLGroup IAM group.
+
 ## Warehouse / Pipeline configuration
 
+The pipeline is configured with a `config.json` placed at the apex of the relevant bucket.
+A [sample file](config.json.template) is provided, and generally requires the following
+pieces of information filled in:
 
+* `raw_prefixes` (list): the list of raw prefixes in the bucket that are allowed to be processed. These
+  are the folders where the raw file uploads happen, and generally have names in the pattern of
+  `raw-<aws-username>`
+* `training_percentage` (int): the percentage (0-100) of the patients to split into the training group.
+* `sites`: this setting has 3 sub-sections, each containing a list of sites that are matched against
+  the medical data files' `SubmittingCentre` section, to define the data splitting behaviour
+  * `split` (list): sites that are randomly split between training/validation, in a proportion set by
+    the `training_percentage` value above
+  * `training` (list): all patients going to the training set
+  * `validation` (list): all patients going to the validation set
 
 ## Pipeline overview
 
