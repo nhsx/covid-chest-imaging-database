@@ -62,5 +62,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          msg: "📰 Docs preview has been deployed to https://${{ secrets.AWS_BUCKET }}.s3.${{ secrets.AWS_BUCKET_REGION }}.amazonaws.com/${{ github.sha }}/index.html"
+          msg: "📰 Latest docs preview has been deployed to [${{ github.sha }}](https://${{ secrets.AWS_BUCKET }}.s3.${{ secrets.AWS_BUCKET_REGION }}.amazonaws.com/${{ github.sha }}/index.html)."
           check_for_duplicate_msg: true
