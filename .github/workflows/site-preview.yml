@@ -1,0 +1,66 @@
+name:  Build and Preview Docs
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+
+jobs:
+  preview:
+    runs-on: ubuntu-18.04
+    env:
+      working-directory: ./docs
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: chrnorm/deployment-action@releases/v1
+        name: Create GitHub deployment
+        id: test
+        with:
+          token: ${{ secrets.GITHUB_TOKEN}}
+          description: 'Preview my app'
+          environment: preview
+
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.8'
+          architecture: 'x64'
+
+      - name: Install dependencies
+        working-directory: ${{ env.working-directory }}
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r ./requirements.txt
+
+      - name: Build
+        working-directory: ${{ env.working-directory }}
+        run: |
+          make html
+
+      - name: Upload S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        working-directory: ${{ env.working-directory }}
+        run: |
+          python3 -m pip install awscli
+          aws s3 sync --delete build/html s3://${{ secrets.AWS_BUCKET }}/$GITHUB_SHA/
+
+      - name: Update deployment status (success)
+        if: success()
+        uses: chrnorm/deployment-status@releases/v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target_url: https://${{ secrets.AWS_BUCKET }}.s3.${{ secrets.AWS_BUCKET_REGION }}.amazonaws.com/${{ github.sha }}/index.html
+          state: 'success'
+          deployment_id: ${{ steps.test.outputs.deployment_id }}
+
+      - name: comment PR
+        uses: unsplash/comment-on-pr@master
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          msg: "📰 Latest docs preview has been deployed to [${{ github.sha }}](https://${{ secrets.AWS_BUCKET }}.s3.${{ secrets.AWS_BUCKET_REGION }}.amazonaws.com/${{ github.sha }}/index.html)."
+          check_for_duplicate_msg: true
