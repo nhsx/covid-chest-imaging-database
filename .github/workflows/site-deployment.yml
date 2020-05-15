@@ -6,6 +6,7 @@ on:
       - master
     paths:
       - 'docs/**'
+      - '.github/workflows/site-deployment.yml'
 
 jobs:
   deploy:
