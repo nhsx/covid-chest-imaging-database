@@ -1,9 +1,12 @@
-name:  Build and Preview Docs
+name: Build and Preview Docs
 
 on:
-  pull_request:
+  push:
+    branches-ignore:
+      - master
     paths:
       - 'docs/**'
+      - '.github/workflows/site-preview.yml'
 
 jobs:
   preview:
@@ -13,19 +16,19 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: chrnorm/deployment-action@releases/v1
-        name: Create GitHub deployment
-        id: test
-        with:
-          token: ${{ secrets.GITHUB_TOKEN}}
-          description: 'Preview my app'
-          environment: preview
-
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
           python-version: '3.8'
           architecture: 'x64'
+
+      - name: Create deployment
+        id: deployment
+        run: |
+          echo "Creating deployment for ref: $GITHUB_REF"
+          API_RESPONSE=$(curl -H "Accept: application/vnd.github.ant-man-preview+json" -H "Authorization: token ${{ github.token }}" -X POST -H 'Content-Type: application/json' -d '{"ref": "'"$GITHUB_REF"'", "environment": "preview", "transient_environment": true, "description": "Docs preview", "required_contexts": []}' "https://api.github.com/repos/$GITHUB_REPOSITORY/deployments")
+          STATUSES_URL=$(echo $API_RESPONSE | jq .statuses_url)
+          echo "::set-output name=statuses_url::$STATUSES_URL"
 
       - name: Install dependencies
         working-directory: ${{ env.working-directory }}
@@ -38,6 +41,10 @@ jobs:
         run: |
           make html
 
+      - name: Update deployment status (in_progress)
+        run: |
+          curl -H "Accept: application/vnd.github.flash-preview+json" -H "Authorization: token ${{ github.token }}" -X POST -H 'Content-Type: application/json' -d '{"state": "in_progress"}' ${{ steps.deployment.outputs.statuses_url }}
+
       - name: Upload S3
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
@@ -49,18 +56,10 @@ jobs:
 
       - name: Update deployment status (success)
         if: success()
-        uses: chrnorm/deployment-status@releases/v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          target_url: https://${{ secrets.AWS_BUCKET }}.s3.${{ secrets.AWS_BUCKET_REGION }}.amazonaws.com/${{ github.sha }}/index.html
-          state: 'success'
-          deployment_id: ${{ steps.test.outputs.deployment_id }}
+        run: |
+          curl -H "Accept: application/vnd.github.ant-man-preview+json" -H "Authorization: token ${{ github.token }}" -X POST -H 'Content-Type: application/json' -d '{"state": "success", "environment_url": "'"https://${{ secrets.AWS_BUCKET }}.s3.${{ secrets.AWS_BUCKET_REGION }}.amazonaws.com/${{ github.sha }}/index.html"'"}' ${{ steps.deployment.outputs.statuses_url }}
 
-      - name: comment PR
-        uses: unsplash/comment-on-pr@master
-        if: success()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          msg: "📰 Latest docs preview has been deployed to [${{ github.sha }}](https://${{ secrets.AWS_BUCKET }}.s3.${{ secrets.AWS_BUCKET_REGION }}.amazonaws.com/${{ github.sha }}/index.html)."
-          check_for_duplicate_msg: true
+      - name: Update deployment status (success)
+        if: failure()
+        run: |
+          curl -H "Accept: application/vnd.github.ant-man-preview+json" -H "Authorization: token ${{ github.token }}" -X POST -H 'Content-Type: application/json' -d '{"state": "failure"}' ${{ steps.deployment.outputs.statuses_url }}
