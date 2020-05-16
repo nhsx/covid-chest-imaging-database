@@ -1,4 +1,4 @@
-name:  Build and Preview Docs
+name: Build and Preview Docs
 
 on:
   push:
