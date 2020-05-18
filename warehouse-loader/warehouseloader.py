@@ -308,7 +308,9 @@ def extract_raw_folders(config):
             )
         )
         for f in folders:
-            yield f
+            # ensure order that data is processed before images
+            yield f + "data/"
+            yield f + "images/"
 
 
 def extract_raw_files_from_folder(folder):
