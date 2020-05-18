@@ -40,7 +40,6 @@ $ bonobo run warehouseloader.py --env WAREHOUSE_BUCKET=my-warehouse-bucket
 - process_dicom_data in=111835 out=55916 [done]
 - upload_text_data in=55916 out=55916 [done]
 - data_copy in=168129 out=56243 [done]
-- SummaryFile in=112159 [done]
  ```
 
 To run the code, have have AWS programmatic access credentials loaded in the environment
@@ -80,36 +79,15 @@ and date, as follows:
 
 ```shell
 /training/ct/PATIENT_ID/IMAGE_UUID.dcm
-/training/ct/summary.json
 /training/ct-metadata/PATIENT_ID/IMAGE_UUID.json
-/training/ct-metadata/summary.json
 /training/mri/PATIENT_ID/IMAGE_UUID.dcm
-/training/mri/summary.json
 /training/mri-metadata/PATIENT_ID/IMAGE_UUID.json
-/training/mri-metadata/summary.json
 /training/x-ray/PATIENT_ID/IMAGE_UUID.dcm
-/training/x-ray/summary.json
 /training/x-ray-metadata/PATIENT_ID/IMAGE_UUID.json
-/training/x-ray-metadata/summary.json
 /training/data/PATIENT_ID/status_DATE.json
 /training/data/PATIENT_ID/data_DATE.json
-/training/data/summary.json
 ```
 
 * The `ct`, `mri`, `x-ray` folders hold the DICOM images of the relevant kind.
 * The `...-metadata` folders hold the DICOM tags exported as `json` from the corresponding `IMAGE_UUID.dcm`
 * The `data` folder holds the patient medical data, `status_DATE.json` files for negative results, and `data_DATE.json` file/files for positive results. The `DATE` is formatted as `YYYY-MM-DD`, such as `2020-04-21`.
-* Each of the `summary.json` files contain exported data that can help filtering files that you might want to download. The file's structure is:
-
-```json
-[
-  {
-    "patient_id": "PATIENT_ID",
-    "modality": "ct",
-    "file_name": "IMAGE_UUID.dcm",
-    "file_key": "training/ct/PATIENT_ID/IMAGE_UUID.dcm",
-    "upload_date": "DATE"
-  },
-  ...
-]
-```

@@ -44,38 +44,6 @@ def test_training_set_equivalence(
     ) == wl.patient_in_training_set(alternate_patient_id, training_percentage)
 
 
-@pytest.mark.parametrize(
-    "key, expected",
-    [
-        ("raw/2020-04-30/test.json", "2020-04-30"),
-        ("raw/2020-5-5/test.json", None),
-        ("raw/another/2020-04-30/test.json", "2020-04-30"),
-        ("2020-04-30/test.json", None),
-        ("anywhere/0000-00-00/anything", "0000-00-00"),
-    ],
-)
-def test_get_date_from_key(key, expected):
-    assert wl.get_date_from_key(key) == expected
-
-
-@pytest.mark.parametrize(
-    "cache,key,expected",
-    [
-        ({}, "data_2020-04-30.json", "2020-04-30"),
-        ({}, "status_2020-04-30.json", "2020-04-30"),
-        ({}, "example_2020-04-30.json", "2020-04-30"),
-        ({"test.dcm": "2020-04-30"}, "test.json", "2020-04-30"),
-        ({"test.dcm": "2020-04-30"}, "TEST.JSON", "2020-04-30"),
-        ({}, "test.json", None),
-        ({"test.dcm": "2020-04-30"}, "test.dcm", "2020-04-30"),
-        ({"test.dcm": "2020-04-30"}, "TEST.DCM", "2020-04-30"),
-        ({}, "test.dcm", None),
-    ],
-)
-def test_get_summary_date(cache, key, expected):
-    assert wl.get_summary_date(cache, key) == expected
-
-
 def test_process_dicom_data():
     test_file_name = "test_data/sample.dcm"
     test_file_json = test_file_name.replace(".dcm", ".json")
