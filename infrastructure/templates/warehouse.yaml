@@ -123,7 +123,6 @@ Resources:
             Condition:
               StringLike:
                 s3:prefix: ["training/ct/*", "training/ct-metadata/*", "training/data/*"]
-                s3:delimiter: "/"
           - Effect: Allow
             Action:
               - "s3:GetObject"
@@ -154,7 +153,6 @@ Resources:
             Condition:
               StringLike:
                 s3:prefix: ["training/mri/*", "training/mri-metadata/*", "training/data/*"]
-                s3:delimiter: "/"
           - Effect: Allow
             Action:
               - "s3:GetObject"
@@ -185,7 +183,6 @@ Resources:
             Condition:
               StringLike:
                 s3:prefix: ["training/x-ray/*", "training/x-ray-metadata/*", "training/data/*"]
-                s3:delimiter: "/"
           - Effect: Allow
             Action:
               - "s3:GetObject"
