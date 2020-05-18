@@ -298,6 +298,8 @@ def extract_raw_folders(config):
     :rtype: string
     """
     for site_raw_prefix in config.get_raw_prefixes():
+        if not site_raw_prefix.endswith("/"):
+            site_raw_prefix += "/"
         result = s3_client.list_objects(
             Bucket=BUCKET_NAME, Prefix=site_raw_prefix, Delimiter="/"
         )
