@@ -33,7 +33,7 @@ jobs:
     - name: Lint with flake8
       working-directory: ${{ env.working-directory }}
       run: |
-        flake8 . --count --show-source --statistics
+        flake8 . --count --show-source --statistics --max-complexity 10
 
     - name: Run tests
       working-directory: ${{ env.working-directory }}

@@ -158,6 +158,24 @@ def get_date_from_key(key):
         return date_match.group("date")
 
 
+def get_submitting_centre_from_object(obj):
+    """Extract the SubmittingCentre value from an S3 object that is
+    a JSON file in the expected format.
+
+    :param obj: the S3 object of the JSON file to process
+    :type obj: boto3.resource('s3').ObjectSummary
+    :return: the value defined for SubmittingCentre in the file
+    :rtype: string or None
+    """
+    file_content = obj.Object().get()["Body"].read().decode("utf-8")
+    try:
+        json_content = json.loads(file_content)
+    except json.decoder.JSONDecodeError:
+        logger.error("Couldn't decode contents of {obj.key} as JSON.")
+        raise
+    return json_content.get("SubmittingCentre")
+
+
 def patient_in_training_set(patient_id, training_percent=TRAINING_PERCENTAGE):
     """ Separating patient ID's into training and validation sets, check
     which one this ID should fall into.
@@ -431,53 +449,44 @@ def process_patient_data(*args, config, patientcache):
         yield bonobo.constants.NOT_MODIFIED
 
     m = re.match(r"^(?P<patient_id>.*)_(?P<outcome>data|status)$", Path(obj.key).stem)
-    if m:
-        patient_id = m.group("patient_id")
-        outcome = m.group("outcome")
+    if m is None:
+        # Can't interpret this file based on name, skip
+        return
 
-        group = patientcache.get_group(patient_id)
-        if group is not None:
-            training_set = group == "training"
+    patient_id = m.group("patient_id")
+    outcome = m.group("outcome")
+
+    group = patientcache.get_group(patient_id)
+    if group is not None:
+        training_set = group == "training"
+    else:
+        # patient group is not cached
+        submitting_centre = get_submitting_centre_from_object(obj)
+        if submitting_centre is None:
+            logger.error(f"{obj.key} does not have 'SubmittingCentre' entry, skipping!")
+            return
+
+        config_group = config.get_site_group(submitting_centre)
+        if config_group is None:
+            logger.warning(
+                f"Site '{submitting_centre}' is not in configuration, skipping!"
+            )
+            return
+        if config_group == "split":
+            training_set = patient_in_training_set(
+                patient_id, config.get_training_percentage()
+            )
         else:
-            # patient group is not cached
-            file_content = obj.Object().get()["Body"].read().decode("utf-8")
-            json_content = json.loads(file_content)
-            submitting_centre = json_content.get("SubmittingCentre")
-            if submitting_centre is None:
-                logger.warning(
-                    f"{obj.key} does not have 'SubmittingCentre' entry, skipping!"
-                )
-                return
-            else:
-                config_group = config.get_site_group(submitting_centre)
-                if config_group is None:
-                    logger.warning(
-                        f"Site '{submitting_centre}' is not in configuration, skipping!"
-                    )
-                    return
-                if config_group == "split":
-                    training_set = patient_in_training_set(
-                        patient_id, config.get_training_percentage()
-                    )
-                elif config_group == "training":
-                    training_set = True
-                elif config_group == "validation":
-                    training_set = False
-                else:
-                    logger.error(
-                        f"Unknown config group for {patient_id}: {config_group}, skipping!"
-                    )
-                    return
-                patientcache.add(
-                    patient_id, "training" if training_set else "validation"
-                )
+            # deciding between "training" and "validation" groups.
+            training_set = config_group == "training"
+        patientcache.add(patient_id, "training" if training_set else "validation")
 
-        prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
-        date = get_date_from_key(obj.key)
-        if date:
-            new_key = f"{prefix}data/{patient_id}/{outcome}_{date}.json"
-            if not object_exists(new_key):
-                yield "copy", obj, new_key
+    prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
+    date = get_date_from_key(obj.key)
+    if date is not None:
+        new_key = f"{prefix}data/{patient_id}/{outcome}_{date}.json"
+        if not object_exists(new_key):
+            yield "copy", obj, new_key
 
 
 def data_copy(*args):
