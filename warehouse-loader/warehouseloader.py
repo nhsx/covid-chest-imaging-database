@@ -1,5 +1,4 @@
 import hashlib
-import itertools
 import json
 import logging
 import os
@@ -11,7 +10,7 @@ import bonobo
 import boto3
 import mondrian
 import pydicom
-from bonobo.config import Configurable, ContextProcessor, Service, use
+from bonobo.config import use
 from botocore.exceptions import ClientError
 
 # set up logging
@@ -505,119 +504,6 @@ def data_copy(*args):
         return bonobo.constants.NOT_MODIFIED
 
 
-def get_summary_date(cache, key):
-    """ Get date for a given file from the relevant sources
-
-    :param cache: the cache of the "raw" input to look things up in
-    :type cache: dict
-    :param key: object key to process
-    :type key: string
-    :return: the extracted date if any
-    :rtype: string or None
-    """
-    datamatch = re.match(
-        r"^.+_(?P<date>\d{4}-\d{2}-\d{2})\.json$", Path(key).name.lower(),
-    )
-    if datamatch:
-        # it's a data file, get date from the filename
-        return datamatch.group("date")
-
-    if Path(key).suffix.lower() == ".json":
-        # it's a metadata file, look things up by the original DICOM image
-        lookup_key = Path(key).stem.lower() + ".dcm"
-    else:
-        # it's an image
-        lookup_key = Path(key).name.lower()
-    return cache.get(lookup_key)
-
-
-def prepare_summary(cache, prefix, modality):
-    """Prepare the summary.json files to upload to the relevant
-    prefixes, containing file metadata.
-
-    :param cache: the cache of the "raw input to look things up in
-    :type cache: dict
-    :param prefix: the prefix to act on (usually "training/" and "validation/"), needs trailing slash
-    :type prefix: string
-    :param modality: subfolder to look in (such as "ct", "data", ...)
-    :type modality: string
-    :return: file summary the extracted from the bucket structure
-    :rtype: list[dict]
-    """
-    prefix = prefix + modality + "/"
-    modality_files = bucket.objects.filter(Prefix=prefix)
-    modality_list = []
-    for obj in modality_files:
-        file_key = obj.key
-        file_name = Path(file_key).name
-        date = get_summary_date(cache, file_key)
-        patient_match = re.match(rf"^{prefix}(?P<patient_id>.+?)\/.*", file_key)
-        if date and patient_match:
-            patient_id = patient_match.group("patient_id")
-            modality_list += [
-                {
-                    "patient_id": patient_id,
-                    "modality": modality,
-                    "file_name": file_name,
-                    "file_key": file_key,
-                    "upload_date": date,
-                }
-            ]
-    return modality_list
-
-
-class SummaryFile(Configurable):
-    """ Get unique channel names from the raw messages. """
-
-    config = Service("config")
-
-    @ContextProcessor
-    def processor(self, context, config, *args):
-        """Run at the very end of processing and upload summary
-        files to all relevant directories.
-        """
-        yield
-
-        # When everything else finished, kick off real computation
-        cache = {}
-        for raw_prefix in config.get_raw_prefixes():
-            raw_files = bucket.objects.filter(Prefix=raw_prefix)
-            for f in raw_files:
-                cache[Path(f.key).name.lower()] = get_date_from_key(f.key)
-
-        modalities = (
-            set(["data"])
-            | set(MODALITY.values())
-            | set([m + "-metadata" for m in MODALITY.values()])
-        )
-        prefixes = [TRAINING_PREFIX, VALIDATION_PREFIX]
-
-        for prefix, modality in itertools.product(prefixes, modalities):
-            summary = prepare_summary(cache, prefix, modality)
-            if not summary:
-                continue  # if there's an empty summary, do not upload
-            summary_json = json.dumps(summary)
-            summarykey = prefix + modality + "/summary.json"
-            upload = True
-            if object_exists(summarykey):
-                obj = bucket.Object(summarykey).get()
-                contents = obj["Body"].read().decode("utf-8")
-                if contents == summary_json:
-                    upload = False
-                    logger.debug(
-                        f"{summarykey}: already exists and content is current."
-                    )
-            if upload:
-                if DRY_RUN:
-                    logger.info(f"Would upload: {summarykey}")
-                else:
-                    upload_text_data("upload", summarykey, summary_json)
-
-    def __call__(self, *args, **kwargs):
-        # this should be a total no-op
-        pass
-
-
 ###
 # Graph setup
 ###
@@ -636,9 +522,7 @@ def get_graph(**options):
         extract_raw_files_from_folder,
     )
 
-    graph.add_chain(SummaryFile(), _input=None, _name="metadata")
-
-    graph.add_chain(data_copy, _input=None, _output="metadata", _name="copy")
+    graph.add_chain(data_copy, _input=None, _name="copy")
 
     graph.add_chain(
         # bonobo.Limit(30),
@@ -654,9 +538,7 @@ def get_graph(**options):
         _output="copy",
     )
 
-    graph.add_chain(
-        process_dicom_data, upload_text_data, _input=process_image, _output="metadata"
-    )
+    graph.add_chain(process_dicom_data, upload_text_data, _input=process_image)
 
     return graph
 
