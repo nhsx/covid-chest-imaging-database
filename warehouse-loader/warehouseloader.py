@@ -298,6 +298,8 @@ def extract_raw_folders(config):
     :rtype: string
     """
     for site_raw_prefix in config.get_raw_prefixes():
+        if not site_raw_prefix.endswith("/"):
+            site_raw_prefix += "/"
         result = s3_client.list_objects(
             Bucket=BUCKET_NAME, Prefix=site_raw_prefix, Delimiter="/"
         )
@@ -308,7 +310,9 @@ def extract_raw_folders(config):
             )
         )
         for f in folders:
-            yield f
+            # ensure order that data is processed before images
+            yield f + "data/"
+            yield f + "images/"
 
 
 def extract_raw_files_from_folder(folder):

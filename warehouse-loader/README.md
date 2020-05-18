@@ -64,12 +64,12 @@ pieces of information filled in:
 
 ## Pipeline overview
 
-![Data warehouse loader pipeline overview](warehouse-loader-pipeline.png)
+![Data warehouse loader pipeline overview](warehouseloader-pipeline.png)
 
 To generate the pipeline flow above, install the Python dependencies, [Graphviz](https://www.graphviz.org/), and run:
 
 ```shell
-bonobo inspect --graph warehouseloader.py | dot -o warehouse-loader-pipeline.png -T png
+bonobo inspect --graph warehouseloader.py | dot -o warehouseloader-pipeline.png -T png
 ```
 
 ## Warehouse structure
@@ -91,3 +91,28 @@ and date, as follows:
 * The `ct`, `mri`, `x-ray` folders hold the DICOM images of the relevant kind.
 * The `...-metadata` folders hold the DICOM tags exported as `json` from the corresponding `IMAGE_UUID.dcm`
 * The `data` folder holds the patient medical data, `status_DATE.json` files for negative results, and `data_DATE.json` file/files for positive results. The `DATE` is formatted as `YYYY-MM-DD`, such as `2020-04-21`.
+
+## Extracting submitting centre values
+
+As mentioned above, the pipeline configuration requires a list of hospitals
+that are assigned to the `split`/`training`/`validation` sets. To extract
+the current values from the submitted data, run the `submittingcentres` pipeline,
+which will print the list of hospitals in the console:
+
+```shell
+$ bonobo run submittingcentres.py --env WAREHOUSE_BUCKET=mybucketname
+ACME Hospital
+Busytown Hospital
+ - load_config in=1 out=1 [done]
+ - extract_raw_folders in=1 out=2 [done]
+ - extract_raw_files_from_folder in=2 out=3042 [done]
+ - SubmittingCentreExtractor in=3042 [done]
+```
+
+![SubmittingCentre extractor pipeline overview](submittingcentres-pipeline.png)
+
+To generate the pipeline flow above, install the Python dependencies, [Graphviz](https://www.graphviz.org/), and run:
+
+```shell
+bonobo inspect --graph submittingcentres.py | dot -o submittingcentres-pipeline.png -T png
+```
