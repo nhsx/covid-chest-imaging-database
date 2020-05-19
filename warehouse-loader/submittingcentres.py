@@ -22,7 +22,7 @@ class SubmittingCentreExtractor(Configurable):
     @ContextProcessor
     def acc(self, context):
         centres = yield ValueHolder(set())
-        for centre in centres.get():
+        for centre in sorted(centres.get()):
             print(centre)
 
     @use_raw_input
