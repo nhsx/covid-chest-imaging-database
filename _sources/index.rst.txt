@@ -58,6 +58,7 @@ The hospitals and trusts already contributing data to NCCID are listed below:
 - `London North West University Healthcare NHS Trust <https://www.lnwh.nhs.uk/>`_
 - `George Eliot Hospital NHS Trust <http://www.geh.nhs.uk/>`_
 - `Cwm Taf Morgannwg University Health Board <https://cwmtafmorgannwg.wales/>`_
+- `Hampshire Hospitals NHS Foundation Trust <https://www.hampshirehospitals.nhs.uk/>`_
 
 All participating hospitals and trusts will be cited in any publication
 resulting from the use of NCCID data.
