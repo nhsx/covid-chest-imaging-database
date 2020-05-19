@@ -1,9 +1,7 @@
 name: Build and Preview Docs
 
 on:
-  push:
-    branches-ignore:
-      - master
+  pull_request:
     paths:
       - 'docs/**'
       - '.github/workflows/site-preview.yml'
@@ -25,8 +23,8 @@ jobs:
       - name: Create deployment
         id: deployment
         run: |
-          echo "Creating deployment for ref: $GITHUB_REF"
-          API_RESPONSE=$(curl -H "Accept: application/vnd.github.ant-man-preview+json" -H "Authorization: token ${{ github.token }}" -X POST -H 'Content-Type: application/json' -d '{"ref": "'"$GITHUB_REF"'", "environment": "preview", "transient_environment": true, "description": "Docs preview", "required_contexts": []}' "https://api.github.com/repos/$GITHUB_REPOSITORY/deployments")
+          echo "Creating deployment for PR branch head SHA: ${{ github.event.pull_request.head.sha }}"
+          API_RESPONSE=$(curl -H "Accept: application/vnd.github.ant-man-preview+json" -H "Authorization: token ${{ github.token }}" -X POST -H 'Content-Type: application/json' -d '{"ref": "${{ github.event.pull_request.head.sha }}", "environment": "preview", "transient_environment": true, "description": "Docs preview", "required_contexts": []}' "https://api.github.com/repos/$GITHUB_REPOSITORY/deployments")
           STATUSES_URL=$(echo $API_RESPONSE | jq .statuses_url)
           echo "::set-output name=statuses_url::$STATUSES_URL"
 
@@ -52,12 +50,12 @@ jobs:
         working-directory: ${{ env.working-directory }}
         run: |
           python3 -m pip install awscli
-          aws s3 sync --delete build/html s3://${{ secrets.AWS_BUCKET }}/$GITHUB_SHA/
+          aws s3 sync --delete build/html "s3://${{ secrets.AWS_BUCKET }}/${{ github.event.pull_request.head.sha }}/"
 
       - name: Update deployment status (success)
         if: success()
         run: |
-          curl -H "Accept: application/vnd.github.ant-man-preview+json" -H "Authorization: token ${{ github.token }}" -X POST -H 'Content-Type: application/json' -d '{"state": "success", "environment_url": "'"https://${{ secrets.AWS_BUCKET }}.s3.${{ secrets.AWS_BUCKET_REGION }}.amazonaws.com/${{ github.sha }}/index.html"'"}' ${{ steps.deployment.outputs.statuses_url }}
+          curl -H "Accept: application/vnd.github.ant-man-preview+json" -H "Authorization: token ${{ github.token }}" -X POST -H 'Content-Type: application/json' -d '{"state": "success", "environment_url": "'"https://${{ secrets.AWS_BUCKET }}.s3.${{ secrets.AWS_BUCKET_REGION }}.amazonaws.com/${{ github.event.pull_request.head.sha }}/index.html"'"}' ${{ steps.deployment.outputs.statuses_url }}
 
       - name: Update deployment status (success)
         if: failure()
