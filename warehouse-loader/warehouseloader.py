@@ -4,7 +4,7 @@ import logging
 import os
 import re
 from io import BytesIO
-from pathlib import Path
+from pathlib import Path, posixpath
 
 import bonobo
 import boto3
@@ -369,7 +369,9 @@ def process_image(*args, keycache, config, patientcache):
         image_data = pydicom.dcmread(tmp, stop_before_pixels=True)
 
     # extract the required data from the image
-    patient_id = image_data["PatientID"].value
+    patient_id = image_data.PatientID
+    study_id = image_data.StudyInstanceUID
+    series_id = image_data.SeriesInstanceUID
     group = patientcache.get_group(patient_id)
     if group is not None:
         training_set = group == "training"
@@ -386,8 +388,17 @@ def process_image(*args, keycache, config, patientcache):
     date = get_date_from_key(obj.key)
     if date:
         # the location of the new files
-        new_key = f"{prefix}{image_type}/{patient_id}/{Path(obj.key).name}"
-        metadata_key = f"{prefix}{image_type}-metadata/{patient_id}/{image_uuid}.json"
+        new_key = posixpath.join(
+            prefix, image_type, patient_id, study_id, series_id, Path(obj.key).name
+        )
+        metadata_key = posixpath.join(
+            prefix,
+            f"{image_type}-metadata",
+            patient_id,
+            study_id,
+            series_id,
+            f"{image_uuid}.json",
+        )
         # send off to copy or upload steps
         if not object_exists(new_key):
             yield "copy", obj, new_key
