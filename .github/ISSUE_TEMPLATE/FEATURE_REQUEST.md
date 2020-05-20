@@ -2,7 +2,7 @@
 name: Feature request
 about: Suggest an idea to improve the National COVID-19 Chest Imaging Database
 title: ''
-labels: ''
+labels: 'enhancement'
 assignees: imrehg
 
 ---
@@ -14,6 +14,7 @@ assignees: imrehg
 [ ] Documentation
 [ ] Data access
 [ ] Infrastructure
+[ ] Loader pipeline
 [ ] Other (please describe)
 
 ### Additional context
