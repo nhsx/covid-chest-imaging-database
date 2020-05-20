@@ -2,7 +2,7 @@
 name: Bug report
 about: Report a bug to help us improve the National COVID-19 Chest Imaging Database
 title: ''
-labels: ''
+labels: 'bug'
 assignees: imrehg
 
 ---
@@ -14,6 +14,7 @@ assignees: imrehg
 [ ] Documentation
 [ ] Data access
 [ ] Infrastructure
+[ ] Loader pipeline
 [ ] Performance
 [ ] Security
 [ ] User Experience
