@@ -61,6 +61,10 @@ The hospitals and trusts already contributing data to NCCID are listed below:
 - `Hampshire Hospitals NHS Foundation Trust <https://www.hampshirehospitals.nhs.uk/>`_
 - `Betsi Cadwaladr University Health Board <https://bcuhb.nhs.wales/>`_
 
+
+.. bokeh-plot:: scripts/maps.py
+    :source-position: none
+
 All participating hospitals and trusts will be cited in any publication
 resulting from the use of NCCID data.
 
