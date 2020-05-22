@@ -82,13 +82,13 @@ and date, as follows:
 /training/ct-metadata/PATIENT_ID/IMAGE_UUID.json
 /training/mri/PATIENT_ID/IMAGE_UUID.dcm
 /training/mri-metadata/PATIENT_ID/IMAGE_UUID.json
-/training/x-ray/PATIENT_ID/IMAGE_UUID.dcm
-/training/x-ray-metadata/PATIENT_ID/IMAGE_UUID.json
+/training/xray/PATIENT_ID/IMAGE_UUID.dcm
+/training/xray-metadata/PATIENT_ID/IMAGE_UUID.json
 /training/data/PATIENT_ID/status_DATE.json
 /training/data/PATIENT_ID/data_DATE.json
 ```
 
-* The `ct`, `mri`, `x-ray` folders hold the DICOM images of the relevant kind.
+* The `ct`, `mri`, `xray` folders hold the DICOM images of the relevant kind.
 * The `...-metadata` folders hold the DICOM tags exported as `json` from the corresponding `IMAGE_UUID.dcm`
 * The `data` folder holds the patient medical data, `status_DATE.json` files for negative results, and `data_DATE.json` file/files for positive results. The `DATE` is formatted as `YYYY-MM-DD`, such as `2020-04-21`.
 

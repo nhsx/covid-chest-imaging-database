@@ -30,8 +30,8 @@ CONFIG_KEY = "config.json"
 TRAINING_PERCENTAGE = 0
 
 MODALITY = {
-    "DX": "x-ray",
-    "CR": "x-ray",
+    "DX": "xray",
+    "CR": "xray",
     "MR": "mri",
     "CT": "ct",
 }

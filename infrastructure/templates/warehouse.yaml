@@ -182,13 +182,13 @@ Resources:
               !GetAtt [WarehouseBucket, Arn]
             Condition:
               StringLike:
-                s3:prefix: ["training/x-ray/*", "training/x-ray-metadata/*", "training/data/*"]
+                s3:prefix: ["training/xray/*", "training/xray-metadata/*", "training/data/*"]
           - Effect: Allow
             Action:
               - "s3:GetObject"
             Resource:
-              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/x-ray/*"]]
-              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/x-ray-metadata/*"]]
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/xray/*"]]
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/xray-metadata/*"]]
               - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/data/*"]]
   TrainingXrayGroup:
     Type: AWS::IAM::Group
