@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description : "Hosting docs previews"
+
+Parameters:
+  BucketNameParameter:
+    Type: String
+    Default: nhsx-covid-chest-imaging-database-preview
+    Description: The base name of the storage bucket
+
+Resources:
+
+  # Main bucket
+  DocsPreviewStorageBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AccessControl: PublicRead
+      BucketName: !Ref "BucketNameParameter"
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+      LifecycleConfiguration:
+        Rules:
+          - Id: "BucketRecycling"
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+            ExpirationInDays: 7
+            Status: Enabled
+
+  PublicReadBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DocsPreviewStorageBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - "s3:GetObject"
+            Resource:
+              !Join ["", [!GetAtt [DocsPreviewStorageBucket, Arn], "/*"]]
+            Principal: "*"
+
+  # IAM
+  UploadToDocsPreviewPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Join ["", ["upload-to-", !Ref "BucketNameParameter"]]
+      Description: Allow uploading to the the preview bucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - "s3:PutObject"
+            Resource:
+              !Join ["", [!GetAtt [DocsPreviewStorageBucket, Arn], "/*"]]
+  DocsPreviewUploaderGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      ManagedPolicyArns:
+        - !Ref UploadToDocsPreviewPolicy

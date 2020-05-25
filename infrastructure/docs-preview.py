@@ -2,8 +2,8 @@
 
 import argparse
 import logging
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 import boto3
 
@@ -11,8 +11,8 @@ logging.basicConfig(level=logging.INFO)
 
 
 TEMPLATES_DIRECTORY = Path("templates")
-DEFAULT_TEMPLATE_NAME = "warehouse"
-DEAFULT_BUCKET_NAME = "nccid-data-warehouse"
+DEFAULT_TEMPLATE_NAME = "docs-preview"
+DEFAULT_BUCKET_NAME = "nhsx-covid-chest-imaging-database-preview"
 
 CLIENT = boto3.client("cloudformation", region_name="eu-west-2")
 
@@ -25,14 +25,12 @@ def _stack_exists(stack_name):
     return stack_name in stack_names
 
 
-def create_warehouse(suffix=None):
-    suffix_string = "" if suffix is None else f"-{suffix}"
-    template_body = (TEMPLATES_DIRECTORY / "warehouse.yaml").read_text()
+def create_docs_preview_bucket(bucket_name=DEFAULT_BUCKET_NAME):
+    template_body = (TEMPLATES_DIRECTORY / "docs-preview.yaml").read_text()
     timestamp_suffix = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     changeset_name = f"{DEFAULT_TEMPLATE_NAME}-{timestamp_suffix}"
-    stack_name = f"{DEFAULT_TEMPLATE_NAME}{suffix_string}"
+    stack_name = f"{DEFAULT_TEMPLATE_NAME}-{bucket_name}"
     logging.info(f"Stack name: {stack_name}")
-    bucket_name = f"{DEAFULT_BUCKET_NAME}{suffix_string}"
 
     # Update or create as needed
     changeset_type = "UPDATE" if _stack_exists(stack_name) else "CREATE"
@@ -55,14 +53,19 @@ def create_warehouse(suffix=None):
     return changeset_arn
 
 
-def main(suffix=None):
-    changeset_arn = create_warehouse(suffix)
-    logging.info(f"Created changeset for warehouse with ARN: {changeset_arn}")
+def main(bucket_name):
+    changeset_arn = create_docs_preview_bucket(bucket_name)
+    logging.info(f"Created changeset for docs preview bucket with ARN: {changeset_arn}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-s", "--suffix", help="suffix to use for templates and names")
+    parser.add_argument(
+        "-b",
+        "--bucket",
+        help="The docs preview bucket's name",
+        default=DEFAULT_BUCKET_NAME,
+    )
     args = parser.parse_args()
 
-    main(args.suffix)
+    main(args.bucket)
