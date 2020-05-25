@@ -1,7 +1,9 @@
+#!/usr/bin/env python3
+
 import argparse
 import logging
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 import boto3
 
@@ -58,7 +60,12 @@ def main(bucket_name):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-b", "--bucket", help="", default=DEFAULT_BUCKET_NAME)
+    parser.add_argument(
+        "-b",
+        "--bucket",
+        help="The docs preview bucket's name",
+        default=DEFAULT_BUCKET_NAME,
+    )
     args = parser.parse_args()
 
     main(args.bucket)
