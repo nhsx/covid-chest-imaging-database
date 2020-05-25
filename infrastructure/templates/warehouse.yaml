@@ -64,6 +64,11 @@ Resources:
         BlockPublicPolicy: true
         RestrictPublicBuckets: true
         IgnorePublicAcls: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: "BucketRecycling"
+            ExpirationInDays: 7
+            Status: Enabled
 
   # IAM
   UploadToRawPolicy:
