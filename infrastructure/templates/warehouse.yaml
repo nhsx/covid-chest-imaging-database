@@ -70,6 +70,26 @@ Resources:
             ExpirationInDays: 7
             Status: Enabled
 
+  InventoryBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WarehouseInventoryBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Id: "ReceiveInventoryPolicy"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action: s3:PutObject
+            Resource: !Join ["", [!GetAtt [WarehouseInventoryBucket, Arn], "/*"]]
+            Condition:
+              StringEquals:
+                  s3:x-amz-acl: bucket-owner-full-control
+                  aws:SourceAccount: !Ref "AWS::AccountId"
+              ArnLike:
+                  aws:SourceArn: !GetAtt [WarehouseBucket, Arn]
+
   # IAM
   UploadToRawPolicy:
     Type: AWS::IAM::ManagedPolicy
