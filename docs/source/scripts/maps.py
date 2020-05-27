@@ -43,10 +43,11 @@ source = ColumnDataSource(
     )
 )
 
-
-TOOLTIPS = [
-    ("Contributor", "@name"),
-]
+TOOLTIPS = """
+    <div class="tooltip">
+        <span style="font-size: 15px; font-weight: bold; font-family: Furtiger W01,Arial,Sans-serif;">@name</span>
+    </div>
+"""
 
 p = figure(
     x_range=(lower_left[0], upper_right[0]),
@@ -57,9 +58,7 @@ p = figure(
     tooltips=TOOLTIPS,
 )
 p.add_tile(tile_provider)
-p.circle(
-    x="x", y="y", source=source, size=8, fill_color="#FFD700", line_color="#000000"
-)
+p.circle(x="x", y="y", source=source, size=8, fill_color="Orange", line_color="Black")
 p.axis.visible = False
 p.toolbar.active_drag = None
 p.toolbar.active_scroll = None
