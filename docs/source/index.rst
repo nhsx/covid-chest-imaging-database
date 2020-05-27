@@ -60,7 +60,7 @@ The hospitals and trusts already contributing data to NCCID are listed below:
 - `Cwm Taf Morgannwg University Health Board <https://cwmtafmorgannwg.wales/>`_
 - `Hampshire Hospitals NHS Foundation Trust <https://www.hampshirehospitals.nhs.uk/>`_
 - `Betsi Cadwaladr University Health Board <https://bcuhb.nhs.wales/>`_
-
+- `Ashford and St Peter's Hospitals <http://www.ashfordstpeters.nhs.uk/>`_
 
 .. bokeh-plot:: scripts/maps.py
     :source-position: none
