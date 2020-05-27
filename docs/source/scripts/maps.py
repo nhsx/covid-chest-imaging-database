@@ -5,7 +5,7 @@ import pandas as pd
 from bokeh.io import show
 from bokeh.models import ColumnDataSource
 from bokeh.plotting import figure
-from bokeh.tile_providers import STAMEN_TONER_BACKGROUND, get_provider
+from bokeh.tile_providers import CARTODBPOSITRON, get_provider
 
 
 # imported from https://towardsdatascience.com/exploring-and-visualizing-chicago-transit-data-using-pandas-and-bokeh-part-ii-intro-to-bokeh-5dca6c5ced10
@@ -24,7 +24,7 @@ def merc(lat, lon):
     return (x, y)
 
 
-tile_provider = get_provider(STAMEN_TONER_BACKGROUND)
+tile_provider = get_provider(CARTODBPOSITRON)
 
 # Map bounding box, roughly
 lower_left = merc(49.61934607370432, -10.994519941147475)
@@ -58,7 +58,7 @@ p = figure(
     tooltips=TOOLTIPS,
 )
 p.add_tile(tile_provider)
-p.circle(x="x", y="y", source=source, size=8, fill_color="Orange", line_color="Black")
+p.circle(x="x", y="y", source=source, size=8, fill_color="#003087", line_color="Black")
 p.axis.visible = False
 p.toolbar.active_drag = None
 p.toolbar.active_scroll = None
