@@ -27,8 +27,8 @@ def merc(lat, lon):
 tile_provider = get_provider(STAMEN_TONER_BACKGROUND)
 
 # Map bounding box, roughly
-lower_left = merc(48.850, -11.558)
-upper_right = merc(59.508, 2.967)
+lower_left = merc(49.61934607370432, -10.994519941147475)
+upper_right = merc(60.931634153408915, 0.9818240754471713)
 
 df = pd.read_csv(
     os.path.join(os.path.dirname(os.path.realpath(__file__)), "hospital_locations.csv")
