@@ -1,0 +1,417 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Accessing the NCCID data &mdash; National COVID-19 Chest Image Database  documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/favicon.png"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/nhsx.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="National COVID-19 Chest Image Database (NCCID)" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #003087" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> National COVID-19 Chest Image Database
+          
+
+          
+            
+            <img src="_static/logo.svg" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Technical documentation</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Accessing the NCCID data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#warehouse-structure">Warehouse structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#using-the-aws-command-line-interface">Using the AWS Command Line Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#using-python-and-boto3">Using Python and Boto3</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#listing-files">Listing files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#downloading-image-files">Downloading image files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#opening-image-files">Opening image files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#loading-a-json-file">Loading a JSON file</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">National COVID-19 Chest Image Database</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Accessing the NCCID data</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/access_examples.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="accessing-the-nccid-data">
+<span id="data-access-main"></span><h1>Accessing the NCCID data<a class="headerlink" href="#accessing-the-nccid-data" title="Permalink to this headline">¶</a></h1>
+<p>The data is stored in <a class="reference external" href="https://aws.amazon.com/s3/">Amazon Web Services S3</a>.
+Once your organisation has been granted access, NHSX will send AWS credentials
+by encrypted email. The credentials will allow accessing the data.</p>
+<p>We recommend accessing the data using the <a class="reference external" href="https://aws.amazon.com/cli/">Amazon Web Services Command Line Interface (AWS CLI)</a>,
+or client libraries that interact with S3. Some examples are provided below.</p>
+<div class="section" id="warehouse-structure">
+<h2>Warehouse structure<a class="headerlink" href="#warehouse-structure" title="Permalink to this headline">¶</a></h2>
+<p>The warehouse data is stored in the <code class="docutils literal notranslate"><span class="pre">nccid-data-warehouse-prod</span></code> S3 bucket, and access
+is granted to different <a class="reference external" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html#object-keys">prefixes</a>.</p>
+<p>The warehouse training data is organised into prefixes within the <code class="docutils literal notranslate"><span class="pre">training</span></code> prefix,
+based on image types (or “modality”), patient ID, and date as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># CT images &amp; metadata</span>
+<span class="n">training</span><span class="o">/</span><span class="n">ct</span><span class="o">/</span><span class="n">PATIENT_ID</span><span class="o">/</span><span class="n">STUDY_UID</span><span class="o">/</span><span class="n">SERIES_UID</span><span class="o">/</span><span class="n">IMAGE_UUID</span><span class="o">.</span><span class="n">dcm</span>
+<span class="n">training</span><span class="o">/</span><span class="n">ct</span><span class="o">-</span><span class="n">metadata</span><span class="o">/</span><span class="n">PATIENT_ID</span><span class="o">/</span><span class="n">STUDY_UID</span><span class="o">/</span><span class="n">SERIES_UID</span><span class="o">/</span><span class="n">IMAGE_UUID</span><span class="o">.</span><span class="n">json</span>
+
+<span class="c1"># MRI images &amp; metadata</span>
+<span class="n">training</span><span class="o">/</span><span class="n">mri</span><span class="o">/</span><span class="n">PATIENT_ID</span><span class="o">/</span><span class="n">STUDY_UID</span><span class="o">/</span><span class="n">SERIES_UID</span><span class="o">/</span><span class="n">IMAGE_UUID</span><span class="o">.</span><span class="n">dcm</span>
+<span class="n">training</span><span class="o">/</span><span class="n">mri</span><span class="o">-</span><span class="n">metadata</span><span class="o">/</span><span class="n">PATIENT_ID</span><span class="o">/</span><span class="n">STUDY_UID</span><span class="o">/</span><span class="n">SERIES_UID</span><span class="o">/</span><span class="n">IMAGE_UUID</span><span class="o">.</span><span class="n">json</span>
+
+<span class="c1"># X-ray images &amp; metadata</span>
+<span class="n">training</span><span class="o">/</span><span class="n">xray</span><span class="o">/</span><span class="n">PATIENT_ID</span><span class="o">/</span><span class="n">STUDY_UID</span><span class="o">/</span><span class="n">SERIES_UID</span><span class="o">/</span><span class="n">IMAGE_UUID</span><span class="o">.</span><span class="n">dcm</span>
+<span class="n">training</span><span class="o">/</span><span class="n">xray</span><span class="o">-</span><span class="n">metadata</span><span class="o">/</span><span class="n">PATIENT_ID</span><span class="o">/</span><span class="n">STUDY_UID</span><span class="o">/</span><span class="n">SERIES_UID</span><span class="o">/</span><span class="n">IMAGE_UUID</span><span class="o">.</span><span class="n">json</span>
+
+<span class="c1"># Patient clinical data</span>
+<span class="n">training</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">PATIENT_ID</span><span class="o">/</span><span class="n">status_DATE</span><span class="o">.</span><span class="n">json</span>
+<span class="n">training</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">PATIENT_ID</span><span class="o">/</span><span class="n">data_DATE</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">ct</span></code>, <code class="docutils literal notranslate"><span class="pre">mri</span></code>, <code class="docutils literal notranslate"><span class="pre">xray</span></code> folders hold the <a class="reference external" href="https://www.dicomstandard.org/">DICOM</a>
+images of the given kind.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">Patient_ID</span></code> value is equivalent to the <code class="docutils literal notranslate"><span class="pre">(0010,0020)</span></code> DICOM <a class="reference external" href="https://www.dicomlibrary.com/dicom/dicom-tags/">tag</a>
+from the images and <code class="docutils literal notranslate"><span class="pre">Pseudonym</span></code> field from the <code class="docutils literal notranslate"><span class="pre">status_DATE.json</span></code> and <code class="docutils literal notranslate"><span class="pre">data_DATE.json</span></code>
+clinical data files.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">STUDY_UID</span></code> and <code class="docutils literal notranslate"><span class="pre">SERIES_UID</span></code> are equivalent to the <code class="docutils literal notranslate"><span class="pre">(0020,000D)</span></code> and <code class="docutils literal notranslate"><span class="pre">(0020,000E)</span></code>
+DICOM tags in the given images.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">...-metadata</span></code> folders hold the DICOM tags exported as JSON from the corresponding
+image file <code class="docutils literal notranslate"><span class="pre">IMAGE_UUID.dcm</span></code> into <code class="docutils literal notranslate"><span class="pre">IMAGE_UUID.json</span></code> to enable quick parsing without the
+need to download the given image</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">data</span></code> folder holds the patient medical data, <code class="docutils literal notranslate"><span class="pre">status_DATE.json</span></code> files for negative
+results, and <code class="docutils literal notranslate"><span class="pre">data_DATE.json</span></code> file/files for positive results. <code class="docutils literal notranslate"><span class="pre">DATE</span></code> is formatted as
+<code class="docutils literal notranslate"><span class="pre">YYYY-MM-DD</span></code>, for example <code class="docutils literal notranslate"><span class="pre">2020-04-21</span></code>.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Over time there will be more images added to the warehouse, and they will show up as new
+patient folders, and new image folders with new images.</p>
+</div>
+</div>
+<div class="section" id="using-the-aws-command-line-interface">
+<h2>Using the AWS Command Line Interface<a class="headerlink" href="#using-the-aws-command-line-interface" title="Permalink to this headline">¶</a></h2>
+<p>The simplest way to retrieve the imaging data is using the AWS CLI:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ aws s3 sync s3://nccid-data-warehouse-prod/training/ct ct
+download: s3://nccid-data-warehouse-prod/training/ct/Covid1/1.2.3/A.B.C/x.y.z.dcm to ct/Covid1/1.2.3/A.B.C/x.y.z.dcm
+...
+</pre></div>
+</div>
+<p>Repeating this for all the relevant directories you would download the latest
+data and images that you don’t have locally:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Remove items from this array that you don&#39;t want to download</span>
+<span class="nv">modalities</span><span class="o">=(</span><span class="s2">&quot;data&quot;</span> <span class="s2">&quot;ct&quot;</span> <span class="s2">&quot;ct-metadata&quot;</span> <span class="s2">&quot;mri&quot;</span> <span class="s2">&quot;mri-metadata&quot;</span> <span class="s2">&quot;xray&quot;</span> <span class="s2">&quot;xray-metadata&quot;</span><span class="o">)</span>
+<span class="k">for</span> modality in <span class="si">${</span><span class="nv">modalities</span><span class="p">[@]</span><span class="si">}</span><span class="p">;</span> <span class="k">do</span>
+  aws s3 sync <span class="s2">&quot;s3://nccid-data-warehouse-prod/training/</span><span class="si">${</span><span class="nv">modality</span><span class="si">}</span><span class="s2">&quot;</span> <span class="s2">&quot;</span><span class="si">${</span><span class="nv">modality</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="k">done</span>
+</pre></div>
+</div>
+<p>In the above example <a class="reference external" href="https://www.gnu.org/software/bash/manual/html_node/Arrays.html">Bash arrays</a>
+were used (the <code class="docutils literal notranslate"><span class="pre">modalities</span></code> variable).</p>
+<p>For more information check the <a class="reference external" href="https://docs.aws.amazon.com/cli/index.html">AWS CLI documentation</a>.
+If you encounter any problems, open an issue on our <a class="reference external" href="https://github.com/nhsx/covid-chest-imaging-database/issues">GitHub repository</a>.</p>
+</div>
+<div class="section" id="using-python-and-boto3">
+<h2>Using Python and Boto3<a class="headerlink" href="#using-python-and-boto3" title="Permalink to this headline">¶</a></h2>
+<p>If you are scripting access to files, we recommend using Python and <a class="reference external" href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.html">Boto3</a></p>
+<p>For more information check the <a class="reference external" href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.html">Boto3 documentation</a>.
+If you encounter any problems, open an issue on our <a class="reference external" href="https://github.com/nhsx/covid-chest-imaging-database/issues">GitHub repository</a>.</p>
+<p>Below you may find examples of accessing the data in various ways with Python and Boto3.</p>
+<div class="section" id="listing-files">
+<h3>Listing files<a class="headerlink" href="#listing-files" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">boto3</span>
+
+<span class="n">s3</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">resource</span><span class="p">(</span><span class="s2">&quot;s3&quot;</span><span class="p">)</span>
+<span class="n">bucket</span> <span class="o">=</span> <span class="n">s3</span><span class="o">.</span><span class="n">Bucket</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;nccid-data-warehouse-prod&quot;</span><span class="p">)</span>
+
+<span class="c1"># List the objects at a given prefix</span>
+<span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">bucket</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Prefix</span><span class="o">=</span><span class="s2">&quot;training/data&quot;</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">key</span><span class="si">}</span><span class="se">\t</span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="se">\t</span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">last_modified</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This will result in a list such as:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">training</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">Covid1</span><span class="o">/</span><span class="n">data_2020</span><span class="o">-</span><span class="mi">05</span><span class="o">-</span><span class="mf">14.</span><span class="n">json</span>       <span class="mi">1416</span>    <span class="mi">2020</span><span class="o">-</span><span class="mi">05</span><span class="o">-</span><span class="mi">22</span> <span class="mi">13</span><span class="p">:</span><span class="mi">38</span><span class="p">:</span><span class="mi">30</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>
+<span class="n">training</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">Covid6</span><span class="o">/</span><span class="n">data_2020</span><span class="o">-</span><span class="mi">05</span><span class="o">-</span><span class="mf">15.</span><span class="n">json</span>       <span class="mi">1560</span>    <span class="mi">2020</span><span class="o">-</span><span class="mi">05</span><span class="o">-</span><span class="mi">22</span> <span class="mi">13</span><span class="p">:</span><span class="mi">38</span><span class="p">:</span><span class="mi">31</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>
+<span class="o">....</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="downloading-image-files">
+<h3>Downloading image files<a class="headerlink" href="#downloading-image-files" title="Permalink to this headline">¶</a></h3>
+<p>To download files using Boto3, if you don’t have them locally already:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">boto3</span>
+
+<span class="n">BUCKET_NAME</span> <span class="o">=</span> <span class="s2">&quot;nccid-data-warehouse-prod&quot;</span>
+
+
+<span class="k">def</span> <span class="nf">downloadPrefixFromS3</span><span class="p">(</span><span class="n">bucketName</span><span class="p">,</span> <span class="n">prefix</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This function takes a remote S3 bucket and a prefix,</span>
+<span class="sd">    and downloads all the objects from there, that are not</span>
+<span class="sd">    already stored locally.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">s3</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">resource</span><span class="p">(</span><span class="s2">&quot;s3&quot;</span><span class="p">)</span>
+    <span class="n">bucket</span> <span class="o">=</span> <span class="n">s3</span><span class="o">.</span><span class="n">Bucket</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">bucketName</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">bucket</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">):</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">key</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">key</span><span class="p">)</span><span class="o">.</span><span class="n">st_size</span> <span class="o">==</span> <span class="n">obj</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="c1"># If the file exists and it&#39;s the right size, we should be done</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: already have locally&quot;</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">key</span><span class="p">)):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: downloading&quot;</span><span class="p">)</span>
+        <span class="n">bucket</span><span class="o">.</span><span class="n">download_file</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+
+
+<span class="c1"># Download a specific prefix. Don&#39;t forget the final &quot;/&quot; to limit to the exact prefix</span>
+<span class="n">downloadPrefixFromS3</span><span class="p">(</span><span class="n">BUCKET_NAME</span><span class="p">,</span> <span class="s2">&quot;training/mri/&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The above code will create the folders corresponding to the remote prefixes in
+the current working directory as needed, and only download files that are
+not yet downloaded (similar to <code class="docutils literal notranslate"><span class="pre">aws</span> <span class="pre">s3</span> <span class="pre">sync</span></code>.</p>
+</div>
+<div class="section" id="opening-image-files">
+<h3>Opening image files<a class="headerlink" href="#opening-image-files" title="Permalink to this headline">¶</a></h3>
+<p>You can also access a remote DICOM image, download into memory and open
+it with, for example with the <a class="reference external" href="https://github.com/pydicom/pydicom">PyDICOM library</a>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
+
+<span class="kn">import</span> <span class="nn">boto3</span>
+<span class="kn">import</span> <span class="nn">pydicom</span>
+
+<span class="n">s3</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">resource</span><span class="p">(</span><span class="s2">&quot;s3&quot;</span><span class="p">)</span>
+<span class="n">bucket</span> <span class="o">=</span> <span class="n">s3</span><span class="o">.</span><span class="n">Bucket</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;nccid-data-warehouse-staging&quot;</span><span class="p">)</span>
+
+<span class="n">image_name</span> <span class="o">=</span> <span class="s2">&quot;training/xray/Covid1/1.2.3/A.B.C/x.y.z.dcm&quot;</span>
+
+<span class="k">with</span> <span class="n">BytesIO</span><span class="p">()</span> <span class="k">as</span> <span class="n">tmp</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Downloading: </span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">bucket</span><span class="o">.</span><span class="n">Object</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">image_name</span><span class="p">)</span><span class="o">.</span><span class="n">download_fileobj</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+    <span class="n">tmp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="c1"># Do not read the image only the metadata here.</span>
+    <span class="c1"># To also read the image, remove set stop_before_pixels to False</span>
+    <span class="n">image_data</span> <span class="o">=</span> <span class="n">pydicom</span><span class="o">.</span><span class="n">dcmread</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">stop_before_pixels</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">image_data</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This code would result in an output such as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Downloading</span><span class="p">:</span> <span class="n">training</span><span class="o">/</span><span class="n">xray</span><span class="o">/</span><span class="n">Covid1</span><span class="o">/</span><span class="mf">1.2</span><span class="o">.</span><span class="mi">3</span><span class="o">/</span><span class="n">A</span><span class="o">.</span><span class="n">B</span><span class="o">.</span><span class="n">C</span><span class="o">/</span><span class="n">x</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">z</span><span class="o">.</span><span class="n">dcm</span>
+<span class="p">(</span><span class="mi">0008</span><span class="p">,</span> <span class="mi">0005</span><span class="p">)</span> <span class="n">Specific</span> <span class="n">Character</span> <span class="n">Set</span>              <span class="n">CS</span><span class="p">:</span> <span class="s1">&#39;ISO_IR 100&#39;</span>
+<span class="p">(</span><span class="mi">0008</span><span class="p">,</span> <span class="mi">0008</span><span class="p">)</span> <span class="n">Image</span> <span class="n">Type</span>                          <span class="n">CS</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;ORIGINAL&#39;</span><span class="p">,</span> <span class="s1">&#39;PRIMARY&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;RT&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;150000&#39;</span><span class="p">]</span>
+<span class="p">(</span><span class="mi">0008</span><span class="p">,</span> <span class="mi">0016</span><span class="p">)</span> <span class="n">SOP</span> <span class="n">Class</span> <span class="n">UID</span>                       <span class="n">UI</span><span class="p">:</span> <span class="n">Digital</span> <span class="n">X</span><span class="o">-</span><span class="n">Ray</span> <span class="n">Image</span> <span class="n">Storage</span> <span class="o">-</span> <span class="n">For</span> <span class="n">Presentation</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="loading-a-json-file">
+<h3>Loading a JSON file<a class="headerlink" href="#loading-a-json-file" title="Permalink to this headline">¶</a></h3>
+<p>Similarly to the image download above, JSON files can also be directly accessed,
+using the <a class="reference external" href="https://docs.python.org/3/library/json.html">built in Python json library</a>
+such as:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
+
+<span class="kn">import</span> <span class="nn">boto3</span>
+
+<span class="n">s3</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">resource</span><span class="p">(</span><span class="s2">&quot;s3&quot;</span><span class="p">)</span>
+<span class="n">bucket</span> <span class="o">=</span> <span class="n">s3</span><span class="o">.</span><span class="n">Bucket</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;nccid-data-warehouse-prod&quot;</span><span class="p">)</span>
+
+<span class="n">json_name</span> <span class="o">=</span> <span class="s2">&quot;training/data/Covid1/data_2020-05-14.json</span>
+
+<span class="k">with</span> <span class="n">BytesIO</span><span class="p">()</span> <span class="k">as</span> <span class="n">tmp</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Downloading: </span><span class="si">{</span><span class="n">json_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">bucket</span><span class="o">.</span><span class="n">Object</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">json_name</span><span class="p">)</span><span class="o">.</span><span class="n">download_fileobj</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+    <span class="n">tmp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">json_data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The output of the above code would be similar to this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Downloading</span><span class="p">:</span> <span class="n">training</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">Covid1</span><span class="o">/</span><span class="n">data_2020</span><span class="o">-</span><span class="mi">05</span><span class="o">-</span><span class="mf">14.</span><span class="n">json</span>
+<span class="p">{</span>
+    <span class="s2">&quot;Pseudonym&quot;</span><span class="p">:</span> <span class="s2">&quot;Covid1&quot;</span><span class="p">,</span>
+    <span class="o">...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="National COVID-19 Chest Image Database (NCCID)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, NHSX; All content is available under the Open Government Licence v3.0, except where otherwise stated.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+The source code to this site is available on <a href="https://github.com/nhsx/covid-chest-imaging-database/">GitHub</a>.
+
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

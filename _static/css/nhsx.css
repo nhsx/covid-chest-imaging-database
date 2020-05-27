@@ -29,14 +29,17 @@ div.wy-side-scroll {
     background-color: #d8dde0;
 }
 
-div.local-toc li a {
+div.wy-menu p.caption {
+    color: #212b32;
+}
+div.wy-menu li a {
     color: #4c6272;
 }
 
-div.local-toc li a:hover {
+div.wy-menu li a:hover {
     color: #d9d9d9;
 }
 
-div.local-toc li.current a:hover {
+div.wy-menu li.current a:hover {
     color: #4c6272;
 }

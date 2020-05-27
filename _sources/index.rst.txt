@@ -1,8 +1,3 @@
-.. Chest Data Warehouse documentation master file, created by
-   sphinx-quickstart on Wed Apr  1 20:03:09 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 National COVID-19 Chest Image Database (NCCID)
 ==============================================
 
@@ -139,3 +134,12 @@ pandemic.
 Any access to the data and licences to use will expire when the COVID-19 COPI
 (COVID-19 – Notice under Regulation 3(4) of the Health Service Control of Patient
 Information Regulations 2002) ceases effect.
+
+
+.. Table of contents below, put all front page text above this
+
+.. toctree::
+   :hidden:
+   :caption: Technical documentation
+
+   access_examples
