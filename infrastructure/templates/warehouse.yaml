@@ -37,7 +37,7 @@ Resources:
       InventoryConfigurations:
         - Destination:
             BucketArn: !GetAtt [WarehouseInventoryBucket, Arn]
-            Format: ORC
+            Format: Parquet
           OptionalFields:
             - Size
             - LastModifiedDate
