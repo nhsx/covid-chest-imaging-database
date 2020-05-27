@@ -1,0 +1,237 @@
+.. _data-access-main:
+
+Accessing the NCCID data
+========================
+
+The data is stored in `Amazon Web Services S3 <https://aws.amazon.com/s3/>`_.
+Once your organisation has been granted access, NHSX will send AWS credentials
+by encrypted email. The credentials will allow accessing the data. 
+
+We recommend accessing the data using the `Amazon Web Services Command Line Interface (AWS CLI) <https://aws.amazon.com/cli/>`_,
+or client libraries that interact with S3. Some examples are provided below.
+
+
+Warehouse structure
+-------------------
+
+The warehouse data is stored in the ``nccid-data-warehouse-prod`` S3 bucket, and access
+is granted to different `prefixes <https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html#object-keys>`_.
+
+The warehouse training data is organised into prefixes within the ``training`` prefix,
+based on image types (or "modality"), patient ID, and date as follows:
+
+.. code-block::
+
+    # CT images & metadata
+    training/ct/PATIENT_ID/STUDY_UID/SERIES_UID/IMAGE_UUID.dcm
+    training/ct-metadata/PATIENT_ID/STUDY_UID/SERIES_UID/IMAGE_UUID.json
+
+    # MRI images & metadata
+    training/mri/PATIENT_ID/STUDY_UID/SERIES_UID/IMAGE_UUID.dcm
+    training/mri-metadata/PATIENT_ID/STUDY_UID/SERIES_UID/IMAGE_UUID.json
+
+    # X-ray images & metadata
+    training/xray/PATIENT_ID/STUDY_UID/SERIES_UID/IMAGE_UUID.dcm
+    training/xray-metadata/PATIENT_ID/STUDY_UID/SERIES_UID/IMAGE_UUID.json
+
+    # Patient clinical data
+    training/data/PATIENT_ID/status_DATE.json
+    training/data/PATIENT_ID/data_DATE.json
+
+
+* The ``ct``, ``mri``, ``xray`` folders hold the `DICOM <https://www.dicomstandard.org/>`_
+  images of the given kind.
+* The ``Patient_ID`` value is equivalent to the ``(0010,0020)`` DICOM `tag <https://www.dicomlibrary.com/dicom/dicom-tags/>`_
+  from the images and ``Pseudonym`` field from the ``status_DATE.json`` and ``data_DATE.json``
+  clinical data files.
+* ``STUDY_UID`` and ``SERIES_UID`` are equivalent to the ``(0020,000D)`` and ``(0020,000E)``
+  DICOM tags in the given images.
+* The ``...-metadata`` folders hold the DICOM tags exported as JSON from the corresponding
+  image file ``IMAGE_UUID.dcm`` into ``IMAGE_UUID.json`` to enable quick parsing without the
+  need to download the given image
+* The ``data`` folder holds the patient medical data, ``status_DATE.json`` files for negative
+  results, and ``data_DATE.json`` file/files for positive results. ``DATE`` is formatted as
+  ``YYYY-MM-DD``, for example ``2020-04-21``.
+
+.. note::
+
+    Over time there will be more images added to the warehouse, and they will show up as new
+    patient folders, and new image folders with new images.
+
+
+Using the AWS Command Line Interface
+------------------------------------
+
+The simplest way to retrieve the imaging data is using the AWS CLI:
+
+.. code-block:: shell
+
+    $ aws s3 sync s3://nccid-data-warehouse-prod/training/ct ct
+    download: s3://nccid-data-warehouse-prod/training/ct/Covid1/1.2.3/A.B.C/x.y.z.dcm to ct/Covid1/1.2.3/A.B.C/x.y.z.dcm
+    ...
+
+Repeating this for all the relevant directories you would download the latest
+data and images that you don't have locally:
+
+.. code-block:: shell
+
+    # Remove items from this array that you don't want to download
+    modalities=("data" "ct" "ct-metadata" "mri" "mri-metadata" "xray" "xray-metadata")
+    for modality in ${modalities[@]}; do
+      aws s3 sync "s3://nccid-data-warehouse-prod/training/${modality}" "${modality}"
+    done
+
+In the above example `Bash arrays <https://www.gnu.org/software/bash/manual/html_node/Arrays.html>`_
+were used (the ``modalities`` variable).
+
+For more information check the `AWS CLI documentation <https://docs.aws.amazon.com/cli/index.html>`_.
+If you encounter any problems, open an issue on our `GitHub repository <https://github.com/nhsx/covid-chest-imaging-database/issues>`_.
+
+
+Using Python and Boto3
+----------------------
+
+If you are scripting access to files, we recommend using Python and `Boto3 <https://boto3.amazonaws.com/v1/documentation/api/latest/index.html>`_
+
+For more information check the `Boto3 documentation <https://boto3.amazonaws.com/v1/documentation/api/latest/index.html>`_.
+If you encounter any problems, open an issue on our `GitHub repository <https://github.com/nhsx/covid-chest-imaging-database/issues>`_.
+
+Below you may find examples of accessing the data in various ways with Python and Boto3.
+
+Listing files
+^^^^^^^^^^^^^
+
+.. code-block:: python
+
+    import boto3
+
+    s3 = boto3.resource("s3")
+    bucket = s3.Bucket(name="nccid-data-warehouse-prod")
+
+    # List the objects at a given prefix
+    for obj in bucket.objects.filter(Prefix="training/data"):
+        print(f"{obj.key}\t{obj.size}\t{obj.last_modified}")
+
+
+This will result in a list such as:
+
+.. code-block:: python
+
+    training/data/Covid1/data_2020-05-14.json       1416    2020-05-22 13:38:30+00:00
+    training/data/Covid6/data_2020-05-15.json       1560    2020-05-22 13:38:31+00:00
+    ....
+
+
+Downloading image files
+^^^^^^^^^^^^^^^^^^^^^^^
+
+To download files using Boto3, if you don't have them locally already:
+
+.. code-block:: python
+
+    import os
+    import boto3
+
+    BUCKET_NAME = "nccid-data-warehouse-prod"
+
+
+    def downloadPrefixFromS3(bucketName, prefix):
+        """This function takes a remote S3 bucket and a prefix,
+        and downloads all the objects from there, that are not
+        already stored locally.
+        """
+        s3 = boto3.resource("s3")
+        bucket = s3.Bucket(name=bucketName)
+        for obj in bucket.objects.filter(Prefix=prefix):
+            key = obj.key
+            if os.path.exists(key) and os.stat(key).st_size == obj.size:
+                # If the file exists and it's the right size, we should be done
+                print(f"{key}: already have locally")
+                continue
+            if not os.path.exists(os.path.dirname(key)):
+                os.makedirs(os.path.dirname(key))
+            print(f"{key}: downloading")
+            bucket.download_file(key, key)
+
+
+    # Download a specific prefix. Don't forget the final "/" to limit to the exact prefix
+    downloadPrefixFromS3(BUCKET_NAME, "training/mri/")
+
+The above code will create the folders corresponding to the remote prefixes in
+the current working directory as needed, and only download files that are
+not yet downloaded (similar to ``aws s3 sync``.
+
+
+Opening image files
+^^^^^^^^^^^^^^^^^^^
+
+You can also access a remote DICOM image, download into memory and open
+it with, for example with the `PyDICOM library <https://github.com/pydicom/pydicom>`_:
+
+.. code-block:: python
+
+    from io import BytesIO
+
+    import boto3
+    import pydicom
+
+    s3 = boto3.resource("s3")
+    bucket = s3.Bucket(name="nccid-data-warehouse-staging")
+
+    image_name = "training/xray/Covid1/1.2.3/A.B.C/x.y.z.dcm"
+
+    with BytesIO() as tmp:
+        print(f"Downloading: {image_name}")
+        bucket.Object(key=image_name).download_fileobj(tmp)
+        tmp.seek(0)
+        # Do not read the image only the metadata here.
+        # To also read the image, remove set stop_before_pixels to False
+        image_data = pydicom.dcmread(tmp, stop_before_pixels=True)
+        print(image_data)
+
+This code would result in an output such as:
+
+.. code-block::
+
+    Downloading: training/xray/Covid1/1.2.3/A.B.C/x.y.z.dcm
+    (0008, 0005) Specific Character Set              CS: 'ISO_IR 100'
+    (0008, 0008) Image Type                          CS: ['ORIGINAL', 'PRIMARY', '', 'RT', '', '', '', '', '150000']
+    (0008, 0016) SOP Class UID                       UI: Digital X-Ray Image Storage - For Presentation
+    ...
+
+
+Loading a JSON file
+^^^^^^^^^^^^^^^^^^^
+
+Similarly to the image download above, JSON files can also be directly accessed,
+using the `built in Python json library <https://docs.python.org/3/library/json.html>`_
+such as:
+
+.. code-block:: python
+
+    import json
+    from io import BytesIO
+
+    import boto3
+
+    s3 = boto3.resource("s3")
+    bucket = s3.Bucket(name="nccid-data-warehouse-prod")
+
+    json_name = "training/data/Covid1/data_2020-05-14.json
+
+    with BytesIO() as tmp:
+        print(f"Downloading: {json_name}")
+        bucket.Object(key=json_name).download_fileobj(tmp)
+        tmp.seek(0)
+        json_data = json.load(tmp)
+        print(json.dumps(json_data, indent=4, sort_keys=True))
+
+The output of the above code would be similar to this:
+
+.. code-block::
+
+    Downloading: training/data/Covid1/data_2020-05-14.json
+    {
+        "Pseudonym": "Covid1",
+        ...
+    }
