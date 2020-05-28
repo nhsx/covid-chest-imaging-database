@@ -150,4 +150,4 @@ Information Regulations 2002) ceases effect.
    :hidden:
    :caption: Technical documentation
 
-   access_examples
+   data_access
