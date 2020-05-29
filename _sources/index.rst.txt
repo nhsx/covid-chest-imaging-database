@@ -56,6 +56,8 @@ The hospitals and trusts already contributing data to NCCID are listed below:
 - `Hampshire Hospitals NHS Foundation Trust <https://www.hampshirehospitals.nhs.uk/>`_
 - `Betsi Cadwaladr University Health Board <https://bcuhb.nhs.wales/>`_
 - `Ashford and St Peter's Hospitals <http://www.ashfordstpeters.nhs.uk/>`_
+- `Royal Cornwall Hospitals NHS Trust <https://www.royalcornwall.nhs.uk/>`_
+- `Sheffield Children's NHS Foundation Trust <https://www.sheffieldchildrens.nhs.uk/>`_
 
 .. To add a site to the map below, please add an entry to
    source/scripts/hospital_locations.csv
