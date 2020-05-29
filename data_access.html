@@ -169,7 +169,8 @@
 Once your organisation has been granted access, NHSX will send AWS credentials
 by encrypted email. The credentials will allow accessing the data.</p>
 <p>We recommend accessing the data using the <a class="reference external" href="https://aws.amazon.com/cli/">Amazon Web Services Command Line Interface (AWS CLI)</a>,
-or client libraries that interact with S3. Some examples are provided below.</p>
+or client libraries that interact with S3 such as <a class="reference external" href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.html">Boto3</a>.
+Some examples are provided below.</p>
 <div class="section" id="warehouse-structure">
 <h2>Warehouse structure<a class="headerlink" href="#warehouse-structure" title="Permalink to this headline">¶</a></h2>
 <p>The warehouse data is stored in the <code class="docutils literal notranslate"><span class="pre">nccid-data-warehouse-prod</span></code> S3 bucket, and access
@@ -196,7 +197,7 @@ based on image types (or “modality”), patient ID, and date as follows:</p>
 <ul class="simple">
 <li><p>The <code class="docutils literal notranslate"><span class="pre">ct</span></code>, <code class="docutils literal notranslate"><span class="pre">mri</span></code>, <code class="docutils literal notranslate"><span class="pre">xray</span></code> folders hold the <a class="reference external" href="https://www.dicomstandard.org/">DICOM</a>
 images of the given kind.</p></li>
-<li><p>The <code class="docutils literal notranslate"><span class="pre">Patient_ID</span></code> value is equivalent to the <code class="docutils literal notranslate"><span class="pre">(0010,0020)</span></code> DICOM <a class="reference external" href="https://www.dicomlibrary.com/dicom/dicom-tags/">tag</a>
+<li><p>The de-identified <code class="docutils literal notranslate"><span class="pre">Patient_ID</span></code> value is equivalent to the <code class="docutils literal notranslate"><span class="pre">(0010,0020)</span></code> DICOM <a class="reference external" href="https://www.dicomlibrary.com/dicom/dicom-tags/">tag</a>
 from the images and <code class="docutils literal notranslate"><span class="pre">Pseudonym</span></code> field from the <code class="docutils literal notranslate"><span class="pre">status_DATE.json</span></code> and <code class="docutils literal notranslate"><span class="pre">data_DATE.json</span></code>
 clinical data files.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">STUDY_UID</span></code> and <code class="docutils literal notranslate"><span class="pre">SERIES_UID</span></code> are equivalent to the <code class="docutils literal notranslate"><span class="pre">(0020,000D)</span></code> and <code class="docutils literal notranslate"><span class="pre">(0020,000E)</span></code>
@@ -210,8 +211,9 @@ results, and <code class="docutils literal notranslate"><span class="pre">data_D
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Over time there will be more images added to the warehouse, and they will show up as new
-patient folders, and new image folders with new images.</p>
+<p>Over time there will be more data added to the warehouse, and they will show up as new
+patient folders, and new image folders with new images. We expect new data will be made
+available approximately twice a week.</p>
 </div>
 </div>
 <div class="section" id="using-the-aws-command-line-interface">
@@ -238,7 +240,7 @@ If you encounter any problems, open an issue on our <a class="reference external
 </div>
 <div class="section" id="using-python-and-boto3">
 <h2>Using Python and Boto3<a class="headerlink" href="#using-python-and-boto3" title="Permalink to this headline">¶</a></h2>
-<p>If you are scripting access to files, we recommend using Python and <a class="reference external" href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.html">Boto3</a></p>
+<p>If you are scripting access to files, we recommend using Python and <a class="reference external" href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.html">Boto3</a>.</p>
 <p>For more information check the <a class="reference external" href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.html">Boto3 documentation</a>.
 If you encounter any problems, open an issue on our <a class="reference external" href="https://github.com/nhsx/covid-chest-imaging-database/issues">GitHub repository</a>.</p>
 <p>Below you may find examples of accessing the data in various ways with Python and Boto3.</p>

@@ -8,7 +8,8 @@ Once your organisation has been granted access, NHSX will send AWS credentials
 by encrypted email. The credentials will allow accessing the data. 
 
 We recommend accessing the data using the `Amazon Web Services Command Line Interface (AWS CLI) <https://aws.amazon.com/cli/>`_,
-or client libraries that interact with S3. Some examples are provided below.
+or client libraries that interact with S3 such as `Boto3 <https://boto3.amazonaws.com/v1/documentation/api/latest/index.html>`_.
+Some examples are provided below.
 
 
 Warehouse structure
@@ -41,7 +42,7 @@ based on image types (or "modality"), patient ID, and date as follows:
 
 * The ``ct``, ``mri``, ``xray`` folders hold the `DICOM <https://www.dicomstandard.org/>`_
   images of the given kind.
-* The ``Patient_ID`` value is equivalent to the ``(0010,0020)`` DICOM `tag <https://www.dicomlibrary.com/dicom/dicom-tags/>`_
+* The de-identified ``Patient_ID`` value is equivalent to the ``(0010,0020)`` DICOM `tag <https://www.dicomlibrary.com/dicom/dicom-tags/>`_
   from the images and ``Pseudonym`` field from the ``status_DATE.json`` and ``data_DATE.json``
   clinical data files.
 * ``STUDY_UID`` and ``SERIES_UID`` are equivalent to the ``(0020,000D)`` and ``(0020,000E)``
@@ -55,8 +56,9 @@ based on image types (or "modality"), patient ID, and date as follows:
 
 .. note::
 
-    Over time there will be more images added to the warehouse, and they will show up as new
-    patient folders, and new image folders with new images.
+    Over time there will be more data added to the warehouse, and they will show up as new
+    patient folders, and new image folders with new images. We expect new data will be made
+    available approximately twice a week.
 
 
 Using the AWS Command Line Interface
@@ -91,7 +93,7 @@ If you encounter any problems, open an issue on our `GitHub repository <https://
 Using Python and Boto3
 ----------------------
 
-If you are scripting access to files, we recommend using Python and `Boto3 <https://boto3.amazonaws.com/v1/documentation/api/latest/index.html>`_
+If you are scripting access to files, we recommend using Python and `Boto3 <https://boto3.amazonaws.com/v1/documentation/api/latest/index.html>`_.
 
 For more information check the `Boto3 documentation <https://boto3.amazonaws.com/v1/documentation/api/latest/index.html>`_.
 If you encounter any problems, open an issue on our `GitHub repository <https://github.com/nhsx/covid-chest-imaging-database/issues>`_.
