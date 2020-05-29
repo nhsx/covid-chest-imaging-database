@@ -1,3 +1,6 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description : "Hosting an NCCID warehouse instance"
+
 Parameters:
   BucketNameParameter:
     Type: String
@@ -27,9 +30,65 @@ Resources:
         IgnorePublicAcls: true
       LifecycleConfiguration:
         Rules:
-          - AbortIncompleteMultipartUpload:
+          - Id: "clear-incomplete-uploads"
+            AbortIncompleteMultipartUpload:
               DaysAfterInitiation: 7
             Status: Enabled
+      InventoryConfigurations:
+        - Destination:
+            BucketArn: !GetAtt [WarehouseInventoryBucket, Arn]
+            Format: Parquet
+          OptionalFields:
+            - Size
+            - LastModifiedDate
+            - ETag
+          Enabled: true
+          Id: "daily-full-inventory"
+          IncludedObjectVersions: Current
+          ScheduleFrequency: Daily
+
+  # Inventory bucket
+  WarehouseInventoryBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AccessControl: Private
+      BucketName: !Join ["", [!Ref "BucketNameParameter", "-inventory"]]
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+        IgnorePublicAcls: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: "BucketRecycling"
+            ExpirationInDays: 7
+            Status: Enabled
+
+  InventoryBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WarehouseInventoryBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Id: "ReceiveInventoryPolicy"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action: s3:PutObject
+            Resource: !Join ["", [!GetAtt [WarehouseInventoryBucket, Arn], "/*"]]
+            Condition:
+              StringEquals:
+                  s3:x-amz-acl: bucket-owner-full-control
+                  aws:SourceAccount: !Ref "AWS::AccountId"
+              ArnLike:
+                  aws:SourceArn: !GetAtt [WarehouseBucket, Arn]
 
   # IAM
   UploadToRawPolicy:
@@ -64,12 +123,14 @@ Resources:
               - "s3:ListBucket"
               - "s3:GetBucketLocation"
             Resource:
-              !GetAtt [WarehouseBucket, Arn]
+              - !GetAtt [WarehouseBucket, Arn]
+              - !GetAtt [WarehouseInventoryBucket, Arn]
           - Effect: Allow
             Action:
               - "s3:GetObject"
             Resource:
-              !Join ["", [!GetAtt [WarehouseBucket, Arn], "/*"]]
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/*"]]
+              - !Join ["", [!GetAtt [WarehouseInventoryBucket, Arn], "/*"]]
           - Effect: Allow
             Action:
               - "s3:PutObject"
