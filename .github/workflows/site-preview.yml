@@ -52,12 +52,12 @@ jobs:
         working-directory: ${{ env.working-directory }}
         run: |
           python3 -m pip install awscli
-          aws s3 sync --delete build/html s3://${{ secrets.AWS_DOCS_PREVIEW_BUCKET }}/$GITHUB_SHA/
+          aws s3 sync --delete build/html s3://${{ secrets.AWS_DOCS_PREVIEW_BUCKET }}/${{ github.sha }}/
 
       - name: Update deployment status (success)
         if: success()
         run: |
-          curl -H "Accept: application/vnd.github.ant-man-preview+json" -H "Authorization: token ${{ github.token }}" -X POST -H 'Content-Type: application/json' -d '{"state": "success", "environment_url": "'"https://${{ secrets.AWS_DOCS_PREVIEW_BUCKET }}.s3.${{ secrets.AWS_DOCS_PREVIEW_BUCKET_REGION }}.amazonaws.com/${{ github.sha }}/index.html"'"}' ${{ steps.deployment.outputs.statuses_url }}
+          curl -H "Accept: application/vnd.github.ant-man-preview+json" -H "Authorization: token ${{ github.token }}" -X POST -H 'Content-Type: application/json' -d '{"state": "success", "environment_url": "'"https://${{ secrets.AWS_DOCS_PREVIEW_BUCKET }}.s3-website.${{ secrets.AWS_DOCS_PREVIEW_BUCKET_REGION }}.amazonaws.com/${{ github.sha }}/"'"}' ${{ steps.deployment.outputs.statuses_url }}
 
       - name: Update deployment status (success)
         if: failure()
