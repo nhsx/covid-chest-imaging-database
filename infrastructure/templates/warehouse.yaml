@@ -37,11 +37,9 @@ Resources:
       InventoryConfigurations:
         - Destination:
             BucketArn: !GetAtt [WarehouseInventoryBucket, Arn]
-            Format: Parquet
+            Format: CSV
           OptionalFields:
             - Size
-            - LastModifiedDate
-            - ETag
           Enabled: true
           Id: "daily-full-inventory"
           IncludedObjectVersions: Current
