@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+import struct
 from io import BytesIO
 from pathlib import Path, posixpath
 
@@ -263,7 +264,6 @@ class PartialDicom:
     def download(self):
         with BytesIO() as tmp:
             while True:
-                image_data = None
                 tmp.seek(0)
                 toprange = self.range_kb * KB - 1
                 stream = self.obj.get(Range=f"bytes=0-{toprange}")["Body"]
@@ -277,14 +277,11 @@ class PartialDicom:
                         # We've found the image tag, or there was not image tag
                         # to be found in this image
                         break
-                except OSError:
+                except (OSError, struct.error):
                     # Can happen when file got truncated in the middle of a data field
                     pass
-                except struct.error:
-                    # Can happen when file got truncated in the middle of a header
-                    pass
-                except:
-                    raise
+                except Exception:
+                    image_data = None
                 self.range_kb *= 2
         return image_data
 
