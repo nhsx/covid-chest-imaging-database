@@ -38,6 +38,8 @@ MODALITY = {
 
 DRY_RUN = bool(os.getenv("DRY_RUN", default=False))
 
+KB = 1024
+
 ###
 # Services
 ###
@@ -122,7 +124,7 @@ class PatientCache:
 
 
 ###
-# Helper functions
+# Helpers
 ###
 def object_exists(key):
     """ Checking whether a given object exists in our work bucket
@@ -244,6 +246,49 @@ def scrub_dicom(fd):
     return out
 
 
+class PartialDicom:
+    def __init__(self, obj, initial_range_kb=30):
+        self._found_image_tag = False
+        self.obj = obj
+        self.range_kb = initial_range_kb
+
+    def _stop_when(self, tag, VR, length):
+        """Custom stopper for the DICOM reader, to stop
+        at the pixel data, but also note whether that
+        tag was actually reached.
+        """
+        self._found_image_tag = tag == (0x7FE0, 0x0010)
+        return self._found_image_tag
+
+    def download(self):
+        with BytesIO() as tmp:
+            while True:
+                image_data = None
+                tmp.seek(0)
+                toprange = self.range_kb * KB - 1
+                stream = self.obj.get(Range=f"bytes=0-{toprange}")["Body"]
+                tmp.write(stream.read())
+                tmp.seek(0)
+                try:
+                    image_data = pydicom.filereader.read_partial(
+                        tmp, stop_when=self._stop_when
+                    )
+                    if self._found_image_tag or tmp.tell() < toprange:
+                        # We've found the image tag, or there was not image tag
+                        # to be found in this image
+                        break
+                except OSError:
+                    # Can happen when file got truncated in the middle of a data field
+                    pass
+                except struct.error:
+                    # Can happen when file got truncated in the middle of a header
+                    pass
+                except:
+                    raise
+                self.range_kb *= 2
+        return image_data
+
+
 ###
 # Transformation steps
 ###
@@ -363,10 +408,13 @@ def process_image(*args, keycache, config, patientcache):
         return
 
     # download the image
-    with BytesIO() as tmp:
-        obj.Object().download_fileobj(tmp)
-        tmp.seek(0)
-        image_data = pydicom.dcmread(tmp, stop_before_pixels=True)
+    image_data = PartialDicom(obj.Object()).download()
+    if image_data is None:
+        # we couldn't read the image data correctly
+        logger.warning(
+            f"Object '{obj.key}' couldn't be loaded as a DICOM file, skipping!"
+        )
+        return
 
     # extract the required data from the image
     patient_id = image_data.PatientID
