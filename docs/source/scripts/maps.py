@@ -56,6 +56,7 @@ p = figure(
     y_axis_type="mercator",
     toolbar_location=None,
     tooltips=TOOLTIPS,
+    sizing_mode="scale_both",
 )
 p.add_tile(tile_provider)
 p.circle(x="x", y="y", source=source, size=8, fill_color="#003087", line_color="Black")
