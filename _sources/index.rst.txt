@@ -113,6 +113,8 @@ and provide a signed copy of the :download:`Data Access Framework Contract <docs
 (if first time applying) and a :download:`Data Access Agreement <docs/NCCID_Data_Access_Agreement.docx>`.
 All documents should be sent to NHSX by contacting imaging@nhsx.nhs.uk.
 
+Please note that research groups affiliated with a hospital can only request access to NCCID data if their hospital is already a collection site.
+
 
 How requests are assessed
 -------------------------
