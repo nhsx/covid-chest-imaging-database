@@ -265,7 +265,7 @@ class PartialDicom:
         with BytesIO() as tmp:
             while True:
                 tmp.seek(0)
-                toprange = self.range_kb * KB - 1
+                toprange = (self.range_kb * KB) - 1
                 stream = self.obj.get(Range=f"bytes=0-{toprange}")["Body"]
                 tmp.write(stream.read())
                 tmp.seek(0)
