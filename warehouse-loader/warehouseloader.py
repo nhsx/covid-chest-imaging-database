@@ -248,7 +248,7 @@ def scrub_dicom(fd):
 
 
 class PartialDicom:
-    def __init__(self, obj, initial_range_kb=30):
+    def __init__(self, obj, initial_range_kb=20):
         self._found_image_tag = False
         self.obj = obj
         self.range_kb = initial_range_kb
@@ -281,7 +281,7 @@ class PartialDicom:
                     # Can happen when file got truncated in the middle of a data field
                     pass
                 except Exception:
-                    image_data = None
+                    raise
                 self.range_kb *= 2
         return image_data
 
