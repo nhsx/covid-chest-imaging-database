@@ -248,7 +248,13 @@ def scrub_dicom(fd):
 
 
 class PartialDicom:
+    """Download partial DICOM files iteratively, to save
+    on traffic.
+    """
+
     def __init__(self, obj, initial_range_kb=20):
+        # Default value of 20Kb initial range is based on
+        # tests run on representative data
         self._found_image_tag = False
         self.obj = obj
         self.range_kb = initial_range_kb
@@ -262,6 +268,8 @@ class PartialDicom:
         return self._found_image_tag
 
     def download(self):
+        """Download file iteratively, and return the image data
+        """
         with BytesIO() as tmp:
             while True:
                 tmp.seek(0)
