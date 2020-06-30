@@ -62,11 +62,11 @@ def test_process_dicom_data():
         test_json = f.read().replace("\n", "")
     assert test_json == processed_image_data
 
+
 @pytest.mark.parametrize(
     # Try a number of ranges, partial and whole file downloads
     "initial_range_kb",
-    [ 1, 5, 20, 50, 100, 500
-    ],
+    [1, 5, 20, 50, 100, 500],
 )
 @mock_s3
 def test_partial_dicom_download(initial_range_kb):
@@ -75,14 +75,16 @@ def test_partial_dicom_download(initial_range_kb):
     test_file_name = "test_data/sample.dcm"
 
     # Upload a file to S3
-    conn = boto3.resource('s3', region_name='eu-west-2')
+    conn = boto3.resource("s3", region_name="eu-west-2")
     conn.create_bucket(Bucket="testbucket")
     conn.meta.client.upload_file(test_file_name, "testbucket", "sample.dcm")
     test_object = conn.Object("testbucket", "sample.dcm")
-    image_data = wl.PartialDicom(test_object, initial_range_kb=initial_range_kb).download()
+    image_data = wl.PartialDicom(
+        test_object, initial_range_kb=initial_range_kb
+    ).download()
 
     # Check the local file as if it was fully downloaded
-    with open(test_file_name, 'rb') as fd:
+    with open(test_file_name, "rb") as fd:
         tmp = BytesIO(fd.read())
         tmp.seek(0)
         image_data_nonpartial = pydicom.dcmread(tmp, stop_before_pixels=True)
