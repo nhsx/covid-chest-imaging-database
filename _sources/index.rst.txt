@@ -62,6 +62,7 @@ The hospitals and trusts already contributing data to NCCID are listed below:
 - `Norfolk and Norwich University Hospitals NHS Foundation Trust <http://www.nnuh.nhs.uk/>`_
 - `Royal Surrey NHS Foundation Trust <https://www.royalsurrey.nhs.uk/>`_
 - `Sandwell and West Birmingham NHS Trust <https://www.swbh.nhs.uk/>`_
+- `West Suffolk NHS Foundation Trust <https://www.wsh.nhs.uk/Home.aspx>`_
 
 .. To add a site to the map below, please add an entry to
    source/scripts/hospital_locations.csv
