@@ -492,7 +492,7 @@ def upload_text_data(*args):
         if DRY_RUN:
             logger.info(f"Would upload to key: {outgoing_key}")
         else:
-            bucket.put_object(Body=outgoing_data, Key=outgoing_key)
+            s3_resource.meta.client.put_object(Bucket=BUCKET_NAME, Body=outgoing_data, Key=outgoing_key)
 
         return bonobo.constants.NOT_MODIFIED
 
