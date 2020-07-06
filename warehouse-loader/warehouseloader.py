@@ -144,7 +144,7 @@ def object_exists(key):
     :rtype: boolean
     """
     try:
-        bucket.Object(key).load()
+        s3_resource.meta.client.head_object(Bucket=BUCKET_NAME, Key=key)
     except ClientError as e:
         if e.response["Error"]["Code"] == "404":
             return False
