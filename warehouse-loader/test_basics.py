@@ -95,3 +95,19 @@ def test_partial_dicom_download(initial_range_kb):
 
     # Compare that the two methods result in the same set of tags
     assert k1 ^ k2 == set()
+
+def test_keycache():
+    """Test behaviour of the KeyCache
+    """
+    kc = wl.KeyCache()
+
+    kc.add("test1")
+    with pytest.raises(wl.DuplicateKeyError):
+        kc.add("test1")
+    with pytest.raises(wl.DuplicateKeyError):
+        kc.add("prefix/test1")
+
+    assert kc.exists(key="test1")
+    assert kc.exists(key="prefix/test1")
+    assert not kc.exists(key="prefix/test1", fullpath=True)
+    assert not kc.exists(key="test")
