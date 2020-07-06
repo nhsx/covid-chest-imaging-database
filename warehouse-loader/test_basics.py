@@ -112,3 +112,20 @@ def test_keycache():
     assert kc.exists(key="prefix/test1")
     assert not kc.exists(key="prefix/test1", fullpath=True)
     assert not kc.exists(key="test")
+
+@mock_s3
+def test_object_exists():
+    """Partial download of DICOM files
+    """
+    bucket_name = "testbucket"
+    test_file_name = "test_data/sample.dcm"
+
+    # Upload a file to S3
+    conn = boto3.resource("s3", region_name="eu-west-2")
+    conn.create_bucket(Bucket="testbucket")
+    conn.meta.client.upload_file(test_file_name, "testbucket", "sample.dcm")
+
+    s3 = wl.S3(bucket_name)
+    assert s3.get_bucket_name() == bucket_name
+    assert wl.object_exists(test_file_name, s3)
+    assert not wl.object_exists(test_file_name + ".something", s3)

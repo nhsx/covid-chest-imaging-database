@@ -18,11 +18,11 @@ from botocore.exceptions import ClientError
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
 
-s3_resource = boto3.resource("s3")
-s3_client = boto3.client("s3")
+# s3_resource = boto3.resource("s3")
+# s3_client = boto3.client("s3")
 
 BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default="chest-data-warehouse")
-bucket = s3_resource.Bucket(BUCKET_NAME)
+# bucket = s3_resource.Bucket(BUCKET_NAME)
 
 TRAINING_PREFIX = "training/"
 VALIDATION_PREFIX = "validation/"
@@ -131,10 +131,24 @@ class PatientCache:
         return self.store.get(patient_id)
 
 
+class S3:
+
+    def __init__(self, bucket_name):
+        self.bucket_name = bucket_name
+        self.s3_client = boto3.client("s3")
+
+    def get_client(self):
+        return self.s3_client
+
+    def get_bucket_name(self):
+        return self.bucket_name
+
+
 ###
 # Helpers
 ###
-def object_exists(key):
+@use('s3')
+def object_exists(key, s3):
     """ Checking whether a given object exists in our work bucket
 
     :param key: the object key in question
@@ -144,7 +158,7 @@ def object_exists(key):
     :rtype: boolean
     """
     try:
-        s3_resource.meta.client.head_object(Bucket=BUCKET_NAME, Key=key)
+        s3.get_client().head_object(Bucket=s3.get_bucket_name(), Key=key)
     except ClientError as e:
         if e.response["Error"]["Code"] == "404":
             return False
@@ -649,7 +663,8 @@ def get_services(**options):
     config = PipelineConfig()
     keycache = KeyCache()
     patientcache = PatientCache()
-    return {"config": config, "keycache": keycache, "patientcache": patientcache}
+    s3 = S3(BUCKET_NAME)
+    return {"config": config, "keycache": keycache, "patientcache": patientcache, "s3": s3}
 
 
 # The __main__ block actually execute the graph.
