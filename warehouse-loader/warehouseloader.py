@@ -75,8 +75,10 @@ class PipelineConfig:
     def get_site_group(self, submitting_centre):
         return self.sites.get(submitting_centre)
 
+
 class DuplicateKeyError(LookupError):
     pass
+
 
 class KeyCache:
     """ Basic cache for looking up existing files in the bucket
@@ -92,7 +94,9 @@ class KeyCache:
         lookup_key = Path(key)
         filename = lookup_key.name
         if lookup_key in self.store or filename in self.store:
-            raise DuplicateKeyError(f"{lookup_key} seems duplicate, danger of overwriting things!")
+            raise DuplicateKeyError(
+                f"{lookup_key} seems duplicate, danger of overwriting things!"
+            )
         else:
             self.store.add(lookup_key)
             self.store.add(filename)
@@ -502,7 +506,9 @@ def upload_text_data(*args):
         if DRY_RUN:
             logger.info(f"Would upload to key: {outgoing_key}")
         else:
-            s3_resource.meta.client.put_object(Bucket=BUCKET_NAME, Body=outgoing_data, Key=outgoing_key)
+            s3_resource.meta.client.put_object(
+                Bucket=BUCKET_NAME, Body=outgoing_data, Key=outgoing_key
+            )
 
         return bonobo.constants.NOT_MODIFIED
 

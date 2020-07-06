@@ -96,6 +96,7 @@ def test_partial_dicom_download(initial_range_kb):
     # Compare that the two methods result in the same set of tags
     assert k1 ^ k2 == set()
 
+
 def test_keycache():
     """Test behaviour of the KeyCache
     """
