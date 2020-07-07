@@ -76,6 +76,10 @@ class PipelineConfig:
         return self.sites.get(submitting_centre)
 
 
+class DuplicateKeyError(LookupError):
+    pass
+
+
 class KeyCache:
     """ Basic cache for looking up existing files in the bucket
     """
@@ -87,11 +91,14 @@ class KeyCache:
         """ Add a key to store in the cache, both the full
         key, and the "filename" part, for different lookups
         """
-        filename = Path(key).name
-        if key in self.store:
-            logger.error(f"{filename} seems duplicate, danger of overwriting things!")
+        lookup_key = Path(key)
+        filename = lookup_key.name
+        if lookup_key in self.store or filename in self.store:
+            raise DuplicateKeyError(
+                f"{lookup_key} seems duplicate, danger of overwriting things!"
+            )
         else:
-            self.store.add(key)
+            self.store.add(lookup_key)
             self.store.add(filename)
 
     def exists(self, key, fullpath=False):
@@ -332,11 +339,18 @@ def load_existing_files(keycache, patientcache):
         ("training", TRAINING_PREFIX),
     ]:
         for obj in bucket.objects.filter(Prefix=prefix):
-            keycache.add(obj.key)
             m = patient_file_name.match(obj.key)
             if m:
+                # It is a patient file
                 patient_id = m.group("patient_id")
                 patientcache.add(patient_id, group)
+            else:
+                # It is an image file
+                try:
+                    keycache.add(obj.key)
+                except DuplicateKeyError:
+                    logger.exception(f"{obj.key} is duplicate in cache.")
+                    continue
     return bonobo.constants.NOT_MODIFIED
 
 
