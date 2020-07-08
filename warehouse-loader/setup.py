@@ -18,7 +18,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/nhsx/covid-chest-imaging-database",
     packages=find_namespace_packages(include=["warehouse"]),
-    classifiers=["Programming Language :: Python :: 3",],
+    classifiers=["Programming Language :: Python :: 3"],
     python_requires=">=3.6",
     scripts=["bin/warehouseloader", "bin/submittingcentres"],
     # entry_points={
