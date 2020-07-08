@@ -14,6 +14,8 @@ import pydicom
 from bonobo.config import use
 from botocore.exceptions import ClientError
 
+from warehouse.components import services, constants
+
 # set up logging
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
@@ -24,112 +26,9 @@ s3_client = boto3.client("s3")
 BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default="chest-data-warehouse")
 bucket = s3_resource.Bucket(BUCKET_NAME)
 
-TRAINING_PREFIX = "training/"
-VALIDATION_PREFIX = "validation/"
-CONFIG_KEY = "config.json"
-
-TRAINING_PERCENTAGE = 0
-
-MODALITY = {
-    "DX": "xray",
-    "CR": "xray",
-    "MR": "mri",
-    "CT": "ct",
-}
-
 DRY_RUN = bool(os.getenv("DRY_RUN", default=False))
 
 KB = 1024
-
-###
-# Services
-###
-class PipelineConfig:
-    """ Basic cache for looking up existing files in the bucket
-    """
-
-    def __init__(self):
-        self.config = dict(
-            {
-                "raw_prefixes": [],
-                "training_percentage": TRAINING_PERCENTAGE,
-                "sites": {"split": [], "training": [], "validation": []},
-            }
-        )
-        self.sites = dict()
-
-    def set_config(self, input_config):
-        self.config = input_config
-        # Preprocess site groups
-        for group in self.config["sites"].keys():
-            for site in self.config["sites"][group]:
-                self.sites[site] = group
-        logger.debug(f"Training percentage: {self.get_training_percentage()}%")
-
-    def get_raw_prefixes(self):
-        return self.config.get("raw_prefixes", [])
-
-    def get_training_percentage(self):
-        return self.config.get("training_percentage", TRAINING_PERCENTAGE)
-
-    def get_site_group(self, submitting_centre):
-        return self.sites.get(submitting_centre)
-
-
-class DuplicateKeyError(LookupError):
-    pass
-
-
-class KeyCache:
-    """ Basic cache for looking up existing files in the bucket
-    """
-
-    def __init__(self):
-        self.store = set()
-
-    def add(self, key):
-        """ Add a key to store in the cache, both the full
-        key, and the "filename" part, for different lookups
-        """
-        lookup_key = Path(key)
-        filename = lookup_key.name
-        if lookup_key in self.store or filename in self.store:
-            raise DuplicateKeyError(
-                f"{lookup_key} seems duplicate, danger of overwriting things!"
-            )
-        else:
-            self.store.add(lookup_key)
-            self.store.add(filename)
-
-    def exists(self, key, fullpath=False):
-        """ Look up a key in the cache, either the "filename"
-        alone (default), or the full path
-        """
-        search_key = Path(key) if fullpath else Path(key).name
-        return search_key in self.store
-
-
-class PatientCache:
-    """ Basic cache for looking up existing patients in the bucket
-    """
-
-    def __init__(self):
-        self.store = dict()
-
-    def add(self, patient_id, group=None):
-        if patient_id not in self.store:
-            self.store[patient_id] = group
-            logger.debug(f"Adding {patient_id} to {group} group")
-        elif self.store[patient_id] != group:
-            logger.warning(
-                f"Found patient with ambiguous groups: {patient_id}; "
-                + f"stored group: {self.store[patient_id]}; "
-                + f"attempted group: {group}; "
-            )
-
-    def get_group(self, patient_id):
-        return self.store.get(patient_id)
-
 
 ###
 # Helpers
@@ -186,7 +85,7 @@ def get_submitting_centre_from_object(obj):
     return json_content.get("SubmittingCentre")
 
 
-def patient_in_training_set(patient_id, training_percent=TRAINING_PERCENTAGE):
+def patient_in_training_set(patient_id, training_percent=constants.TRAINING_PERCENTAGE):
     """ Separating patient ID's into training and validation sets, check
     which one this ID should fall into.
 
@@ -309,7 +208,7 @@ def load_config(config):
     """Load configuration from the bucket
     """
     try:
-        obj = bucket.Object(CONFIG_KEY).get()
+        obj = bucket.Object(constants.CONFIG_KEY).get()
         contents = json.loads(obj["Body"].read().decode("utf-8"))
         config.set_config(contents)
         yield
@@ -335,8 +234,8 @@ def load_existing_files(keycache, patientcache):
         r"^.+/data/(?P<patient_id>.*)/(?P<outcome>data|status)_\d{4}-\d{2}-\d{2}.json$"
     )
     for group, prefix in [
-        ("validation", VALIDATION_PREFIX),
-        ("training", TRAINING_PREFIX),
+        ("validation", constants.VALIDATION_PREFIX),
+        ("training", constants.TRAINING_PREFIX),
     ]:
         for obj in bucket.objects.filter(Prefix=prefix):
             m = patient_file_name.match(obj.key)
@@ -348,7 +247,7 @@ def load_existing_files(keycache, patientcache):
                 # It is an image file
                 try:
                     keycache.add(obj.key)
-                except DuplicateKeyError:
+                except services.DuplicateKeyError:
                     logger.exception(f"{obj.key} is duplicate in cache.")
                     continue
     return bonobo.constants.NOT_MODIFIED
@@ -449,8 +348,8 @@ def process_image(*args, keycache, config, patientcache):
             + "skipping!"
         )
         return
-    prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
-    image_type = MODALITY.get(image_data["Modality"].value, "unknown")
+    prefix = constants.TRAINING_PREFIX if training_set else constants.VALIDATION_PREFIX
+    image_type = constants.MODALITY.get(image_data["Modality"].value, "unknown")
 
     date = get_date_from_key(obj.key)
     if date:
@@ -563,7 +462,7 @@ def process_patient_data(*args, config, patientcache):
             training_set = config_group == "training"
         patientcache.add(patient_id, "training" if training_set else "validation")
 
-    prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
+    prefix = constants.TRAINING_PREFIX if training_set else constants.VALIDATION_PREFIX
     date = get_date_from_key(obj.key)
     if date is not None:
         new_key = f"{prefix}data/{patient_id}/{outcome}_{date}.json"
@@ -644,14 +543,19 @@ def get_services(**options):
 
     :return: dict
     """
-    config = PipelineConfig()
-    keycache = KeyCache()
-    patientcache = PatientCache()
+    config = services.PipelineConfig()
+    keycache = services.KeyCache()
+    patientcache = services.PatientCache()
     return {"config": config, "keycache": keycache, "patientcache": patientcache}
 
 
-# The __main__ block actually execute the graph.
-if __name__ == "__main__":
+def main():
+    """Execute the pipeline graph
+    """
     parser = bonobo.get_argument_parser()
     with bonobo.parse_args(parser) as options:
         bonobo.run(get_graph(**options), services=get_services(**options))
+
+
+if __name__ == "__main__":
+    main()

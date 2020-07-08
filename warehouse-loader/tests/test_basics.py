@@ -1,11 +1,18 @@
 from io import BytesIO
+import pathlib
 
 import boto3
 import pydicom
 import pytest
 from moto import mock_s3
 
-import warehouseloader as wl
+import warehouse
+from warehouse.components.services import DuplicateKeyError, KeyCache
+from warehouse.warehouseloader import (
+    PartialDicom,
+    process_dicom_data,
+    patient_in_training_set,
+)
 
 
 @pytest.mark.parametrize(
@@ -22,7 +29,7 @@ import warehouseloader as wl
 def test_training_set_basics(patient_id, training_percentage, expected):
     """Known test/validation split values
     """
-    assert wl.patient_in_training_set(patient_id, training_percentage) == expected
+    assert patient_in_training_set(patient_id, training_percentage) == expected
 
 
 @pytest.mark.parametrize(
@@ -43,18 +50,23 @@ def test_training_set_equivalence(
 ):
     """String transformations should not change validation outcome
     """
-    assert wl.patient_in_training_set(
+    assert warehouse.warehouseloader.patient_in_training_set(
         patient_id, training_percentage
-    ) == wl.patient_in_training_set(alternate_patient_id, training_percentage)
+    ) == warehouse.warehouseloader.patient_in_training_set(
+        alternate_patient_id, training_percentage
+    )
 
 
 def test_process_dicom_data():
-    test_file_name = "test_data/sample.dcm"
+    test_file_name = str(
+        pathlib.Path(__file__).parent.absolute() / "test_data" / "sample.dcm"
+    )
+
     test_file_json = test_file_name.replace(".dcm", ".json")
     print(test_file_json)
     image_data = pydicom.dcmread(test_file_name, stop_before_pixels=True)
     task, metadata_key, processed_image_data = next(
-        wl.process_dicom_data("metadata", test_file_name, image_data)
+        process_dicom_data("metadata", test_file_name, image_data)
     )
     assert task == "upload"
     assert metadata_key == test_file_name
@@ -72,16 +84,17 @@ def test_process_dicom_data():
 def test_partial_dicom_download(initial_range_kb):
     """Partial download of DICOM files
     """
-    test_file_name = "test_data/sample.dcm"
+    # test_file_name = "test_data/sample.dcm"
+    test_file_name = str(
+        pathlib.Path(__file__).parent.absolute() / "test_data" / "sample.dcm"
+    )
 
     # Upload a file to S3
     conn = boto3.resource("s3", region_name="eu-west-2")
     conn.create_bucket(Bucket="testbucket")
     conn.meta.client.upload_file(test_file_name, "testbucket", "sample.dcm")
     test_object = conn.Object("testbucket", "sample.dcm")
-    image_data = wl.PartialDicom(
-        test_object, initial_range_kb=initial_range_kb
-    ).download()
+    image_data = PartialDicom(test_object, initial_range_kb=initial_range_kb).download()
 
     # Check the local file as if it was fully downloaded
     with open(test_file_name, "rb") as fd:
@@ -100,12 +113,12 @@ def test_partial_dicom_download(initial_range_kb):
 def test_keycache():
     """Test behaviour of the KeyCache
     """
-    kc = wl.KeyCache()
+    kc = KeyCache()
 
     kc.add("test1")
-    with pytest.raises(wl.DuplicateKeyError):
+    with pytest.raises(DuplicateKeyError):
         kc.add("test1")
-    with pytest.raises(wl.DuplicateKeyError):
+    with pytest.raises(DuplicateKeyError):
         kc.add("prefix/test1")
 
     assert kc.exists(key="test1")

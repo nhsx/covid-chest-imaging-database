@@ -8,8 +8,10 @@ import mondrian
 from bonobo.config import Configurable, ContextProcessor, use_raw_input
 from bonobo.util.objects import ValueHolder
 
+import warehouse.warehouseloader as wl  # noqa: E402
+from warehouse.components.services import PipelineConfig
+
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
-import warehouseloader as wl  # noqa: E402
 
 
 mondrian.setup(excepthook=True)
@@ -65,12 +67,18 @@ def get_services(**options):
 
     :return: dict
     """
-    config = wl.PipelineConfig()
+    config = PipelineConfig()
     return {"config": config}
+
+
+def main():
+    """Execute the pipeline graph
+    """
+    parser = bonobo.get_argument_parser()
+    with bonobo.parse_args(parser) as options:
+        bonobo.run(get_graph(**options), services=get_services(**options))
 
 
 # The __main__ block actually execute the graph.
 if __name__ == "__main__":
-    parser = bonobo.get_argument_parser()
-    with bonobo.parse_args(parser) as options:
-        bonobo.run(get_graph(**options), services=get_services(**options))
+    main()
