@@ -20,7 +20,7 @@ setup(
     packages=find_namespace_packages(include=["warehouse"]),
     classifiers=["Programming Language :: Python :: 3",],
     python_requires=">=3.6",
-    scripts=['bin/warehouseloader', 'bin/submittingcentres'],
+    scripts=["bin/warehouseloader", "bin/submittingcentres"],
     # entry_points={
     #     "console_scripts": [
     #         "warehouseloader=warehouse.warehouseloader:main",
