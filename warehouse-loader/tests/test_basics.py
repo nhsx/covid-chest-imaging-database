@@ -1,5 +1,5 @@
-from io import BytesIO
 import pathlib
+from io import BytesIO
 
 import boto3
 import pydicom
@@ -10,8 +10,8 @@ import warehouse
 from warehouse.components.services import DuplicateKeyError, KeyCache
 from warehouse.warehouseloader import (
     PartialDicom,
-    process_dicom_data,
     patient_in_training_set,
+    process_dicom_data,
 )
 
 
