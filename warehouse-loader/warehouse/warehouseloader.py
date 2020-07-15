@@ -264,7 +264,8 @@ def load_existing_files(keycache, patientcache):
 
 
 @use("config")
-def extract_raw_folders(config):
+@use("rawsubfolderlist")
+def extract_raw_folders(config, rawsubfolderlist):
     """ Extractor: get all date folders within the `raw/` data drop
 
     :return: subfolders within the `raw/` prefix (yield)
@@ -284,9 +285,8 @@ def extract_raw_folders(config):
             )
         )
         for f in folders:
-            # ensure order that data is processed before images
-            yield f + "data/"
-            yield f + "images/"
+            for subfolder in rawsubfolderlist.get():
+                yield f + subfolder
 
 
 def extract_raw_files_from_folder(folder):
@@ -582,10 +582,12 @@ def get_services(**options):
     config = services.PipelineConfig()
     keycache = services.KeyCache()
     patientcache = services.PatientCache()
+    rawsubfolderlist = services.SubFolderList()
     return {
         "config": config,
         "keycache": keycache,
         "patientcache": patientcache,
+        "rawsubfolderlist": rawsubfolderlist,
     }
 
 

@@ -93,3 +93,14 @@ class PatientCache:
 
     def get_group(self, patient_id):
         return self.store.get(patient_id)
+
+
+class SubFolderList:
+    def __init__(self, folder_list=None):
+        if folder_list is not None:
+            self.folder_list = folder_list
+        else:
+            self.folder_list = ["data/", "images/"]
+
+    def get(self):
+        return self.folder_list
