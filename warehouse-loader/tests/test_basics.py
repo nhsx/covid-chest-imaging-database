@@ -94,7 +94,9 @@ def test_partial_dicom_download(initial_range_kb):
     conn.create_bucket(Bucket="testbucket")
     conn.meta.client.upload_file(test_file_name, "testbucket", "sample.dcm")
     test_object = conn.Object("testbucket", "sample.dcm")
-    image_data = PartialDicom(test_object, initial_range_kb=initial_range_kb).download()
+    image_data = PartialDicom(
+        test_object, initial_range_kb=initial_range_kb
+    ).download()
 
     # Check the local file as if it was fully downloaded
     with open(test_file_name, "rb") as fd:
