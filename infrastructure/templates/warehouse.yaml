@@ -89,6 +89,21 @@ Resources:
                   aws:SourceArn: !GetAtt [WarehouseBucket, Arn]
 
   # IAM
+  RotateOwnCredentials:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Join ["", ["rotate-credentials-", !Ref "BucketNameParameter", "-users"]]
+      Description: Allow rotating keys for programmatic users
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - "iam:*AccessKey*"
+              - "iam:GetUser"
+            Resource:
+              - "arn:aws:iam::*:user/${aws:username}"
+
   UploadToRawPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
@@ -107,6 +122,7 @@ Resources:
     Properties:
       ManagedPolicyArns:
         - !Ref UploadToRawPolicy
+        - !Ref RotateOwnCredentials
 
   ETLPolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -140,6 +156,7 @@ Resources:
     Properties:
       ManagedPolicyArns:
         - !Ref ETLPolicy
+        - !Ref RotateOwnCredentials
 
   ReadOnlyAccessWholeBucketPolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -164,6 +181,7 @@ Resources:
     Properties:
       ManagedPolicyArns:
         - !Ref ReadOnlyAccessWholeBucketPolicy
+        - !Ref RotateOwnCredentials
 
   TrainingCTPolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -194,6 +212,7 @@ Resources:
     Properties:
       ManagedPolicyArns:
         - !Ref TrainingCTPolicy
+        - !Ref RotateOwnCredentials
 
   TrainingMRIPolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -224,6 +243,7 @@ Resources:
     Properties:
       ManagedPolicyArns:
         - !Ref TrainingMRIPolicy
+        - !Ref RotateOwnCredentials
 
   TrainingXrayPolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -254,6 +274,7 @@ Resources:
     Properties:
       ManagedPolicyArns:
         - !Ref TrainingXrayPolicy
+        - !Ref RotateOwnCredentials
 
   TrainingAllPolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -282,6 +303,7 @@ Resources:
     Properties:
       ManagedPolicyArns:
         - !Ref TrainingAllPolicy
+        - !Ref RotateOwnCredentials
 
   # CloudTrail
   CloudTrailLogsBucket:
