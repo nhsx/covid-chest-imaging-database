@@ -9,7 +9,7 @@ logger = logging.getLogger()
 
 
 class PipelineConfig:
-    """ Basic cache for looking up existing files in the bucket
+    """ Configuration settings for the whole pipeline
     """
 
     def __init__(self):
