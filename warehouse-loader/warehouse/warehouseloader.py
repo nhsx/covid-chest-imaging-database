@@ -1,3 +1,6 @@
+"""The main warehose pipeline definition.
+"""
+
 import hashlib
 import json
 import logging
@@ -85,7 +88,9 @@ def get_submitting_centre_from_object(obj):
     return json_content.get("SubmittingCentre")
 
 
-def patient_in_training_set(patient_id, training_percent=constants.TRAINING_PERCENTAGE):
+def patient_in_training_set(
+    patient_id, training_percent=constants.TRAINING_PERCENTAGE
+):
     """ Separating patient ID's into training and validation sets, check
     which one this ID should fall into.
 
@@ -100,7 +105,12 @@ def patient_in_training_set(patient_id, training_percent=constants.TRAINING_PERC
     :rtype: boolean
     """
     return (
-        int(hashlib.sha512(patient_id.strip().upper().encode("utf-8")).hexdigest(), 16)
+        int(
+            hashlib.sha512(
+                patient_id.strip().upper().encode("utf-8")
+            ).hexdigest(),
+            16,
+        )
         % 100
         < training_percent
     )
@@ -269,7 +279,8 @@ def extract_raw_folders(config):
         # list folders in date order
         folders = iter(
             sorted(
-                [p.get("Prefix") for p in result.get("CommonPrefixes")], reverse=False
+                [p.get("Prefix") for p in result.get("CommonPrefixes")],
+                reverse=False,
             )
         )
         for f in folders:
@@ -348,14 +359,25 @@ def process_image(*args, keycache, config, patientcache):
             + "skipping!"
         )
         return
-    prefix = constants.TRAINING_PREFIX if training_set else constants.VALIDATION_PREFIX
-    image_type = constants.MODALITY.get(image_data["Modality"].value, "unknown")
+    prefix = (
+        constants.TRAINING_PREFIX
+        if training_set
+        else constants.VALIDATION_PREFIX
+    )
+    image_type = constants.MODALITY.get(
+        image_data["Modality"].value, "unknown"
+    )
 
     date = get_date_from_key(obj.key)
     if date:
         # the location of the new files
         new_key = posixpath.join(
-            prefix, image_type, patient_id, study_id, series_id, Path(obj.key).name
+            prefix,
+            image_type,
+            patient_id,
+            study_id,
+            series_id,
+            Path(obj.key).name,
         )
         metadata_key = posixpath.join(
             prefix,
@@ -401,7 +423,11 @@ def upload_text_data(*args):
     :type outgoing_data: string
     """
     task, outgoing_key, outgoing_data, = args
-    if task == "upload" and outgoing_key is not None and outgoing_data is not None:
+    if (
+        task == "upload"
+        and outgoing_key is not None
+        and outgoing_data is not None
+    ):
         if DRY_RUN:
             logger.info(f"Would upload to key: {outgoing_key}")
         else:
@@ -429,7 +455,9 @@ def process_patient_data(*args, config, patientcache):
         # Not a data file, don't do anything with it
         yield bonobo.constants.NOT_MODIFIED
 
-    m = re.match(r"^(?P<patient_id>.*)_(?P<outcome>data|status)$", Path(obj.key).stem)
+    m = re.match(
+        r"^(?P<patient_id>.*)_(?P<outcome>data|status)$", Path(obj.key).stem
+    )
     if m is None:
         # Can't interpret this file based on name, skip
         return
@@ -444,7 +472,9 @@ def process_patient_data(*args, config, patientcache):
         # patient group is not cached
         submitting_centre = get_submitting_centre_from_object(obj)
         if submitting_centre is None:
-            logger.error(f"{obj.key} does not have 'SubmittingCentre' entry, skipping!")
+            logger.error(
+                f"{obj.key} does not have 'SubmittingCentre' entry, skipping!"
+            )
             return
 
         config_group = config.get_site_group(submitting_centre)
@@ -460,9 +490,15 @@ def process_patient_data(*args, config, patientcache):
         else:
             # deciding between "training" and "validation" groups.
             training_set = config_group == "training"
-        patientcache.add(patient_id, "training" if training_set else "validation")
+        patientcache.add(
+            patient_id, "training" if training_set else "validation"
+        )
 
-    prefix = constants.TRAINING_PREFIX if training_set else constants.VALIDATION_PREFIX
+    prefix = (
+        constants.TRAINING_PREFIX
+        if training_set
+        else constants.VALIDATION_PREFIX
+    )
     date = get_date_from_key(obj.key)
     if date is not None:
         new_key = f"{prefix}data/{patient_id}/{outcome}_{date}.json"
@@ -546,7 +582,11 @@ def get_services(**options):
     config = services.PipelineConfig()
     keycache = services.KeyCache()
     patientcache = services.PatientCache()
-    return {"config": config, "keycache": keycache, "patientcache": patientcache}
+    return {
+        "config": config,
+        "keycache": keycache,
+        "patientcache": patientcache,
+    }
 
 
 def main():

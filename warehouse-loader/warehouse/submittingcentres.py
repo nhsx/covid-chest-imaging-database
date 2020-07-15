@@ -1,3 +1,7 @@
+""" This module helps extracting the submitting centres from
+the uploaded raw dataset.
+"""
+
 import logging
 import os
 import sys
@@ -10,9 +14,6 @@ from bonobo.util.objects import ValueHolder
 
 import warehouse.warehouseloader as wl  # noqa: E402
 from warehouse.components.services import PipelineConfig
-
-sys.path.append(os.path.dirname(os.path.realpath(__file__)))
-
 
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
