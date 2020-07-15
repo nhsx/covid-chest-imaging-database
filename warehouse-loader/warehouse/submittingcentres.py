@@ -3,8 +3,6 @@ the uploaded raw dataset.
 """
 
 import logging
-import os
-import sys
 from pathlib import Path
 
 import bonobo
