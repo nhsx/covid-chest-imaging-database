@@ -162,3 +162,10 @@ Information Regulations 2002) ceases effect.
    :caption: Technical documentation
 
    data_access
+
+.. toctree::
+   :hidden:
+   :caption: Other Information
+
+   study_group
+   faq
