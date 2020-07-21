@@ -1,6 +1,8 @@
+""" This module helps extracting the submitting centres from
+the uploaded raw dataset.
+"""
+
 import logging
-import os
-import sys
 from pathlib import Path
 
 import bonobo
@@ -8,9 +10,8 @@ import mondrian
 from bonobo.config import Configurable, ContextProcessor, use_raw_input
 from bonobo.util.objects import ValueHolder
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__)))
-import warehouseloader as wl  # noqa: E402
-
+import warehouse.warehouseloader as wl  # noqa: E402
+from warehouse.components.services import PipelineConfig, SubFolderList
 
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
@@ -65,12 +66,19 @@ def get_services(**options):
 
     :return: dict
     """
-    config = wl.PipelineConfig()
-    return {"config": config}
+    config = PipelineConfig()
+    rawsubfolderlist = SubFolderList(folder_list=["data/"])
+    return {"config": config, "rawsubfolderlist": rawsubfolderlist}
+
+
+def main():
+    """Execute the pipeline graph
+    """
+    parser = bonobo.get_argument_parser()
+    with bonobo.parse_args(parser) as options:
+        bonobo.run(get_graph(**options), services=get_services(**options))
 
 
 # The __main__ block actually execute the graph.
 if __name__ == "__main__":
-    parser = bonobo.get_argument_parser()
-    with bonobo.parse_args(parser) as options:
-        bonobo.run(get_graph(**options), services=get_services(**options))
+    main()

@@ -8,13 +8,16 @@ jobs:
     runs-on: ubuntu-latest
     env:
       working-directory: ./warehouse-loader
+    strategy:
+      matrix:
+        python: [3.6, 3.8]
 
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python 3.8
       uses: actions/setup-python@v1
       with:
-        python-version: 3.8
+        python-version: ${{ matrix.python }}
     - name: "Python version"
       run: python -V
 
@@ -22,20 +25,19 @@ jobs:
       working-directory: ${{ env.working-directory }}
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
+        python -m pip install tox
 
     - name: Lint with black
       working-directory: ${{ env.working-directory }}
       run: |
-        black . --check
+        tox -e black
 
     - name: Lint with flake8
       working-directory: ${{ env.working-directory }}
       run: |
-        flake8 . --count --show-source --statistics --max-complexity 10
+        tox -e flake8
 
     - name: Run tests
       working-directory: ${{ env.working-directory }}
       run: |
-        pytest
+        tox -e py

@@ -1,0 +1,10 @@
+build/
+dist/
+*.egg-info/
+.eggs/
+.mypy_cache/
+pytest_cache/
+__pycache__/
+*.pyc
+.tox/
+pip-wheel-metadata/

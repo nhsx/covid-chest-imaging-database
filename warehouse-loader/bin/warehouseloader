@@ -1,0 +1,3 @@
+#!/bin/bash
+
+bonobo run -m warehouse.warehouseloader "$@"

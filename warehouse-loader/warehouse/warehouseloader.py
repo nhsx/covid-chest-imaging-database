@@ -1,3 +1,6 @@
+"""The main warehose pipeline definition.
+"""
+
 import hashlib
 import json
 import logging
@@ -14,6 +17,8 @@ import pydicom
 from bonobo.config import use
 from botocore.exceptions import ClientError
 
+from warehouse.components import services, constants
+
 # set up logging
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
@@ -24,112 +29,9 @@ s3_client = boto3.client("s3")
 BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default="chest-data-warehouse")
 bucket = s3_resource.Bucket(BUCKET_NAME)
 
-TRAINING_PREFIX = "training/"
-VALIDATION_PREFIX = "validation/"
-CONFIG_KEY = "config.json"
-
-TRAINING_PERCENTAGE = 0
-
-MODALITY = {
-    "DX": "xray",
-    "CR": "xray",
-    "MR": "mri",
-    "CT": "ct",
-}
-
 DRY_RUN = bool(os.getenv("DRY_RUN", default=False))
 
 KB = 1024
-
-###
-# Services
-###
-class PipelineConfig:
-    """ Basic cache for looking up existing files in the bucket
-    """
-
-    def __init__(self):
-        self.config = dict(
-            {
-                "raw_prefixes": [],
-                "training_percentage": TRAINING_PERCENTAGE,
-                "sites": {"split": [], "training": [], "validation": []},
-            }
-        )
-        self.sites = dict()
-
-    def set_config(self, input_config):
-        self.config = input_config
-        # Preprocess site groups
-        for group in self.config["sites"].keys():
-            for site in self.config["sites"][group]:
-                self.sites[site] = group
-        logger.debug(f"Training percentage: {self.get_training_percentage()}%")
-
-    def get_raw_prefixes(self):
-        return self.config.get("raw_prefixes", [])
-
-    def get_training_percentage(self):
-        return self.config.get("training_percentage", TRAINING_PERCENTAGE)
-
-    def get_site_group(self, submitting_centre):
-        return self.sites.get(submitting_centre)
-
-
-class DuplicateKeyError(LookupError):
-    pass
-
-
-class KeyCache:
-    """ Basic cache for looking up existing files in the bucket
-    """
-
-    def __init__(self):
-        self.store = set()
-
-    def add(self, key):
-        """ Add a key to store in the cache, both the full
-        key, and the "filename" part, for different lookups
-        """
-        lookup_key = Path(key)
-        filename = lookup_key.name
-        if lookup_key in self.store or filename in self.store:
-            raise DuplicateKeyError(
-                f"{lookup_key} seems duplicate, danger of overwriting things!"
-            )
-        else:
-            self.store.add(lookup_key)
-            self.store.add(filename)
-
-    def exists(self, key, fullpath=False):
-        """ Look up a key in the cache, either the "filename"
-        alone (default), or the full path
-        """
-        search_key = Path(key) if fullpath else Path(key).name
-        return search_key in self.store
-
-
-class PatientCache:
-    """ Basic cache for looking up existing patients in the bucket
-    """
-
-    def __init__(self):
-        self.store = dict()
-
-    def add(self, patient_id, group=None):
-        if patient_id not in self.store:
-            self.store[patient_id] = group
-            logger.debug(f"Adding {patient_id} to {group} group")
-        elif self.store[patient_id] != group:
-            logger.warning(
-                f"Found patient with ambiguous groups: {patient_id}; "
-                + f"stored group: {self.store[patient_id]}; "
-                + f"attempted group: {group}; "
-            )
-
-    def get_group(self, patient_id):
-        return self.store.get(patient_id)
-
 
 ###
 # Helpers
@@ -186,7 +88,9 @@ def get_submitting_centre_from_object(obj):
     return json_content.get("SubmittingCentre")
 
 
-def patient_in_training_set(patient_id, training_percent=TRAINING_PERCENTAGE):
+def patient_in_training_set(
+    patient_id, training_percent=constants.TRAINING_PERCENTAGE
+):
     """ Separating patient ID's into training and validation sets, check
     which one this ID should fall into.
 
@@ -201,7 +105,12 @@ def patient_in_training_set(patient_id, training_percent=TRAINING_PERCENTAGE):
     :rtype: boolean
     """
     return (
-        int(hashlib.sha512(patient_id.strip().upper().encode("utf-8")).hexdigest(), 16)
+        int(
+            hashlib.sha512(
+                patient_id.strip().upper().encode("utf-8")
+            ).hexdigest(),
+            16,
+        )
         % 100
         < training_percent
     )
@@ -309,7 +218,7 @@ def load_config(config):
     """Load configuration from the bucket
     """
     try:
-        obj = bucket.Object(CONFIG_KEY).get()
+        obj = bucket.Object(constants.CONFIG_KEY).get()
         contents = json.loads(obj["Body"].read().decode("utf-8"))
         config.set_config(contents)
         yield
@@ -335,8 +244,8 @@ def load_existing_files(keycache, patientcache):
         r"^.+/data/(?P<patient_id>.*)/(?P<outcome>data|status)_\d{4}-\d{2}-\d{2}.json$"
     )
     for group, prefix in [
-        ("validation", VALIDATION_PREFIX),
-        ("training", TRAINING_PREFIX),
+        ("validation", constants.VALIDATION_PREFIX),
+        ("training", constants.TRAINING_PREFIX),
     ]:
         for obj in bucket.objects.filter(Prefix=prefix):
             m = patient_file_name.match(obj.key)
@@ -348,14 +257,15 @@ def load_existing_files(keycache, patientcache):
                 # It is an image file
                 try:
                     keycache.add(obj.key)
-                except DuplicateKeyError:
+                except services.DuplicateKeyError:
                     logger.exception(f"{obj.key} is duplicate in cache.")
                     continue
     return bonobo.constants.NOT_MODIFIED
 
 
 @use("config")
-def extract_raw_folders(config):
+@use("rawsubfolderlist")
+def extract_raw_folders(config, rawsubfolderlist):
     """ Extractor: get all date folders within the `raw/` data drop
 
     :return: subfolders within the `raw/` prefix (yield)
@@ -370,13 +280,13 @@ def extract_raw_folders(config):
         # list folders in date order
         folders = iter(
             sorted(
-                [p.get("Prefix") for p in result.get("CommonPrefixes")], reverse=False
+                [p.get("Prefix") for p in result.get("CommonPrefixes")],
+                reverse=False,
             )
         )
         for f in folders:
-            # ensure order that data is processed before images
-            yield f + "data/"
-            yield f + "images/"
+            for subfolder in rawsubfolderlist.get():
+                yield f + subfolder
 
 
 def extract_raw_files_from_folder(folder):
@@ -449,14 +359,25 @@ def process_image(*args, keycache, config, patientcache):
             + "skipping!"
         )
         return
-    prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
-    image_type = MODALITY.get(image_data["Modality"].value, "unknown")
+    prefix = (
+        constants.TRAINING_PREFIX
+        if training_set
+        else constants.VALIDATION_PREFIX
+    )
+    image_type = constants.MODALITY.get(
+        image_data["Modality"].value, "unknown"
+    )
 
     date = get_date_from_key(obj.key)
     if date:
         # the location of the new files
         new_key = posixpath.join(
-            prefix, image_type, patient_id, study_id, series_id, Path(obj.key).name
+            prefix,
+            image_type,
+            patient_id,
+            study_id,
+            series_id,
+            Path(obj.key).name,
         )
         metadata_key = posixpath.join(
             prefix,
@@ -502,7 +423,11 @@ def upload_text_data(*args):
     :type outgoing_data: string
     """
     task, outgoing_key, outgoing_data, = args
-    if task == "upload" and outgoing_key is not None and outgoing_data is not None:
+    if (
+        task == "upload"
+        and outgoing_key is not None
+        and outgoing_data is not None
+    ):
         if DRY_RUN:
             logger.info(f"Would upload to key: {outgoing_key}")
         else:
@@ -530,7 +455,9 @@ def process_patient_data(*args, config, patientcache):
         # Not a data file, don't do anything with it
         yield bonobo.constants.NOT_MODIFIED
 
-    m = re.match(r"^(?P<patient_id>.*)_(?P<outcome>data|status)$", Path(obj.key).stem)
+    m = re.match(
+        r"^(?P<patient_id>.*)_(?P<outcome>data|status)$", Path(obj.key).stem
+    )
     if m is None:
         # Can't interpret this file based on name, skip
         return
@@ -545,7 +472,9 @@ def process_patient_data(*args, config, patientcache):
         # patient group is not cached
         submitting_centre = get_submitting_centre_from_object(obj)
         if submitting_centre is None:
-            logger.error(f"{obj.key} does not have 'SubmittingCentre' entry, skipping!")
+            logger.error(
+                f"{obj.key} does not have 'SubmittingCentre' entry, skipping!"
+            )
             return
 
         config_group = config.get_site_group(submitting_centre)
@@ -561,9 +490,15 @@ def process_patient_data(*args, config, patientcache):
         else:
             # deciding between "training" and "validation" groups.
             training_set = config_group == "training"
-        patientcache.add(patient_id, "training" if training_set else "validation")
+        patientcache.add(
+            patient_id, "training" if training_set else "validation"
+        )
 
-    prefix = TRAINING_PREFIX if training_set else VALIDATION_PREFIX
+    prefix = (
+        constants.TRAINING_PREFIX
+        if training_set
+        else constants.VALIDATION_PREFIX
+    )
     date = get_date_from_key(obj.key)
     if date is not None:
         new_key = f"{prefix}data/{patient_id}/{outcome}_{date}.json"
@@ -644,14 +579,25 @@ def get_services(**options):
 
     :return: dict
     """
-    config = PipelineConfig()
-    keycache = KeyCache()
-    patientcache = PatientCache()
-    return {"config": config, "keycache": keycache, "patientcache": patientcache}
+    config = services.PipelineConfig()
+    keycache = services.KeyCache()
+    patientcache = services.PatientCache()
+    rawsubfolderlist = services.SubFolderList()
+    return {
+        "config": config,
+        "keycache": keycache,
+        "patientcache": patientcache,
+        "rawsubfolderlist": rawsubfolderlist,
+    }
 
 
-# The __main__ block actually execute the graph.
-if __name__ == "__main__":
+def main():
+    """Execute the pipeline graph
+    """
     parser = bonobo.get_argument_parser()
     with bonobo.parse_args(parser) as options:
         bonobo.run(get_graph(**options), services=get_services(**options))
+
+
+if __name__ == "__main__":
+    main()
