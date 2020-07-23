@@ -355,3 +355,106 @@ Resources:
             - Type: AWS::S3::Object
               Values:
                 - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/"]]
+
+  # Compute
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.40.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Join ["", [!Ref "BucketNameParameter", "-VPC"]]
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    DependsOn: VPC
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnetA:
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId: !Ref VPC
+        CidrBlock: 10.40.10.0/24
+        AvailabilityZone: !Select [ 0, !GetAZs ]    # Get the first AZ in the list
+        Tags:
+        - Key: Name
+          Value: !Join ["", [!Ref "BucketNameParameter", "-publicA"]]
+
+  PublicSubnetB:
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId: !Ref VPC
+        CidrBlock: 10.40.20.0/24
+        AvailabilityZone: !Select [ 1, !GetAZs ]    # Get the second AZ in the list
+        Tags:
+        - Key: Name
+          Value: !Join ["", [!Ref "BucketNameParameter", "-publicB"]]
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Name
+        Value: !Join ["", [!Ref "BucketNameParameter", "-public"]]
+
+  PublicRoute1:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetA
+      RouteTableId: !Ref PublicRouteTable
+  PublicSubnetBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetB
+      RouteTableId: !Ref PublicRouteTable
+
+  S3Endpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Id: "S3EndpointAccessPolicy"
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/*"]]
+              - !Join ["", [!GetAtt [WarehouseInventoryBucket, Arn], "/*"]]
+      RouteTableIds:
+        - !Ref PublicRouteTable
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+      VpcId: !Ref VPC
+
+  FaregateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: "http-anywhere"
+      GroupDescription: HTTP access from anywhere for container pull
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"
+          CidrIp: 0.0.0.0/0
+          FromPort: 80
+          ToPort: 80
+          Description: "HTTP access from anywhere"
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Name
+          Value: !Join ["", [!Ref "BucketNameParameter", "-http-anywhere"]]
