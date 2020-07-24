@@ -435,8 +435,13 @@ Resources:
             Principal: "*"
             Action: "s3:*"
             Resource:
+              # Access to the relevant warehoues buckets only
+              - !GetAtt [WarehouseBucket, Arn]
               - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/*"]]
+              - !GetAtt [WarehouseInventoryBucket, Arn]
               - !Join ["", [!GetAtt [WarehouseInventoryBucket, Arn], "/*"]]
+              # Required to pull from ECR through this endpoint
+              - !Sub arn:aws:s3:::prod-${AWS::Region}-starport-layer-bucket/*
       RouteTableIds:
         - !Ref PublicRouteTable
       ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
@@ -445,7 +450,6 @@ Resources:
   FaregateSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: "http-anywhere"
       GroupDescription: HTTP access from anywhere for container pull
       SecurityGroupIngress:
         - IpProtocol: "tcp"
@@ -457,4 +461,126 @@ Resources:
         Ref: VPC
       Tags:
         - Key: Name
-          Value: !Join ["", [!Ref "BucketNameParameter", "-http-anywhere"]]
+          Value: !Sub "${AWS::StackName}-http-anywhere"
+
+  DockerRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${AWS::StackName}-pipeline"
+
+  ECSCluster:
+    Type: 'AWS::ECS::Cluster'
+    Properties:
+      ClusterName: !Sub "${AWS::StackName}-cluster"
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+
+  # This is a role which is used by the ECS tasks themselves.
+  # From https://github.com/awslabs/aws-cloudformation-templates/blob/7671e34887dec84bcaebab33bf0fa8e46e77137b/aws/services/ECS/FargateLaunchType/clusters/public-vpc.yml  # This is a role which is used by the ECS tasks themselves.
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs-tasks.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+        - PolicyName: AmazonECSTaskExecutionRolePolicy
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                # Allow the ECS Tasks to download images from ECR
+                - 'ecr:GetAuthorizationToken'
+                - 'ecr:BatchCheckLayerAvailability'
+                - 'ecr:GetDownloadUrlForLayer'
+                - 'ecr:BatchGetImage'
+
+                # Allow the ECS tasks to upload logs to CloudWatch
+                - 'logs:CreateLogStream'
+                - 'logs:PutLogEvents'
+              Resource: '*'
+
+  # The submitting centres extracting task
+  SubmittingcentresTaskdefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      RequiresCompatibilities:
+        - "FARGATE"
+      Cpu: "512"  # 1 vCPU
+      Memory: "1GB"
+      NetworkMode: "awsvpc"
+      ExecutionRoleArn: !GetAtt [ECSTaskExecutionRole, Arn]
+      TaskRoleArn: !GetAtt [PipelineRole, Arn]
+      ContainerDefinitions:
+        -
+          Name: "pipeline"
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AWS::StackName}-pipeline:prod"
+          Essential: true
+          Command:
+            - submittingcentres
+          Environment:
+            - Name: COMMIT
+              Value: master
+            - Name: WAREHOUSE_BUCKET
+              Value: !Ref WarehouseBucket
+          # Send logs to CloudWatch Logs
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Ref TaskLogGroup
+              awslogs-stream-prefix: ecs
+
+  # The the actual pipeline task
+  PipelineTaskdefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      RequiresCompatibilities:
+        - "FARGATE"
+      Cpu: "1024"  # 1 vCPU
+      Memory: "5GB"
+      NetworkMode: "awsvpc"
+      ExecutionRoleArn: !GetAtt [ECSTaskExecutionRole, Arn]
+      TaskRoleArn: !GetAtt [PipelineRole, Arn]
+      ContainerDefinitions:
+        -
+          Name: "pipeline"
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AWS::StackName}-pipeline:prod"
+          Essential: true
+          Command:
+            - warehouseloader
+          Environment:
+            - Name: COMMIT
+              Value: master
+            - Name: WAREHOUSE_BUCKET
+              Value: !Ref WarehouseBucket
+          # Send logs to CloudWatch Logs
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Ref TaskLogGroup
+              awslogs-stream-prefix: ecs
+
+  TaskLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /ecs/${AWS::StackName}-pipeline
+
+  PipelineRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs-tasks.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      ManagedPolicyArns:
+        - !Ref ETLPolicy
