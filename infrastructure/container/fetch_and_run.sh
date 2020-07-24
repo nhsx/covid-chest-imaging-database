@@ -32,8 +32,10 @@ if [ -z "${COMMIT}" ]; then
     usage "COMMIT not set, unable to determine version of code to pull."
 fi
 
+echo "Cloning ${REPOSITORY}"
 git clone "${REPOSITORY}" code || error_exit "Failed to clone repository: ${REPOSITORY}"
 cd code || error_exit "Failed to enter code folder."
+echo "Checking out ${COMMIT}"
 git checkout -b run "${COMMIT}" || error_exit "Failed to check out relevant commitish: ${COMMIT}"
 cd "${CODE_FOLDER}" || error_exit "Failed to enter code folder ${CODE_FOLDER}"
 echo "Installing code & dependencies..."
@@ -51,4 +53,5 @@ fi
 
 # Main task
 echo "Running ${script}..."
-exec "${script}" "${@}" || error_exit " Failed to execute script."
+eval "${script}" "${@}" || error_exit " Failed to execute script."
+echo "Pipeline finished successfully."
