@@ -168,4 +168,5 @@ Information Regulations 2002) ceases effect.
    :caption: Other Information
 
    study_group
+   project_summaries
    faq
