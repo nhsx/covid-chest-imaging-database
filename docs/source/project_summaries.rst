@@ -4,7 +4,7 @@ NCCID project summaries
 =======================
 
 NCCID users are required to provide a project summary describing the aim of their research and the purpose for utilising NCCID data.
-Below is a list of the research projects currently ongoing, as they have been shared with NCCID by the researchers.
+Below is a list of the projects currently ongoing, as described by the researchers.
 
 
 University College London
