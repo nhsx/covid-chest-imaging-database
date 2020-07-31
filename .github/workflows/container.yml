@@ -1,0 +1,19 @@
+name: Docker Image
+
+on: [push]
+
+jobs:
+  docker-lint:
+    runs-on: ubuntu-latest
+
+    container: hadolint/hadolint
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: hadolint on all Dockerfiles
+        run: |
+          find infrastructure/container -name Dockerfile | xargs -I{} sh -c "echo Checking {}; hadolint {}"
+      - name: shellcheck on container scripts
+        run: |
+          apk add --no-cache shellcheck
+          find infrastructure/container -name "*.sh" | xargs -I{} sh -c "echo Checking {}; shellcheck {}"
