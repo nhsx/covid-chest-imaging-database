@@ -1,0 +1,15 @@
+name: Docker Image
+
+on: [push]
+
+jobs:
+  docker-lint:
+    runs-on: ubuntu-latest
+
+    container: hadolint/hadolint
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: hadolint on all Dockerfiles
+        run: |
+          find . -name Dockerfile | xargs -I{} hadolint {}
