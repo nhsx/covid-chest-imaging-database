@@ -2,7 +2,7 @@ FROM phusion/baseimage:18.04-1.0.0
 
 # Install generic dependencies
 RUN apt-get update \
- && DEBIAN_FRONTEND=noninteractive apt-get install -q -y \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -q -y --no-install-recommends \
       awscli=1.18.69-1ubuntu0.18.04.1 \
       git=1:2.17.1-1ubuntu0.7 \
       python3=3.6.7-1~18.04 \
@@ -17,7 +17,7 @@ RUN groupadd -g 1001 pipeline \
  && chown -R pipeline:pipeline /home/pipeline
 
 # Tool to fetch the repo and run it according to environment variables set
-ADD fetch_and_run.sh /usr/local/bin/fetch_and_run.sh
+COPY fetch_and_run.sh /usr/local/bin/fetch_and_run.sh
 
 WORKDIR /home/pipeline
 
