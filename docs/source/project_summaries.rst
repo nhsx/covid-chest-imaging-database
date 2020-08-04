@@ -29,3 +29,7 @@ X-ray images and CT scans can also be useful in monitoring the progression of Co
 This project aims to find the visual signatures of Covid-19, as they appear in chest scans, that can lead to accurate diagnostic and prognosis for use in
 hospital settings. Automated imaging algorithms, aided by advanced artificial intelligence techniques, can detect some of the abnormal features
 appearing in these scans, such as ground glass patterned areas, Ground glass, Crazy paving, Vascular dilatation, Traction Bronchiectasis. These features are generally not specific to Covid-19 and could be seen with other infections. Hence, it is important to develop AI techniques to aid the imaging analysis to increase the accuracy of diagnostic.
+
+University of Bradford
+-------------------------
+Coronavirus Disease 2019 (COVID-19) is highly contagious, and severe cases can lead to pneumonia and ultimately death. The diagnosis can be confirmed by laboratory testing; however, the test has low sensitivity which leads to late diagnosis and treatment. Chest X-rays and CT scans provide valuable diagnostic and monitoring information that can complement the laboratory and clinical data. In this project, we propose to develop an open-source artificial intelligence tool that combines chest imaging data and clinical data to support the diagnosis, triaging and prognosis for COVID-19 in the UK. This will make clinical decisions more efficient, accurate, timely, and potentially cheaper, leading to better patient outcomes.
