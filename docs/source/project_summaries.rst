@@ -12,7 +12,7 @@ University College London
 
 University College London plans to store the NCCID data in a highly secure XNAT repository to enable imaging-based research at UCL Centre for Medical Image Computing (CMIC). In particular, researchers at CMIC will use these data to build artificial intelligence models to automatically detect COVID-19 patients based on their CT or X-ray images, such that, in the future, these images can be screened automatically before doctors read them. This will significantly save time in managing future outbreaks. The research also involves building computational models to analyse the outcomes for those with confirmed COVID-19 diagnosis, predicting best management for individual patients. These predictions may shorten their hospital stay, reduce complications and even save lives. Finally, the project will investigates methods to deploy these developed models to local hospitals quickly and safely.  
 
-University of Bradford
+University of Cambridge
 -------------------------
 It is strongly believed that early detection of COVID-19 and intervention leads to lower Covid-19 mortality because it enables disease treatment via
 oxygen therapy and control of spread via isolation. The diagnosis of COVID-19 must be confirmed by reverse-transcription
