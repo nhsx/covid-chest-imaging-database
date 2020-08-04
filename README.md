@@ -12,6 +12,7 @@ This repository contains tooling related to the NHSX National COVID-19 Chest Ima
 ![Build and Deploy Docs](https://github.com/nhsx/covid-chest-imaging-database/workflows/Build%20and%20Deploy%20Docs/badge.svg)
 ![Infrastructure](https://github.com/nhsx/covid-chest-imaging-database/workflows/Infrastructure/badge.svg)
 ![Warehouse Loader Checks](https://github.com/nhsx/covid-chest-imaging-database/workflows/Warehouse%20Loader%20Checks/badge.svg)
+![Docker Image](https://github.com/nhsx/covid-chest-imaging-database/workflows/Docker%20Image/badge.svg)
 
 * [documentation site source code](docs) (docs are deployed [here](https://nhsx.github.io/covid-chest-imaging-database/))
 * [infrastructure setup](infrastructure)
