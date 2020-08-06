@@ -3,8 +3,10 @@
 NCCID project summaries
 =======================
 
-NCCID users are required to provide a project summary describing the aim of their research and the purpose for utilising NCCID data.
-Below is a list of the projects currently ongoing, as described by the researchers.
+The core of the NCCID initiative is to provide value to the public in response to the COVID-19 crisis.
+For this reason, NCCID wishes to share information on how the data is being utilised by approved institutions and researcherts, to inform the wider community of patients, staff and interested public.
+
+Below is a list of the projects currently ongoing.
 
 
 University College London
