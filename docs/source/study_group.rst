@@ -1,9 +1,9 @@
 .. _study_group:
 
-NCCID study group
-=================	
+NCCID Collaborative
+===================
 
-The NCCID Study Group includes all the researchers, clinicians and nurses who actively participated in contributing data to NCCID, making the creation of this database possible. Contributors from each trust are listed below.
+The NCCID Collaborative includes all the researchers, clinicians and nurses who actively participated in contributing data to NCCID, making the creation of this database possible. Contributors from each trust are listed below.
 
 **Royal United Hospitals Bath NHS Foundation Trust**
 Dr Jonathan Carl Luis Rodrigues; Dr Helen Oliver; Dr Benjamin Hudson; Dr Graham Robinson; Mr Richard Wood; Mrs Annette Moreton; Miss Katy Lomas; Research & Development team
