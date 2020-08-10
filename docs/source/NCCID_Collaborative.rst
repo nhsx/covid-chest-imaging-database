@@ -1,4 +1,4 @@
-.. _study_group:
+.. _NCCID_Collaborative:
 
 NCCID Collaborative
 ===================
