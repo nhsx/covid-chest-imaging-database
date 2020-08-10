@@ -167,6 +167,6 @@ Information Regulations 2002) ceases effect.
    :hidden:
    :caption: Other Information
 
-   study_group
+   NCCID_Collaborative
    project_summaries
    faq
