@@ -24,7 +24,7 @@ The NCCID Collaborative includes all the researchers, clinicians and nurses who 
 | Dr Aarti Shah, Dr Fiona Kirkham, Hannah Bown, Simon Seal, Hayley Connoley
 
 | **Betsi Cadwaladr University Health Board**
-| Jenna Tugwell-Allsup; Bethan Wyn Owen
+| Jenna Tugwell-Allsup, Bethan Wyn Owen
 
 | **Ashford and St Peter’s Hospitals**
 | Mary Jones, Andrew Moth, Dr Jordan Colman
