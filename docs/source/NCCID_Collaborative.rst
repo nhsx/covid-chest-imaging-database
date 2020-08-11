@@ -6,52 +6,52 @@ NCCID Collaborative
 The NCCID Collaborative includes all the researchers, clinicians and nurses who actively participated in contributing data to NCCID, making the creation of this database possible. Contributors from each trust are listed below.
 
 | **Royal United Hospitals Bath NHS Foundation Trust**
-| Dr Jonathan Carl Luis Rodrigues; Dr Helen Oliver; Dr Benjamin Hudson; Dr Graham Robinson; Mr Richard Wood; Mrs Annette Moreton; Miss Katy Lomas; Research & Development team
+| Dr Jonathan Carl Luis Rodrigues, Dr Helen Oliver, Dr Benjamin Hudson, Dr Graham Robinson, Richard Wood, Annette Moreton, Katy Lomas, Research & Development team
 
 | **Brighton and Sussex University Hospitals NHS Trust**
-| Dr Nigel Marchbank; Dr Chinnoi Law
+| Dr Nigel Marchbank, Dr Chinnoi Law
 
 | **London North West University Healthcare NHS Trust**
-| Dr Harmeet Chana; Dr Nemi Gandy; Dr Ban Sharif; Dr Leila Ismail; Dr Jaymini Patel; Dr Debbie Wai
+| Dr Harmeet Chana, Dr Nemi Gandy, Dr Ban Sharif, Dr Leila Ismail, Dr Jaymini Patel, Dr Debbie Wai
 
 | **George Eliot Hospital NHS Trust**
-| Liz Mathers; Rachel Clark; Anisha Harrar; Alison Bettany
+| Liz Mathers, Rachel Clark, Anisha Harrar, Alison Bettany
 
 | **Cwm Taf Morgannwg University Health Board**
-| Dr Kieran Foley; Mrs Carla Pothecary BSc; MSc; Mr Stephen Buckle; Miss Lisa Roche BSc
+| Dr Kieran Foley, Carla Pothecary, Stephen Buckle, Lisa Roche
 
 | **Hampshire Hospitals NHS Foundation Trust**
-| Dr Aarti Shah; Dr Fiona Kirkham; Ms Hannah Bown; Mr Simon Seal; Mrs Hayley Connoley
+| Dr Aarti Shah, Dr Fiona Kirkham, Hannah Bown, Simon Seal, Hayley Connoley
 
 | **Betsi Cadwaladr University Health Board**
-| Mrs Jenna Tugwell-Allsup; Mrs Bethan Wyn Owen
+| Jenna Tugwell-Allsup; Bethan Wyn Owen
 
 | **Ashford and St Peter’s Hospitals**
-| Mrs Mary Jones; Mr Andrew Moth; Dr Jordan Colman
+| Mary Jones, Andrew Moth, Dr Jordan Colman
 
 | **Royal Cornwall Hospitals NHS Trust**
-| Dr Giles Maskell; Dr Daniel Kim; Dr Alexander Sanchez-Cabello; Dr Hannah Lewis; Dr Matthew Thorley; Dr Ross Kruger; Dr Madalina Chifu; Mr Nicholas Ashley
+| Dr Giles Maskell, Dr Daniel Kim, Dr Alexander Sanchez-Cabello, Dr Hannah Lewis, Dr Matthew Thorley, Dr Ross Kruger, Dr Madalina Chifu, Mr Nicholas Ashley
 
 | **Sheffield Children’s NHS Foundation Trust**
-| Susanne Spas; Angela Bates; Peter Halson; Chris Heafey
+| Susanne Spas, Angela Bates, Peter Halson, Chris Heafey
 
 | **Liverpool Heart and Chest Hospital NHS Foundation Trust**
-| TBD
+| Dr Caroline McCann, Dr David McCreavy, Dr Dileep Duvva, Dr Tze Siah, Mrs Janet Deane
 
 | **Norfolk and Norwich University Hospitals NHS Foundation Trust**
-| Dr. Emily Pearlman; Dr. James MacKay; Dr. Melissa Sia; Mrs. Esme Easter; Ms. Doreen Brookes; Mr. Paul Burford; Dr. Ramona-Rita Barbara
+| Dr. Emily Pearlman, Dr. James MacKay, Dr. Melissa Sia, Esme Easter, Doreen Brookes, Paul Burford, Dr. Ramona-Rita Barbara
 
 | **Royal Surrey NHS Foundation Trust**
-| Dr Thomas Payne; Dr Mark Ingram
+| Dr Thomas Payne, Dr Mark Ingram
 
 | **Sandwell and West Birmingham NHS Trust**
-| Dr Bahadar Bhatia; Dr Sarah Yusuf; Mrs Fiona Rotherham; Mrs Gayle Warren; Mrs Angela Heeney; Miss Angela Bowen; Ms Adele Wilson
+| Dr Bahadar Bhatia, Dr Sarah Yusuf, Fiona Rotherham, Gayle Warren, Angela Heeney, Angela Bowen, Adele Wilson
 
 | **West Suffolk NHS Foundation Trust**
-| Joanne Kellett; Rachael Harrison; Janet Watkins; Lisa Patterson
+| Joanne Kellett, Rachael Harrison, Janet Watkins, Lisa Patterson
 
 | **Somerset NHS Foundation Trust**
-| TBD
+| Dr Tom Welsh, Dawn Redwood, Natasha Greig, Lindsay Van Pelt, Susan Palmer, Kate Milne, Joanna Tilley, Melissa Alexander
 
 | **Cambridge University Hospitals NHS Foundation Trust**
-| Amy J Frary; Dr Judith L Babar; Dr Timothy Sadler; Dr Edward Neil-Gallacher
+| Amy J Frary, Dr Judith L Babar, Dr Timothy Sadler, Dr Edward Neil-Gallacher
