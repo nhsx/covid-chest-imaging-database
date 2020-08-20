@@ -586,6 +586,8 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /ecs/${AWS::StackName}-pipeline
+      # 2 years of pipeline run log retention
+      RetentionInDays: 731
 
   PipelineRole:
     Type: 'AWS::IAM::Role'
