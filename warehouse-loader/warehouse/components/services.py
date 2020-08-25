@@ -96,6 +96,9 @@ class PatientCache:
 
 
 class SubFolderList:
+    """ Managing a list of folder names to include in queries.
+    """
+
     def __init__(self, folder_list=None):
         if folder_list is not None:
             self.folder_list = folder_list

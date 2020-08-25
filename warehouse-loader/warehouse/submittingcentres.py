@@ -18,7 +18,8 @@ logger = logging.getLogger()
 
 
 class SubmittingCentreExtractor(Configurable):
-    """ Get unique channel names from the raw messages. """
+    """ Get unique submitting centre names from the full database.
+    """
 
     @ContextProcessor
     def acc(self, context):
