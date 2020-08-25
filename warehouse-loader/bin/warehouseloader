@@ -45,7 +45,7 @@ main() {
 
     # shellcheck disable=SC2153
     if [ -n "${TOPIC_ARN}" ]; then
-        send_message "${TOPIC_ARN}" "Pipeline finished" "$message"
+        send_message "${TOPIC_ARN}" "Pipeline finished - warehouseloader" "$message"
     fi
 }
 
