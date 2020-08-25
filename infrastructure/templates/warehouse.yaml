@@ -151,6 +151,11 @@ Resources:
             Resource:
               - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/*"]]
               - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/validation/*"]]
+          - Effect: Allow
+            Action:
+              - "sns:Publish"
+            Resource:
+              - !Ref Notifications
   ETLGroup:
     Type: AWS::IAM::Group
     Properties:
@@ -543,6 +548,8 @@ Resources:
               Value: master
             - Name: WAREHOUSE_BUCKET
               Value: !Ref WarehouseBucket
+            - Name: TOPIC_ARN
+              Value: !Ref Notifications
           # Send logs to CloudWatch Logs
           LogConfiguration:
             LogDriver: awslogs
@@ -574,6 +581,8 @@ Resources:
               Value: master
             - Name: WAREHOUSE_BUCKET
               Value: !Ref WarehouseBucket
+            - Name: TOPIC_ARN
+              Value: !Ref Notifications
           # Send logs to CloudWatch Logs
           LogConfiguration:
             LogDriver: awslogs
@@ -601,3 +610,8 @@ Resources:
       Path: /
       ManagedPolicyArns:
         - !Ref ETLPolicy
+
+  Notifications:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Sub ${AWS::StackName}-notifications
