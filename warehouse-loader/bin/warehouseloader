@@ -1,3 +1,52 @@
 #!/bin/bash
 
-bonobo run -m warehouse.warehouseloader "$@"
+# Convert seconds into a more readable format
+convertsecs() {
+ ((h=${1}/3600))
+ ((m=(${1}%3600)/60))
+ ((s=${1}%60))
+ printf "%02dh:%02dm:%02ds" "$h" "$m" "$s"
+}
+
+send_message() {
+    local topic_arn=$1
+    local subject=$2
+    local message=$3
+    local region
+    region=$(echo "${topic_arn}" | awk '{split($0,a,":"); print a[4]}')
+    aws sns publish \
+        --topic-arn "${topic_arn}" \
+        --region "${region}" \
+        --subject "${subject}" \
+        --message "${message}"
+}
+
+main() {
+    # timer start
+    local start
+    local end
+    local runtime
+    local message
+    local exitcode
+
+    # start timer
+    start=$(date +%s)
+
+    # main workload
+    bonobo run -m warehouse.warehouseloader "$@"
+
+    exitcode=$?
+    # timer end
+    end=$(date +%s)
+    runtime=$((end-start))
+
+    message="Pipeline run in $(convertsecs $runtime) and exited with code ${exitcode}."
+    echo "${message}"
+
+    # shellcheck disable=SC2153
+    if [ -n "${TOPIC_ARN}" ]; then
+        send_message "${TOPIC_ARN}" "Pipeline finished" "$message"
+    fi
+}
+
+main "$@"
