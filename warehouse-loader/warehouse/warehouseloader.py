@@ -233,7 +233,8 @@ def load_config(config):
 
 @use("keycache")
 @use("patientcache")
-def load_existing_files(keycache, patientcache):
+@use("inventory")
+def load_existing_files(keycache, patientcache, inventory):
     """ Loading existing files from the training and
     validation sets into the keycache.
 
@@ -247,7 +248,8 @@ def load_existing_files(keycache, patientcache):
         ("validation", constants.VALIDATION_PREFIX),
         ("training", constants.TRAINING_PREFIX),
     ]:
-        for obj in bucket.objects.filter(Prefix=prefix):
+        listing = inventory if inventory.enabled else bucket.objects
+        for obj in listing.filter(Prefix=prefix):
             m = patient_file_name.match(obj.key)
             if m:
                 # It is a patient file
@@ -264,8 +266,9 @@ def load_existing_files(keycache, patientcache):
 
 
 @use("config")
+@use("inventory")
 @use("rawsubfolderlist")
-def extract_raw_folders(config, rawsubfolderlist):
+def extract_raw_folders(config, inventory, rawsubfolderlist):
     """ Extractor: get all date folders within the `raw/` data drop
 
     :return: subfolders within the `raw/` prefix (yield)
@@ -274,22 +277,22 @@ def extract_raw_folders(config, rawsubfolderlist):
     for site_raw_prefix in config.get_raw_prefixes():
         if not site_raw_prefix.endswith("/"):
             site_raw_prefix += "/"
-        result = s3_client.list_objects(
-            Bucket=BUCKET_NAME, Prefix=site_raw_prefix, Delimiter="/"
-        )
-        # list folders in date order
-        folders = iter(
-            sorted(
-                [p.get("Prefix") for p in result.get("CommonPrefixes")],
-                reverse=False,
+
+        if inventory.enabled:
+            prefixes = inventory.list_folders(site_raw_prefix)
+        else:
+            result = s3_client.list_objects(
+                Bucket=BUCKET_NAME, Prefix=site_raw_prefix, Delimiter="/"
             )
-        )
-        for f in folders:
+            prefixes = [p.get("Prefix") for p in result.get("CommonPrefixes")]
+        # list folders in date order
+        for folder in sorted(prefixes, reverse=False):
             for subfolder in rawsubfolderlist.get():
-                yield f + subfolder
+                yield folder + subfolder
 
 
-def extract_raw_files_from_folder(folder):
+@use("inventory")
+def extract_raw_files_from_folder(inventory, folder):
     """ Extract files from a given date folder in the data dump
 
     :param folder: the folder to process
@@ -297,7 +300,8 @@ def extract_raw_files_from_folder(folder):
     :return: each object (yield)
     :rtype: boto3.resource('s3').ObjectSummary
     """
-    for obj in bucket.objects.filter(Prefix=folder):
+    listing = inventory if inventory.enabled else bucket.objects
+    for obj in listing.filter(Prefix=folder):
         yield "process", obj, None
 
 
@@ -583,11 +587,19 @@ def get_services(**options):
     keycache = services.KeyCache()
     patientcache = services.PatientCache()
     rawsubfolderlist = services.SubFolderList()
+
+    if bool(os.getenv("SKIP_INVENTORY", default=False)):
+        # If we are _not_ skipping inventory
+        inventory = services.Inventory(main_bucket=BUCKET_NAME)
+    else:
+        inventory = services.Inventory()
+
     return {
         "config": config,
         "keycache": keycache,
         "patientcache": patientcache,
         "rawsubfolderlist": rawsubfolderlist,
+        "inventory": inventory,
     }
 
 

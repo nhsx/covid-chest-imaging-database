@@ -1,6 +1,9 @@
 import logging
 from pathlib import Path
 import mondrian
+import boto3
+import pandas as pd
+import tempfile
 
 from warehouse.components.constants import TRAINING_PERCENTAGE
 
@@ -104,3 +107,68 @@ class SubFolderList:
 
     def get(self):
         return self.folder_list
+
+
+class Inventory:
+    def __init__(self, main_bucket=None):
+        self.enabled = main_bucket is not None
+
+        if self.enabled:
+            try:
+                inventory_bucket = main_bucket + "-inventory"
+                s3_client = boto3.client("s3")
+                # Get the latest list of inventory files
+                objs = s3_client.list_objects_v2(
+                    Bucket=inventory_bucket,
+                    Prefix=f"{main_bucket}/daily-full-inventory/hive",
+                )["Contents"]
+                latest_symlink = sorted([obj["Key"] for obj in objs])[-1]
+                header_list = ["bucket", "key", "size"]
+                response = s3_client.get_object(
+                    Bucket=inventory_bucket, Key=latest_symlink
+                )
+                frames = []
+                for line in (
+                    response["Body"].read().decode("utf-8").split("\n")
+                ):
+                    inventory_file = line.replace(
+                        f"s3://{inventory_bucket}/", ""
+                    )
+                    with tempfile.NamedTemporaryFile(mode="w+b") as f:
+                        self.s3_client.download_fileobj(
+                            inventory_bucket, inventory_file, f
+                        )
+                        f.seek(0)
+                        frames += [
+                            pd.read_csv(
+                                f,
+                                compression="gzip",
+                                error_bad_lines=False,
+                                names=header_list,
+                            )
+                        ]
+                self.df = pd.concat(frames)
+            except:  # noqa: E722
+                self.enabled = False
+
+    def enabled(self):
+        return self.enabled
+
+    def filter(self, Prefix):
+        if not self.enabled:
+            return
+        for _, row in self.df[
+            self.df["key"].str.startswith(Prefix)
+        ].iterrows():
+            yield boto3.resource("s3").ObjectSummary(row["bucket"], row["key"])
+
+    def list_folders(self, Prefix):
+        if not self.enabled:
+            return
+        return (
+            self.df["key"]
+            .str.extract(pat=rf"{Prefix}([^/]*/?).*", expand=False)
+            .dropna()
+            .unique()
+            .tolist()
+        )
