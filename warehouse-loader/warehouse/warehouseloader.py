@@ -242,7 +242,7 @@ def load_existing_files(keycache, patientcache, inventory):
     :type keycache: Keycache
     """
     patient_file_name = re.compile(
-        r"^.+/data/(?P<patient_id>.*)/(?P<outcome>data|status)_\d{4}-\d{2}-\d{2}.json$"
+        r"^.+/data/(?P<patient_id>.*)/(?:data|status)_\d{4}-\d{2}-\d{2}.json$"
     )
     for group, prefix in [
         ("validation", constants.VALIDATION_PREFIX),
