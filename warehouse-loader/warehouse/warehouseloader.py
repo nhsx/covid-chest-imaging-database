@@ -17,7 +17,7 @@ import pydicom
 from bonobo.config import use
 from botocore.exceptions import ClientError
 
-from warehouse.components import services, constants
+from warehouse.components import constants, services
 
 # set up logging
 mondrian.setup(excepthook=True)
@@ -292,7 +292,7 @@ def extract_raw_folders(config, inventory, rawsubfolderlist):
 
 
 @use("inventory")
-def extract_raw_files_from_folder(inventory, folder):
+def extract_raw_files_from_folder(folder, inventory):
     """ Extract files from a given date folder in the data dump
 
     :param folder: the folder to process
@@ -589,10 +589,9 @@ def get_services(**options):
     rawsubfolderlist = services.SubFolderList()
 
     if bool(os.getenv("SKIP_INVENTORY", default=False)):
-        # If we are _not_ skipping inventory
-        inventory = services.Inventory(main_bucket=BUCKET_NAME)
-    else:
         inventory = services.Inventory()
+    else:
+        inventory = services.Inventory(main_bucket=BUCKET_NAME)
 
     return {
         "config": config,

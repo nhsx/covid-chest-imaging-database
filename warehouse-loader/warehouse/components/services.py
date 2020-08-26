@@ -134,8 +134,11 @@ class Inventory:
                     inventory_file = line.replace(
                         f"s3://{inventory_bucket}/", ""
                     )
+                    logger.debug(
+                        f"Downloding inventory file: {inventory_file}"
+                    )
                     with tempfile.NamedTemporaryFile(mode="w+b") as f:
-                        self.s3_client.download_fileobj(
+                        s3_client.download_fileobj(
                             inventory_bucket, inventory_file, f
                         )
                         f.seek(0)
@@ -147,27 +150,43 @@ class Inventory:
                                 names=header_list,
                             )
                         ]
-                self.df = pd.concat(frames)
-            except:  # noqa: E722
+                self.df = pd.concat(frames, ignore_index=True)
+                # This should reduce memory usage, since "bucket" is only a single value
+                self.df = self.df.astype({"bucket": "category"})
+                # Reduce memory usage by dropping unusued column
+                self.df.drop(columns=["size"], inplace=True)
+            except Exception as e:  # noqa: E722
+                logger.warn(
+                    f"Not enabling Inventory due to run time error: {e}"
+                )
                 self.enabled = False
 
     def enabled(self):
+        """Check whether the inventory is to be used or not
+        """
         return self.enabled
 
     def filter(self, Prefix):
+        """Get an interator of objects with a given prefix
+        """
         if not self.enabled:
             return
+        # Use a single resource for the filter which speeds things up
+        s3 = boto3.resource("s3")
         for _, row in self.df[
             self.df["key"].str.startswith(Prefix)
         ].iterrows():
-            yield boto3.resource("s3").ObjectSummary(row["bucket"], row["key"])
+            yield s3.ObjectSummary(row["bucket"], row["key"])
 
     def list_folders(self, Prefix):
+        """List the folders just below the given prefix,
+        listing including the prefix + folder name.
+        """
         if not self.enabled:
             return
         return (
             self.df["key"]
-            .str.extract(pat=rf"{Prefix}([^/]*/?).*", expand=False)
+            .str.extract(pat=rf"({Prefix}[^/]*/?).*", expand=False)
             .dropna()
             .unique()
             .tolist()

@@ -3,6 +3,7 @@ the uploaded raw dataset.
 """
 
 import logging
+import os
 from pathlib import Path
 
 import bonobo
@@ -11,7 +12,11 @@ from bonobo.config import Configurable, ContextProcessor, use_raw_input
 from bonobo.util.objects import ValueHolder
 
 import warehouse.warehouseloader as wl  # noqa: E402
-from warehouse.components.services import PipelineConfig, SubFolderList
+from warehouse.components.services import (
+    Inventory,
+    PipelineConfig,
+    SubFolderList,
+)
 
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
@@ -68,7 +73,17 @@ def get_services(**options):
     """
     config = PipelineConfig()
     rawsubfolderlist = SubFolderList(folder_list=["data/"])
-    return {"config": config, "rawsubfolderlist": rawsubfolderlist}
+
+    if bool(os.getenv("SKIP_INVENTORY", default=False)):
+        inventory = Inventory()
+    else:
+        inventory = Inventory(main_bucket=wl.BUCKET_NAME)
+
+    return {
+        "config": config,
+        "rawsubfolderlist": rawsubfolderlist,
+        "inventory": inventory,
+    }
 
 
 def main():
