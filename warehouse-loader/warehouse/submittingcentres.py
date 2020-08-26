@@ -73,11 +73,8 @@ def get_services(**options):
     """
     config = PipelineConfig()
     rawsubfolderlist = SubFolderList(folder_list=["data/"])
-
-    if bool(os.getenv("SKIP_INVENTORY", default=False)):
-        inventory = Inventory()
-    else:
-        inventory = Inventory(main_bucket=wl.BUCKET_NAME)
+    # Do not use inventory in this task as it is already quite fast
+    inventory = Inventory()
 
     return {
         "config": config,
