@@ -28,6 +28,8 @@ setup(
         "boto3==1.13.8",
         # image data
         "pydicom==1.4.2",
+        # internal data management
+        "pandas==1.1.1",
     ]
     # entry_points={
     #     "console_scripts": [
