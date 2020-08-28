@@ -159,9 +159,7 @@ class Inventory:
                 self.df.drop(columns=["size"], inplace=True)
                 logger.info(f"Using inventory: {len(self.df)} items")
             except Exception as e:  # noqa: E722
-                logger.warn(
-                    f"Skip using inventory due to run time error: {e}"
-                )
+                logger.warn(f"Skip using inventory due to run time error: {e}")
                 self.enabled = False
 
     def enabled(self):
