@@ -113,7 +113,9 @@ class Inventory:
     def __init__(self, main_bucket=None):
         self.enabled = main_bucket is not None
 
-        if self.enabled:
+        if not self.enabled:
+            logger.info("Not using inventory.")
+        else:
             try:
                 inventory_bucket = main_bucket + "-inventory"
                 s3_client = boto3.client("s3")
@@ -155,9 +157,10 @@ class Inventory:
                 self.df = self.df.astype({"bucket": "category"})
                 # Reduce memory usage by dropping unusued column
                 self.df.drop(columns=["size"], inplace=True)
+                logger.info(f"Using inventory: {len(self.df)} items")
             except Exception as e:  # noqa: E722
                 logger.warn(
-                    f"Not enabling Inventory due to run time error: {e}"
+                    f"Skip using inventory due to run time error: {e}"
                 )
                 self.enabled = False
 
