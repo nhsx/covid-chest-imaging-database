@@ -44,7 +44,7 @@ provided by the radiologist reviewing the images, on a scale of three severity l
 (Mild = 1, Moderate = 2, Severe = 3).
 
 
-Are CXR severity only available for the first two X-Ray studies?
+Is the CXR severity score only available for the first two X-Ray studies?
 ----------------------------------------------------------------
 
 Yes,the severity information is only available for the first two X-Ray studies
@@ -56,8 +56,8 @@ How can I match the clinical data points to the corresponding imaging scan?
 
 The temporal information should help you match the information in the sheet
 with the relevant imaging study: ``Date of 1st CXR`` and ``Date of 2nd CXR``
-are the dates in which the first two Xray scans were taken and correspond to the
-two severity values, the time information in the X-ray's DICOM should then allow
+are the dates in which the first two X-Ray scans were taken and correspond to the
+two severity values, the time information in the X-Ray's DICOM should then allow
 you to identify the imaging scans that match with those dates.
 
 
@@ -81,7 +81,7 @@ Have any of the dates been changed systematically as part of the anonymisation p
 
 Most dates in the DICOM files have been offset. The excludes the Acquisition date
 (if present) and the Study Date, so these can be used to identify the time of scan.
-In addition the patient's DOB has been reset to the year of birth followed by 0101.
+In addition, the patient's DOB has been reset to the year of birth followed by 0101.
 The dates in the clinical data have not been touched.
 
 
