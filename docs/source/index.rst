@@ -170,4 +170,5 @@ Information Regulations 2002) ceases effect.
 
    NCCID_Collaborative
    project_summaries
+   faq
 
