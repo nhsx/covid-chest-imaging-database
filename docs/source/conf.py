@@ -60,6 +60,7 @@ html_logo = "_static/logo.svg"
 html_theme_options = {
     'style_external_links': True,
     'style_nav_header_background': '#003087',
+    'navigation_depth': 1,
 }
 
 html_css_files = [
