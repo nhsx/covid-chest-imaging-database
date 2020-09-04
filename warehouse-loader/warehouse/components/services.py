@@ -137,7 +137,7 @@ class Inventory:
                         f"s3://{inventory_bucket}/", ""
                     )
                     logger.debug(
-                        f"Downloding inventory file: {inventory_file}"
+                        f"Downloading inventory file: {inventory_file}"
                     )
                     with tempfile.NamedTemporaryFile(mode="w+b") as f:
                         s3_client.download_fileobj(
