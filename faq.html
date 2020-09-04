@@ -37,7 +37,8 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   <link rel="stylesheet" href="_static/css/nhsx.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="NCCID project summaries" href="project_summaries.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -89,9 +90,10 @@
 <li class="toctree-l1"><a class="reference internal" href="data_access.html">Accessing the NCCID data</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Other Information</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="NCCID_Collaborative.html">NCCID Collaborative</a></li>
 <li class="toctree-l1"><a class="reference internal" href="project_summaries.html">NCCID project summaries</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Frequently Asked Questions</a></li>
 </ul>
 
             
@@ -158,6 +160,88 @@
             
   <div class="section" id="frequently-asked-questions">
 <span id="faq"></span><h1>Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permalink to this headline">¶</a></h1>
+<p>This is a list of Frequently Asked Questions with regards to the NCCID dataset content and usage.  Feel free to
+suggest new entries!</p>
+<div class="contents local topic" id="questions">
+<p class="topic-title">Questions:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#how-often-is-new-data-uploaded-to-the-database" id="id1">How often is new data uploaded to the database?</a></p></li>
+<li><p><a class="reference internal" href="#what-is-the-final-covid-status-determined-by-we-re-seeing-patients-with-two-negative-pcrs-with-a-positive-final-covid-status" id="id2">What is the “Final COVID Status” determined by? We’re seeing patients with two negative PCRs with a positive final COVID status.</a></p></li>
+<li><p><a class="reference internal" href="#is-covid-code-normal-the-equivalent-of-regular-covid-19-or-is-it-non-covid-19" id="id3">Is COVID CODE = Normal the equivalent of “regular” Covid-19 or is it non-Covid-19?</a></p></li>
+<li><p><a class="reference internal" href="#what-are-the-cxr-severity-scores" id="id4">What are the CXR severity scores?</a></p></li>
+<li><p><a class="reference internal" href="#is-the-cxr-severity-score-only-available-for-the-first-two-x-ray-studies" id="id5">Is the CXR severity score only available for the first two X-Ray studies?</a></p></li>
+<li><p><a class="reference internal" href="#how-can-i-match-the-clinical-data-points-to-the-corresponding-imaging-scan" id="id6">How can I match the clinical data points to the corresponding imaging scan?</a></p></li>
+<li><p><a class="reference internal" href="#date-format-seems-to-be-inconsistent-across-date-variables-some-are-in-us-format-and-some-are-in-uk-format-why-is-this-is-there-a-pattern" id="id7">Date format seems to be inconsistent across date variables (some are in US format and some are in UK format). Why is this? Is there a pattern?</a></p></li>
+<li><p><a class="reference internal" href="#have-any-of-the-dates-been-changed-systematically-as-part-of-the-anonymisation-process-or-are-the-dates-in-the-dicom-files-and-the-clinical-variables-the-actual-dates-of-scans-and-tests" id="id8">Have any of the dates been changed systematically as part of the anonymisation process? Or are the dates in the DICOM files and the clinical variables the actual dates of scans and tests?</a></p></li>
+<li><p><a class="reference internal" href="#there-are-cases-where-patients-have-multiple-json-files-why-is-this-which-one-is-the-correct-one" id="id9">There are cases where patients have multiple JSON files. Why is this? Which one is the correct one?</a></p></li>
+</ul>
+</div>
+<div class="section" id="how-often-is-new-data-uploaded-to-the-database">
+<h2>How often is new data uploaded to the database?<a class="headerlink" href="#how-often-is-new-data-uploaded-to-the-database" title="Permalink to this headline">¶</a></h2>
+<p>It varies but we are aiming for a new data release every week.</p>
+</div>
+<div class="section" id="what-is-the-final-covid-status-determined-by-we-re-seeing-patients-with-two-negative-pcrs-with-a-positive-final-covid-status">
+<h2>What is the “Final COVID Status” determined by? We’re seeing patients with two negative PCRs with a positive final COVID status.<a class="headerlink" href="#what-is-the-final-covid-status-determined-by-we-re-seeing-patients-with-two-negative-pcrs-with-a-positive-final-covid-status" title="Permalink to this headline">¶</a></h2>
+<p>The Final COVID Status is the final status that is available for each patient.
+The fact that there are patients with multiple negative swab results and the final
+status which is positive is an example of what happens sometimes in practice:
+patients might get tested several times producing negative results, and then finally
+result positive. This might be because sometimes tests are not accurate or because
+patients fell ill between the initial and the final test.</p>
+</div>
+<div class="section" id="is-covid-code-normal-the-equivalent-of-regular-covid-19-or-is-it-non-covid-19">
+<h2>Is COVID CODE = Normal the equivalent of “regular” Covid-19 or is it non-Covid-19?<a class="headerlink" href="#is-covid-code-normal-the-equivalent-of-regular-covid-19-or-is-it-non-covid-19" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">COVID</span> <span class="pre">CODE</span> <span class="pre">=</span> <span class="pre">Normal</span></code> refers to the cases where the X-Rays do not show signs of Covid-19,
+this might be because the patient does not have it or because the patient has only very
+mild symptoms.</p>
+</div>
+<div class="section" id="what-are-the-cxr-severity-scores">
+<h2>What are the CXR severity scores?<a class="headerlink" href="#what-are-the-cxr-severity-scores" title="Permalink to this headline">¶</a></h2>
+<p>The severity scores associated with the chest X-Ray studies are subjective descriptions
+provided by the radiologist reviewing the images, on a scale of three severity levels
+(Mild = 1, Moderate = 2, Severe = 3).</p>
+</div>
+<div class="section" id="is-the-cxr-severity-score-only-available-for-the-first-two-x-ray-studies">
+<h2>Is the CXR severity score only available for the first two X-Ray studies?<a class="headerlink" href="#is-the-cxr-severity-score-only-available-for-the-first-two-x-ray-studies" title="Permalink to this headline">¶</a></h2>
+<p>Yes,the severity information is only available for the first two X-Ray studies
+for each patient.</p>
+</div>
+<div class="section" id="how-can-i-match-the-clinical-data-points-to-the-corresponding-imaging-scan">
+<h2>How can I match the clinical data points to the corresponding imaging scan?<a class="headerlink" href="#how-can-i-match-the-clinical-data-points-to-the-corresponding-imaging-scan" title="Permalink to this headline">¶</a></h2>
+<p>The temporal information should help you match the information in the sheet
+with the relevant imaging study: <code class="docutils literal notranslate"><span class="pre">Date</span> <span class="pre">of</span> <span class="pre">1st</span> <span class="pre">CXR</span></code> and <code class="docutils literal notranslate"><span class="pre">Date</span> <span class="pre">of</span> <span class="pre">2nd</span> <span class="pre">CXR</span></code>
+are the dates in which the first two X-Ray scans were taken and correspond to the
+two severity values, the time information in the X-Ray’s DICOM should then allow
+you to identify the imaging scans that match with those dates.</p>
+</div>
+<div class="section" id="date-format-seems-to-be-inconsistent-across-date-variables-some-are-in-us-format-and-some-are-in-uk-format-why-is-this-is-there-a-pattern">
+<h2>Date format seems to be inconsistent across date variables (some are in US format and some are in UK format). Why is this? Is there a pattern?<a class="headerlink" href="#date-format-seems-to-be-inconsistent-across-date-variables-some-are-in-us-format-and-some-are-in-uk-format-why-is-this-is-there-a-pattern" title="Permalink to this headline">¶</a></h2>
+<p>Yes, it is true that the date format is not consistent across all variables, but it
+should be consistent within each single variable (i.e. if it is UK format, all entries
+for that variable are in UK format).</p>
+<p>The dates of the Date of acquisition of 1st RT-PCR and Date of acquisition of 2n RT-PCR are in
+US format, however we have seen there are a few instances where some sites have inputted
+additional text in these fields which will require a small amount of cleaning
+(e.g. <code class="docutils literal notranslate"><span class="pre">Date</span> <span class="pre">of</span> <span class="pre">1st</span> <span class="pre">CXR</span></code> with value <code class="docutils literal notranslate"><span class="pre">[TEXT]</span> <span class="pre">-</span> <span class="pre">2020-03-27</span></code>).</p>
+<p>All other dates should be in UK or ISO format.</p>
+</div>
+<div class="section" id="have-any-of-the-dates-been-changed-systematically-as-part-of-the-anonymisation-process-or-are-the-dates-in-the-dicom-files-and-the-clinical-variables-the-actual-dates-of-scans-and-tests">
+<h2>Have any of the dates been changed systematically as part of the anonymisation process? Or are the dates in the DICOM files and the clinical variables the actual dates of scans and tests?<a class="headerlink" href="#have-any-of-the-dates-been-changed-systematically-as-part-of-the-anonymisation-process-or-are-the-dates-in-the-dicom-files-and-the-clinical-variables-the-actual-dates-of-scans-and-tests" title="Permalink to this headline">¶</a></h2>
+<p>Most dates in the DICOM files have been offset. The excludes the Acquisition date
+(if present) and the Study Date, so these can be used to identify the time of scan.
+In addition, the patient’s DOB has been reset to the year of birth followed by 0101.
+The dates in the clinical data have not been touched.</p>
+</div>
+<div class="section" id="there-are-cases-where-patients-have-multiple-json-files-why-is-this-which-one-is-the-correct-one">
+<h2>There are cases where patients have multiple JSON files. Why is this? Which one is the correct one?<a class="headerlink" href="#there-are-cases-where-patients-have-multiple-json-files-why-is-this-which-one-is-the-correct-one" title="Permalink to this headline">¶</a></h2>
+<p>Situations with patients who have multiple JSON files can occur when the sites that
+contribute data to NCCID have uploaded data, then revised/corrected and then
+re-uploaded it. We are not currently over-writing files, as it would make data management
+harder. We suggest that for each patient you utilise the latest JSON file that you have available.</p>
+<p>Finally, there can also be cases in which the same patient went to two different hospitals,
+and for which images have been received from two centres separately. In similar situations,
+the older JSON files should be considered.</p>
+</div>
 </div>
 
 
@@ -165,6 +249,13 @@
            
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="project_summaries.html" class="btn btn-neutral float-left" title="NCCID project summaries" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>
