@@ -307,8 +307,8 @@ def extract_raw_files_from_folder(folder, inventory):
     :return: each object (yield)
     :rtype: boto3.resource('s3').ObjectSummary
     """
-    listing = inventory if inventory.enabled else bucket.objects
-    for obj in listing.filter(Prefix=folder):
+    listing = inventory.filter if inventory.enabled else bucket.objects.filter
+    for obj in listing(Prefix=folder):
         yield "process", obj, None
 
 
