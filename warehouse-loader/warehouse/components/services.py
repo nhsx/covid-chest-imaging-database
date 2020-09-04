@@ -167,17 +167,30 @@ class Inventory:
         """
         return self.enabled
 
-    def filter(self, Prefix):
-        """Get an interator of objects with a given prefix
+    def _filter_iter(self, Prefix):
+        """Get an iterator to of known objects with a given prefix
+        that can be used by the actual filter functions after transformation
         """
         if not self.enabled:
             return
-        # Use a single resource for the filter which speeds things up
-        s3 = boto3.resource("s3")
         for _, row in self.df[
             self.df["key"].str.startswith(Prefix)
         ].iterrows():
-            yield s3.ObjectSummary(row["bucket"], row["key"])
+            yield row
+
+    def filter_keys(self, Prefix):
+        """Get an iterator of object keys with a given prefix
+        """
+        for obj in self._filter_iter(Prefix=Prefix):
+            yield obj["key"]
+
+    def filter(self, Prefix):
+        """Get an interator of objects with a given prefix
+        """
+        # Use a single resource for the filter which speeds things up
+        s3 = boto3.resource("s3")
+        for obj in self._filter_iter(Prefix=Prefix):
+            yield s3.ObjectSummary(obj["bucket"], obj["key"])
 
     def list_folders(self, Prefix):
         """List the folders just below the given prefix,
