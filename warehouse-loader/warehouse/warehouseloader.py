@@ -241,6 +241,14 @@ def load_existing_files(keycache, patientcache, inventory):
     :param keycache: the key cache service (provided by bonobo)
     :type keycache: Keycache
     """
+    # Set up our listing function.
+    if inventory.enabled:
+        listing = inventory.filter_keys
+    else:
+        listing = lambda Prefix: map(
+            lambda obj: obj.key, bucket.objects.filter(Prefix=Prefix)
+        )
+
     patient_file_name = re.compile(
         r"^.+/data/(?P<patient_id>.*)/(?:data|status)_\d{4}-\d{2}-\d{2}.json$"
     )
@@ -248,9 +256,8 @@ def load_existing_files(keycache, patientcache, inventory):
         ("validation", constants.VALIDATION_PREFIX),
         ("training", constants.TRAINING_PREFIX),
     ]:
-        listing = inventory if inventory.enabled else bucket.objects
-        for obj in listing.filter(Prefix=prefix):
-            m = patient_file_name.match(obj.key)
+        for key in listing(Prefix=prefix):
+            m = patient_file_name.match(key)
             if m:
                 # It is a patient file
                 patient_id = m.group("patient_id")
@@ -258,9 +265,9 @@ def load_existing_files(keycache, patientcache, inventory):
             else:
                 # It is an image file
                 try:
-                    keycache.add(obj.key)
+                    keycache.add(key)
                 except services.DuplicateKeyError:
-                    logger.exception(f"{obj.key} is duplicate in cache.")
+                    logger.exception(f"{key} is duplicate in cache.")
                     continue
     return bonobo.constants.NOT_MODIFIED
 
