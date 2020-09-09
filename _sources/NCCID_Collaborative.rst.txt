@@ -45,7 +45,7 @@ The NCCID Collaborative includes all the researchers, clinicians and nurses who 
 | Dr Thomas Payne, Dr Mark Ingram
 
 | **Sandwell and West Birmingham NHS Trust**
-| Dr Bahadar Bhatia, Dr Sarah Yusuf, Fiona Rotherham, Gayle Warren, Angela Heeney, Angela Bowen, Adele Wilson
+| Dr Bahadar Bhatia, Dr Sarah Yusuf, Fiona Rotherham, Gayle Warren, Angela Heeney, Angela Bowen, Adele Wilson, Zahida Hussain
 
 | **West Suffolk NHS Foundation Trust**
 | Joanne Kellett, Rachael Harrison, Janet Watkins, Lisa Patterson
