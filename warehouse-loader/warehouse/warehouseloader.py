@@ -17,7 +17,7 @@ import pydicom
 from bonobo.config import use
 from botocore.exceptions import ClientError
 
-from warehouse.components import services, constants
+from warehouse.components import constants, services
 
 # set up logging
 mondrian.setup(excepthook=True)
@@ -233,22 +233,34 @@ def load_config(config):
 
 @use("keycache")
 @use("patientcache")
-def load_existing_files(keycache, patientcache):
+@use("inventory")
+def load_existing_files(keycache, patientcache, inventory):
     """ Loading existing files from the training and
     validation sets into the keycache.
 
     :param keycache: the key cache service (provided by bonobo)
     :type keycache: Keycache
     """
+    # Set up our listing function.
+    if inventory.enabled:
+        listing = inventory.filter_keys
+    else:
+        # When using the original listing without inventory, we need to
+        # transform the objects returned by the filter
+        def listing(Prefix):
+            return map(
+                lambda obj: obj.key, bucket.objects.filter(Prefix=Prefix)
+            )
+
     patient_file_name = re.compile(
-        r"^.+/data/(?P<patient_id>.*)/(?P<outcome>data|status)_\d{4}-\d{2}-\d{2}.json$"
+        r"^.+/data/(?P<patient_id>.*)/(?:data|status)_\d{4}-\d{2}-\d{2}.json$"
     )
     for group, prefix in [
         ("validation", constants.VALIDATION_PREFIX),
         ("training", constants.TRAINING_PREFIX),
     ]:
-        for obj in bucket.objects.filter(Prefix=prefix):
-            m = patient_file_name.match(obj.key)
+        for key in listing(Prefix=prefix):
+            m = patient_file_name.match(key)
             if m:
                 # It is a patient file
                 patient_id = m.group("patient_id")
@@ -256,16 +268,17 @@ def load_existing_files(keycache, patientcache):
             else:
                 # It is an image file
                 try:
-                    keycache.add(obj.key)
+                    keycache.add(key)
                 except services.DuplicateKeyError:
-                    logger.exception(f"{obj.key} is duplicate in cache.")
+                    logger.exception(f"{key} is duplicate in cache.")
                     continue
     return bonobo.constants.NOT_MODIFIED
 
 
 @use("config")
+@use("inventory")
 @use("rawsubfolderlist")
-def extract_raw_folders(config, rawsubfolderlist):
+def extract_raw_folders(config, inventory, rawsubfolderlist):
     """ Extractor: get all date folders within the `raw/` data drop
 
     :return: subfolders within the `raw/` prefix (yield)
@@ -274,22 +287,22 @@ def extract_raw_folders(config, rawsubfolderlist):
     for site_raw_prefix in config.get_raw_prefixes():
         if not site_raw_prefix.endswith("/"):
             site_raw_prefix += "/"
-        result = s3_client.list_objects(
-            Bucket=BUCKET_NAME, Prefix=site_raw_prefix, Delimiter="/"
-        )
-        # list folders in date order
-        folders = iter(
-            sorted(
-                [p.get("Prefix") for p in result.get("CommonPrefixes")],
-                reverse=False,
+
+        if inventory.enabled:
+            prefixes = inventory.list_folders(site_raw_prefix)
+        else:
+            result = s3_client.list_objects(
+                Bucket=BUCKET_NAME, Prefix=site_raw_prefix, Delimiter="/"
             )
-        )
-        for f in folders:
+            prefixes = [p.get("Prefix") for p in result.get("CommonPrefixes")]
+        # list folders in date order
+        for folder in sorted(prefixes, reverse=False):
             for subfolder in rawsubfolderlist.get():
-                yield f + subfolder
+                yield folder + subfolder
 
 
-def extract_raw_files_from_folder(folder):
+@use("inventory")
+def extract_raw_files_from_folder(folder, inventory):
     """ Extract files from a given date folder in the data dump
 
     :param folder: the folder to process
@@ -297,7 +310,8 @@ def extract_raw_files_from_folder(folder):
     :return: each object (yield)
     :rtype: boto3.resource('s3').ObjectSummary
     """
-    for obj in bucket.objects.filter(Prefix=folder):
+    listing = inventory.filter if inventory.enabled else bucket.objects.filter
+    for obj in listing(Prefix=folder):
         yield "process", obj, None
 
 
@@ -583,11 +597,18 @@ def get_services(**options):
     keycache = services.KeyCache()
     patientcache = services.PatientCache()
     rawsubfolderlist = services.SubFolderList()
+
+    if bool(os.getenv("SKIP_INVENTORY", default=False)):
+        inventory = services.Inventory()
+    else:
+        inventory = services.Inventory(main_bucket=BUCKET_NAME)
+
     return {
         "config": config,
         "keycache": keycache,
         "patientcache": patientcache,
         "rawsubfolderlist": rawsubfolderlist,
+        "inventory": inventory,
     }
 
 

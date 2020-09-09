@@ -11,7 +11,11 @@ from bonobo.config import Configurable, ContextProcessor, use_raw_input
 from bonobo.util.objects import ValueHolder
 
 import warehouse.warehouseloader as wl  # noqa: E402
-from warehouse.components.services import PipelineConfig, SubFolderList
+from warehouse.components.services import (
+    Inventory,
+    PipelineConfig,
+    SubFolderList,
+)
 
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
@@ -69,7 +73,14 @@ def get_services(**options):
     """
     config = PipelineConfig()
     rawsubfolderlist = SubFolderList(folder_list=["data/"])
-    return {"config": config, "rawsubfolderlist": rawsubfolderlist}
+    # Do not use inventory in this task as it is already quite fast
+    inventory = Inventory()
+
+    return {
+        "config": config,
+        "rawsubfolderlist": rawsubfolderlist,
+        "inventory": inventory,
+    }
 
 
 def main():

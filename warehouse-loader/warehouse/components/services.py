@@ -1,6 +1,9 @@
 import logging
 from pathlib import Path
 import mondrian
+import boto3
+import pandas as pd
+import tempfile
 
 from warehouse.components.constants import TRAINING_PERCENTAGE
 
@@ -107,3 +110,101 @@ class SubFolderList:
 
     def get(self):
         return self.folder_list
+
+
+class Inventory:
+    def __init__(self, main_bucket=None):
+        self.enabled = main_bucket is not None
+
+        if not self.enabled:
+            logger.info("Not using inventory.")
+        else:
+            try:
+                inventory_bucket = main_bucket + "-inventory"
+                s3_client = boto3.client("s3")
+                # Get the latest list of inventory files
+                objs = s3_client.list_objects_v2(
+                    Bucket=inventory_bucket,
+                    Prefix=f"{main_bucket}/daily-full-inventory/hive",
+                )["Contents"]
+                latest_symlink = sorted([obj["Key"] for obj in objs])[-1]
+                header_list = ["bucket", "key", "size"]
+                response = s3_client.get_object(
+                    Bucket=inventory_bucket, Key=latest_symlink
+                )
+                frames = []
+                for line in (
+                    response["Body"].read().decode("utf-8").split("\n")
+                ):
+                    inventory_file = line.replace(
+                        f"s3://{inventory_bucket}/", ""
+                    )
+                    logger.debug(
+                        f"Downloading inventory file: {inventory_file}"
+                    )
+                    with tempfile.NamedTemporaryFile(mode="w+b") as f:
+                        s3_client.download_fileobj(
+                            inventory_bucket, inventory_file, f
+                        )
+                        f.seek(0)
+                        frames += [
+                            pd.read_csv(
+                                f,
+                                compression="gzip",
+                                error_bad_lines=False,
+                                names=header_list,
+                            )
+                        ]
+                self.df = pd.concat(frames, ignore_index=True)
+                # This should reduce memory usage, since "bucket" is only a single value
+                self.df = self.df.astype({"bucket": "category"})
+                # Reduce memory usage by dropping unusued column
+                self.df.drop(columns=["size"], inplace=True)
+                logger.info(f"Using inventory: {len(self.df)} items")
+            except Exception as e:  # noqa: E722
+                logger.warn(f"Skip using inventory due to run time error: {e}")
+                self.enabled = False
+
+    def enabled(self):
+        """Check whether the inventory is to be used or not
+        """
+        return self.enabled
+
+    def _filter_iter(self, Prefix):
+        """Get an iterator to of known objects with a given prefix
+        that can be used by the actual filter functions after transformation
+        """
+        if not self.enabled:
+            return
+        for _, row in self.df[
+            self.df["key"].str.startswith(Prefix)
+        ].iterrows():
+            yield row
+
+    def filter_keys(self, Prefix):
+        """Get an iterator of object keys with a given prefix
+        """
+        for obj in self._filter_iter(Prefix=Prefix):
+            yield obj["key"]
+
+    def filter(self, Prefix):
+        """Get an interator of objects with a given prefix
+        """
+        # Use a single resource for the filter which speeds things up
+        s3 = boto3.resource("s3")
+        for obj in self._filter_iter(Prefix=Prefix):
+            yield s3.ObjectSummary(obj["bucket"], obj["key"])
+
+    def list_folders(self, Prefix):
+        """List the folders just below the given prefix,
+        listing including the prefix + folder name.
+        """
+        if not self.enabled:
+            return
+        return (
+            self.df["key"]
+            .str.extract(pat=rf"({Prefix}[^/]*/?).*", expand=False)
+            .dropna()
+            .unique()
+            .tolist()
+        )
