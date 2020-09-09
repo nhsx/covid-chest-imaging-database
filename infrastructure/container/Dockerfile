@@ -8,7 +8,7 @@ RUN apt-get update \
       git=1:2.17.1-1ubuntu0.7 \
       python3=3.6.7-1~18.04 \
       python3-dev=3.6.7-1~18.04 \
-      python3-pip=9.0.1-2.3~ubuntu1.18.04.1 \
+      python3-pip=9.0.1-2.3~ubuntu1.18.04.2 \
       python3-setuptools=39.0.1-2 \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
