@@ -390,6 +390,32 @@ Resources:
               Values:
                 - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/"]]
 
+  AuditorReadOnlyPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Join ["", ["auditor-", !Ref "BucketNameParameter"]]
+      Description: Allow read-only access to the object logs
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - "s3:ListBucket"
+              - "s3:HeadBucket"
+            Resource:
+              !GetAtt CloudTrailLogsBucket.Arn
+          - Effect: Allow
+            Action:
+              - "s3:GetObject"
+            Resource:
+              - !Sub "${CloudTrailLogsBucket.Arn}/AWSLogs/${AWS::AccountId}/*"
+  AuditorGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      ManagedPolicyArns:
+        - !Ref AuditorReadOnlyPolicy
+        - !Ref RotateOwnCredentials
+
   # Compute
   VPC:
     Type: AWS::EC2::VPC
