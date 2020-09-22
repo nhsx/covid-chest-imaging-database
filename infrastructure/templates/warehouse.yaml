@@ -310,6 +310,35 @@ Resources:
         - !Ref TrainingAllPolicy
         - !Ref RotateOwnCredentials
 
+  ValidationAllPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Join ["", ["validation-all-", !Ref "BucketNameParameter"]]
+      Description: Allow reading all data in the validation set
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - "s3:ListBucket"
+              - "s3:HeadBucket"
+            Resource:
+              !GetAtt [WarehouseBucket, Arn]
+            Condition:
+              StringLike:
+                s3:prefix: ["validation/*"]
+          - Effect: Allow
+            Action:
+              - "s3:GetObject"
+            Resource:
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/validation/*"]]
+  ValidationAllGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      ManagedPolicyArns:
+        - !Ref ValidationAllPolicy
+        - !Ref RotateOwnCredentials
+
   # CloudTrail
   CloudTrailLogsBucket:
     Type: AWS::S3::Bucket
