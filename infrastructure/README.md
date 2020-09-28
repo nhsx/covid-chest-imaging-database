@@ -23,6 +23,14 @@ optional arguments:
                         suffix to use for templates and names
 ```
 
+The (simplified) infrastructure of the warehouse outline in the diagram below.
+Solid arrows mean data flow or write access, dashed lines mean read-only access,
+dotted line means logical connection between items.
+
+![](nccid_infrastructure_outline.png)
+
+
+To regenerate the above graphics, run `diagram.py`.
 
 ## Docs Preview
 
