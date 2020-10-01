@@ -13,3 +13,5 @@ When raising bugs please explain the issue in good detail and provide a guide to
 
 Please raise feature requests as issues before contributing any code. This ensures
 they are discussed properly before any time is spent on them.
+
+      #THANKYOU FOR READ THE CONTRIBUTION GUIDLINES KEEP CODING AND KEEP CONTRIBUTING!!!
