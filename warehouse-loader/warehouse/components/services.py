@@ -128,7 +128,7 @@ class Inventory:
                     Prefix=f"{main_bucket}/daily-full-inventory/hive",
                 )["Contents"]
                 latest_symlink = sorted([obj["Key"] for obj in objs])[-1]
-                header_list = ["bucket", "key", "size"]
+                header_list = ["bucket", "key", "size", "date"]
                 response = s3_client.get_object(
                     Bucket=inventory_bucket, Key=latest_symlink
                 )
