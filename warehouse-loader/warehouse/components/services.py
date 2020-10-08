@@ -158,8 +158,14 @@ class Inventory:
                 self.df = pd.concat(frames, ignore_index=True)
                 # This should reduce memory usage, since "bucket" is only a single value
                 self.df = self.df.astype({"bucket": "category"})
-                # Reduce memory usage by dropping unusued column
-                self.df.drop(columns=["size"], inplace=True)
+                # Reduce memory usage by dropping unused column
+                header_drop_list = [
+                    header
+                    for header in header_list
+                    if header not in {"bucket", "key"}
+                ]
+                for header in header_drop_list:
+                    self.df.drop(columns=[header], inplace=True)
                 logger.info(f"Using inventory: {len(self.df)} items")
             except Exception as e:  # noqa: E722
                 logger.warn(f"Skip using inventory due to run time error: {e}")
