@@ -96,3 +96,11 @@ harder. We suggest that for each patient you utilise the latest JSON file that y
 Finally, there can also be cases in which the same patient went to two different hospitals,
 and for which images have been received from two centres separately. In similar situations,
 the older JSON files should be considered.
+
+
+Patients have multiple `status` and/or `data` files. I'm having trouble finding the latest one to use, what should I do?
+------------------------------------------------------------------------------------------------------------------------
+
+The development team prepared a tool to help you to aggregate JSON metadata and convert the results to CSV files. Please
+check `this repository <https://bitbucket.org/scicomcore/nccid-data-to-csv/>`_, where the README contains all the relevant
+information and the relevant download links.
