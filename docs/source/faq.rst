@@ -45,7 +45,7 @@ provided by the radiologist reviewing the images, on a scale of three severity l
 
 
 Is the CXR severity score only available for the first two X-Ray studies?
-----------------------------------------------------------------
+-------------------------------------------------------------------------
 
 Yes,the severity information is only available for the first two X-Ray studies
 for each patient.
