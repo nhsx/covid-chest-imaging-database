@@ -98,7 +98,7 @@ and for which images have been received from two centres separately. In similar 
 the older JSON files should be considered.
 
 
-Patients have multiple `status` and/or `data` files. I'm having trouble finding the latest one to use, what should I do?
+Patients have multiple "status" and/or "data" files. I'm having trouble finding the latest one to use, what should I do?
 ------------------------------------------------------------------------------------------------------------------------
 
 The development team prepared a tool to help you to aggregate JSON metadata and convert the results to CSV files. Please
