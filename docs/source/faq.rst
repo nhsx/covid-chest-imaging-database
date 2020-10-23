@@ -98,8 +98,8 @@ and for which images have been received from two centres separately. In similar 
 the older JSON files should be considered.
 
 
-Patients have multiple "status" and/or "data" files. I'm having trouble finding the latest one to use, what should I do?
-------------------------------------------------------------------------------------------------------------------------
+How can I combine the clinical data into a single table/dataset, selecting only the most recent "data" and/or "data" files for each patient?
+--------------------------------------------------------------------------------------------------------------------------------------------
 
 The development team prepared a tool to help you to aggregate JSON metadata and convert the results to CSV files. Please
 check `this repository <https://bitbucket.org/scicomcore/nccid-data-to-csv/>`_, where the README contains all the relevant
