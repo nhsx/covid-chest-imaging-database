@@ -45,7 +45,7 @@ provided by the radiologist reviewing the images, on a scale of three severity l
 
 
 Is the CXR severity score only available for the first two X-Ray studies?
-----------------------------------------------------------------
+-------------------------------------------------------------------------
 
 Yes,the severity information is only available for the first two X-Ray studies
 for each patient.
@@ -96,3 +96,11 @@ harder. We suggest that for each patient you utilise the latest JSON file that y
 Finally, there can also be cases in which the same patient went to two different hospitals,
 and for which images have been received from two centres separately. In similar situations,
 the older JSON files should be considered.
+
+
+How can I combine the clinical data into a single table/dataset, selecting only the most recent "data" and/or "data" files for each patient?
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+The development team prepared a tool to help you to aggregate JSON metadata and convert the results to CSV files. Please
+check `this repository <https://bitbucket.org/scicomcore/nccid-data-to-csv/>`_, where the README contains all the relevant
+information and the relevant download links.

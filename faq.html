@@ -174,6 +174,7 @@ suggest new entries!</p>
 <li><p><a class="reference internal" href="#date-format-seems-to-be-inconsistent-across-date-variables-some-are-in-us-format-and-some-are-in-uk-format-why-is-this-is-there-a-pattern" id="id7">Date format seems to be inconsistent across date variables (some are in US format and some are in UK format). Why is this? Is there a pattern?</a></p></li>
 <li><p><a class="reference internal" href="#have-any-of-the-dates-been-changed-systematically-as-part-of-the-anonymisation-process-or-are-the-dates-in-the-dicom-files-and-the-clinical-variables-the-actual-dates-of-scans-and-tests" id="id8">Have any of the dates been changed systematically as part of the anonymisation process? Or are the dates in the DICOM files and the clinical variables the actual dates of scans and tests?</a></p></li>
 <li><p><a class="reference internal" href="#there-are-cases-where-patients-have-multiple-json-files-why-is-this-which-one-is-the-correct-one" id="id9">There are cases where patients have multiple JSON files. Why is this? Which one is the correct one?</a></p></li>
+<li><p><a class="reference internal" href="#how-can-i-combine-the-clinical-data-into-a-single-table-dataset-selecting-only-the-most-recent-data-and-or-data-files-for-each-patient" id="id10">How can I combine the clinical data into a single table/dataset, selecting only the most recent “data” and/or “data” files for each patient?</a></p></li>
 </ul>
 </div>
 <div class="section" id="how-often-is-new-data-uploaded-to-the-database">
@@ -241,6 +242,12 @@ harder. We suggest that for each patient you utilise the latest JSON file that y
 <p>Finally, there can also be cases in which the same patient went to two different hospitals,
 and for which images have been received from two centres separately. In similar situations,
 the older JSON files should be considered.</p>
+</div>
+<div class="section" id="how-can-i-combine-the-clinical-data-into-a-single-table-dataset-selecting-only-the-most-recent-data-and-or-data-files-for-each-patient">
+<h2>How can I combine the clinical data into a single table/dataset, selecting only the most recent “data” and/or “data” files for each patient?<a class="headerlink" href="#how-can-i-combine-the-clinical-data-into-a-single-table-dataset-selecting-only-the-most-recent-data-and-or-data-files-for-each-patient" title="Permalink to this headline">¶</a></h2>
+<p>The development team prepared a tool to help you to aggregate JSON metadata and convert the results to CSV files. Please
+check <a class="reference external" href="https://bitbucket.org/scicomcore/nccid-data-to-csv/">this repository</a>, where the README contains all the relevant
+information and the relevant download links.</p>
 </div>
 </div>
 
