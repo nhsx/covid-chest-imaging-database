@@ -587,7 +587,7 @@ Resources:
     Properties:
       RequiresCompatibilities:
         - "FARGATE"
-      Cpu: "512"  # 1 vCPU
+      Cpu: "512"  # 0.5 vCPU
       Memory: "1GB"
       NetworkMode: "awsvpc"
       ExecutionRoleArn: !GetAtt [ECSTaskExecutionRole, Arn]
@@ -620,8 +620,8 @@ Resources:
     Properties:
       RequiresCompatibilities:
         - "FARGATE"
-      Cpu: "1024"  # 1 vCPU
-      Memory: "8GB"
+      Cpu: "2048"  # 2 vCPU
+      Memory: "12GB"
       NetworkMode: "awsvpc"
       ExecutionRoleArn: !GetAtt [ECSTaskExecutionRole, Arn]
       TaskRoleArn: !GetAtt [PipelineRole, Arn]
