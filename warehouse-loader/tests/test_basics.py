@@ -98,12 +98,13 @@ def test_partial_dicom_download(initial_range_kb):
     test_file_name = str(
         pathlib.Path(__file__).parent.absolute() / "test_data" / "sample.dcm"
     )
+    bucket_name = "testbucket-12345"
 
     # Upload a file to S3
-    conn = boto3.resource("s3", region_name="eu-west-2")
-    conn.create_bucket(Bucket="testbucket")
-    conn.meta.client.upload_file(test_file_name, "testbucket", "sample.dcm")
-    test_object = conn.Object("testbucket", "sample.dcm")
+    conn = boto3.resource("s3", region_name="us-east-1")
+    conn.create_bucket(Bucket=bucket_name)
+    conn.meta.client.upload_file(test_file_name, bucket_name, "sample.dcm")
+    test_object = conn.Object(bucket_name, "sample.dcm")
     image_data = PartialDicom(
         test_object, initial_range_kb=initial_range_kb
     ).download()
@@ -154,9 +155,9 @@ def test_load_existing_files():
         f"{VALIDATION_PREFIX}mri/Covid2/{pydicom.uid.generate_uid()}.dcm",
     ]
 
-    conn = boto3.resource("s3", region_name="eu-west-2")
+    conn = boto3.resource("s3", region_name="us-east-1")
 
-    main_bucket_name = "testbucket"
+    main_bucket_name = "testbucket-12345"
     conn.create_bucket(Bucket=main_bucket_name)
 
     for test_file_name in test_file_names:
