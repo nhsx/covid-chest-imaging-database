@@ -173,5 +173,6 @@ Information Regulations 2002) ceases effect.
    NCCID_Collaborative
    project_summaries
    other_datasets
+   stats
    faq
 
