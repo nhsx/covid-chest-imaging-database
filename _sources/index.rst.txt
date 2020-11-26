@@ -66,6 +66,7 @@ The hospitals and trusts already contributing data to NCCID are listed below:
 - `Somerset NHS Foundation Trust <https://www.somersetft.nhs.uk/>`_
 - `Cambridge University Hospitals NHS Foundation Trust <https://www.cuh.nhs.uk/>`_
 - `Imperial College Healthcare NHS Trust <https://www.imperial.nhs.uk/>`_
+- `Oxford University Hospitals NHS Foundation Trust <https://www.ouh.nhs.uk/>`_
 
 .. To add a site to the map below, please add an entry to
    source/scripts/hospital_locations.csv
