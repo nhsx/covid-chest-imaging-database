@@ -45,6 +45,68 @@ Resources:
           Id: "daily-full-inventory"
           IncludedObjectVersions: Current
           ScheduleFrequency: Daily
+      ReplicationConfiguration:
+        Role: !GetAtt [ReplicaRole, Arn]
+        Rules:
+        - Destination:
+            Bucket: !GetAtt [WarehouseBackupBucket, Arn]
+            StorageClass: STANDARD_IA
+          Id: Backup
+          Prefix: 'raw-'
+          Status: Enabled
+
+  # Backup role
+  ReplicaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            Service: [s3.amazonaws.com]
+
+  ReplicaPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+        - Action:
+          - s3:Get*
+          - s3:ListBucket
+          Effect: 'Allow'
+          Resource:
+            - !GetAtt [WarehouseBucket, Arn]
+            - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/*"]]
+        - Action:
+          - s3:ReplicateObject
+          - s3:ReplicateDelete
+          - s3:ReplicateTags
+          - s3:GetObjectVersionTagging
+          Effect: 'Allow'
+          Resource: !Join ["", [!GetAtt [WarehouseBackupBucket, Arn], "/*"]]
+      PolicyName: ReplicaPolicy
+      Roles: [!Ref 'ReplicaRole']
+
+  # Backup bucket
+  WarehouseBackupBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AccessControl: Private
+      BucketName: !Sub "${BucketNameParameter}-backup"
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+        IgnorePublicAcls: true
 
   # Inventory bucket
   WarehouseInventoryBucket:
@@ -390,6 +452,7 @@ Resources:
             - Type: AWS::S3::Object
               Values:
                 - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/"]]
+                - !Join ["", [!GetAtt [WarehouseBackupBucket, Arn], "/"]]
 
   AuditorReadOnlyPolicy:
     Type: AWS::IAM::ManagedPolicy
