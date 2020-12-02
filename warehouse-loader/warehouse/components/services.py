@@ -209,7 +209,7 @@ class Inventory:
             return
         return (
             self.df["key"]
-            .str.extract(pat=rf"({Prefix}[^/]*/?).*", expand=False)
+            .str.extract(pat=rf"({Prefix}[^/]*/).*", expand=False)
             .dropna()
             .unique()
             .tolist()

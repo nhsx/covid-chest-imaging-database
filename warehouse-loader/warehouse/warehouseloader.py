@@ -294,7 +294,11 @@ def extract_raw_folders(config, inventory, rawsubfolderlist):
             result = s3_client.list_objects(
                 Bucket=BUCKET_NAME, Prefix=site_raw_prefix, Delimiter="/"
             )
-            prefixes = [p.get("Prefix") for p in result.get("CommonPrefixes")]
+            prefixes = (
+                [p.get("Prefix") for p in result.get("CommonPrefixes")]
+                if result.get("CommonPrefixes")
+                else []
+            )
         # list folders in date order
         for folder in sorted(prefixes, reverse=False):
             for subfolder in rawsubfolderlist.get():
