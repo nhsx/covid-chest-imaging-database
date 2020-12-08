@@ -5,6 +5,12 @@ import boto3
 import pandas as pd
 import tempfile
 
+import gzip
+import csv
+from sys import getsizeof
+import os
+import psutil
+
 from warehouse.components.constants import TRAINING_PERCENTAGE
 
 mondrian.setup(excepthook=True)
@@ -111,10 +117,14 @@ class SubFolderList:
     def get(self):
         return self.folder_list
 
+def usage():
+    process = psutil.Process(os.getpid())
+    return process.memory_info()[0] / float(2 ** 20)
 
 class Inventory:
     def __init__(self, main_bucket=None):
         self.enabled = main_bucket is not None
+        self.bucket = main_bucket
 
         if not self.enabled:
             logger.info("Not using inventory.")
@@ -132,7 +142,8 @@ class Inventory:
                 response = s3_client.get_object(
                     Bucket=inventory_bucket, Key=latest_symlink
                 )
-                frames = []
+                self.keys = set()
+                counter = 0
                 for line in (
                     response["Body"].read().decode("utf-8").split("\n")
                 ):
@@ -142,39 +153,27 @@ class Inventory:
                     logger.debug(
                         f"Downloading inventory file: {inventory_file}"
                     )
-                    with tempfile.NamedTemporaryFile(mode="w+b") as f:
+                    with tempfile.TemporaryFile(mode="w+b") as f:
                         s3_client.download_fileobj(
                             inventory_bucket, inventory_file, f
                         )
                         f.seek(0)
-                        frames += [
-                            pd.read_csv(
-                                f,
-                                compression="gzip",
-                                error_bad_lines=False,
-                                names=header_list,
-                            )
-                        ]
-                self.df = pd.concat(frames, ignore_index=True)
-                # This should reduce memory usage, since "bucket" is only a single value
-                self.df = self.df.astype({"bucket": "category"})
-                # Reduce memory usage by dropping unused column
-                header_drop_list = [
-                    header
-                    for header in header_list
-                    if header not in {"bucket", "key"}
-                ]
-                for header in header_drop_list:
-                    self.df.drop(columns=[header], inplace=True)
-                logger.info(f"Using inventory: {len(self.df)} items")
+                        with gzip.open(f, mode='rt') as cf:
+                            reader = csv.reader(cf)
+                            self.keys |= {row[1] for row in reader}
+                logger.info(f"Using inventory: {len(self.keys)} items")
             except Exception as e:  # noqa: E722
                 logger.warn(f"Skip using inventory due to run time error: {e}")
                 self.enabled = False
+
 
     def enabled(self):
         """Check whether the inventory is to be used or not
         """
         return self.enabled
+
+    def bucket(self):
+        return self.bucket
 
     def _filter_iter(self, Prefix):
         """Get an iterator to of known objects with a given prefix
@@ -182,16 +181,17 @@ class Inventory:
         """
         if not self.enabled:
             return
-        for _, row in self.df[
-            self.df["key"].str.startswith(Prefix)
-        ].iterrows():
-            yield row
+        # for _, row in self.df[
+        #     self.df["key"].str.startswith(Prefix)
+        # ].iterrows():
+        #     yield row
+        return [key for key in self.keys if key.startswith(Prefix)]
 
     def filter_keys(self, Prefix):
         """Get an iterator of object keys with a given prefix
         """
-        for obj in self._filter_iter(Prefix=Prefix):
-            yield obj["key"]
+        for key in self._filter_iter(Prefix=Prefix):
+            yield key
 
     def filter(self, Prefix):
         """Get an interator of objects with a given prefix
