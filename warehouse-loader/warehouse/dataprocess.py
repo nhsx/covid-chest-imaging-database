@@ -28,6 +28,8 @@ import pandas as pd
 import re
 import time
 import pydicom
+from nccid.cleaning import clean_data_df, patient_df_pipeline
+
 
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
@@ -65,22 +67,28 @@ def get_files_list(file_list, prefix):
 @use("inventory")
 def list_clinical_files(inventory):
     for group in ["training", "validation"]:
+        # counter = 0
         prefix = f"{group}/data"
         data_files = sorted(inventory.filter_keys(Prefix=prefix))
         for data_list in get_files_list(data_files, prefix):
+            # counter += 1
             yield group, data_list
+            # if counter >= 1000:
+            # break
 
 
 @use("inventory")
 def list_image_metadata_files(inventory):
     for group in ["training", "validation"]:
         for modality in ["ct", "mri", "xray"]:
-            # for group in ["training"]:
-            #     for modality in ["mri", "xray"]:
+            # counter = 0
             prefix = f"{group}/{modality}-metadata"
             modality_files = sorted(inventory.filter_keys(Prefix=prefix))
             for series in get_files_list(modality_files, prefix):
+                # counter += 1
                 yield group, modality, series
+                # if counter >= 50:
+                # break
 
 
 @use("inventory")
@@ -143,6 +151,7 @@ def load_image_metadata_files(*args, inventory):
     data = {k: {"vr": "SQ"} if v is None else v for k, v in data.items()}
     ds = pydicom.Dataset.from_json(data)
     record = {"Pseudonym": ds.PatientID, "group": group}
+    # Should pick and select actually the fields that we are interested in, most of it is useless.
     record.update({attribute: ds.get(attribute) for attribute in ds.dir()})
     yield modality, pd.DataFrame([record])
 
@@ -177,7 +186,8 @@ def patients_data_dicom_update(patients, ct, mri, xray) -> pd.DataFrame:
                 ].values[0]
                 print(f"New sex {x['Pseudonym']}")
             except IndexError:
-                print(f'Pseudonym not in df_dicom data: {x["Pseudonym"]}')
+                pass
+                # print(f'Pseudonym not in df_dicom data: {x["Pseudonym"]}')
         return sex
 
     def _fill_age(x, df_dicom):
@@ -190,7 +200,6 @@ def patients_data_dicom_update(patients, ct, mri, xray) -> pd.DataFrame:
                 print(f"New age {x['Pseudonym']}")
             except IndexError:
                 pass
-        #             print(f'Pseudonym not in df_dicom data: {x["Pseudonym"]}')
         return age
 
     patients["age_update"] = patients.apply(
@@ -210,30 +219,32 @@ class DataExtractor(Configurable):
         records = yield ValueHolder(dict())
         values = records.get()
 
-        ct = pd.concat(values["ct"], ignore_index=True)
-        mri = pd.concat(values["mri"], ignore_index=True)
-        xray = pd.concat(values["xray"], ignore_index=True)
+        ct = values["ct"]
+        mri = values["mri"]
+        xray = values["xray"]
 
         ct.to_csv("ct.csv", index=False, header=True)
         mri.to_csv("mri.csv", index=False, header=True)
         xray.to_csv("xray.csv", index=False, header=True)
 
-        patients = pd.concat(values["patient"], ignore_index=True)
+        patients = values["patient"]
         patients.to_csv("patient.csv", index=False, header=True)
-        
-        from nccid.cleaning import clean_data_df
-        patients_clean = clean_data_df(patients, patient_df_pipeline)
-        # patients_clean = patients.copy()
 
-        patients_clean = patients_data_dicom_update(patients_clean, ct, mri, xray)
-        patients_clean.to_csv("patient_clean.csv", index=False, header=True)
+        patients = clean_data_df(patients, patient_df_pipeline)
+
+        patients_data_dicom_update(patients, ct, mri, xray).to_csv(
+            "patient_clean.csv", index=False, header=True
+        )
 
     @use_raw_input
     def __call__(self, records, *args, **kwargs):
         record_type, record = args
         if record_type not in records:
-            records[record_type] = []
-        records[record_type] += [record]
+            records[record_type] = record
+        else:
+            records[record_type] = records[record_type].append(
+                record, ignore_index=True
+            )
 
 
 ###
@@ -274,14 +285,9 @@ def get_services(**options):
 
     :return: dict
     """
-    config = PipelineConfig()
-    if bool(os.getenv("SKIP_INVENTORY", default=False)):
-        inventory = Inventory()
-    else:
-        inventory = Inventory(main_bucket=BUCKET_NAME)
+    inventory = Inventory(main_bucket=BUCKET_NAME, drop_prefix=["raw-"])
 
     return {
-        "config": config,
         "inventory": inventory,
     }
 

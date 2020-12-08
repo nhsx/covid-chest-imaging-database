@@ -122,7 +122,7 @@ def usage():
     return process.memory_info()[0] / float(2 ** 20)
 
 class Inventory:
-    def __init__(self, main_bucket=None):
+    def __init__(self, main_bucket=None, drop_prefix=[]):
         self.enabled = main_bucket is not None
         self.bucket = main_bucket
 
@@ -161,6 +161,12 @@ class Inventory:
                         with gzip.open(f, mode='rt') as cf:
                             reader = csv.reader(cf)
                             self.keys |= {row[1] for row in reader}
+                if drop_prefix:
+                    for prefix in drop_prefix:
+                        logger.info(
+                        f"Dropping prefix from inventory file: {prefix}"
+                        )
+                        self.keys = {key for key in self.keys if not key.startswith(prefix)}
                 logger.info(f"Using inventory: {len(self.keys)} items")
             except Exception as e:  # noqa: E722
                 logger.warn(f"Skip using inventory due to run time error: {e}")
