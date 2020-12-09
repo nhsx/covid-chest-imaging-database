@@ -35,6 +35,7 @@ patients can found in the template spreadsheets on the
 `Guidance And Documentation For Collection Sites <https://medphys.royalsurrey.nhs.uk/nccid/guidance.php>`_
 page.
 
+.. _data collection:
 
 Data collection
 ---------------
@@ -171,5 +172,6 @@ Information Regulations 2002) ceases effect.
 
    NCCID_Collaborative
    project_summaries
+   other_datasets
    faq
 
