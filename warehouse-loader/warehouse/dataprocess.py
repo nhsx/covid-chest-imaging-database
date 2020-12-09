@@ -12,7 +12,12 @@ import bonobo
 from bonobo.config import use
 import boto3
 import mondrian
-from bonobo.config import Configurable, ContextProcessor, use_raw_input
+from bonobo.config import (
+    Configurable,
+    ContextProcessor,
+    Service,
+    use_raw_input,
+)
 from bonobo.util.objects import ValueHolder
 
 import warehouse.warehouseloader as wl  # noqa: E402
@@ -131,7 +136,7 @@ def load_clinical_files(*args, inventory):
         **latest_record,
     }
 
-    yield "patient", pd.DataFrame([latest_record])
+    yield "patient", latest_record
 
 
 @use("inventory")
@@ -153,10 +158,10 @@ def load_image_metadata_files(*args, inventory):
     record = {"Pseudonym": ds.PatientID, "group": group}
     # Should pick and select actually the fields that we are interested in, most of it is useless.
     record.update({attribute: ds.get(attribute) for attribute in ds.dir()})
-    yield modality, pd.DataFrame([record])
+    yield modality, record
 
 
-def patients_data_dicom_update(patients, ct, mri, xray) -> pd.DataFrame:
+def patient_data_dicom_update(patients, ct, mri, xray) -> pd.DataFrame:
     """
     Fills in missing values for Sex and Age from xray dicom headers.
     """
@@ -184,7 +189,6 @@ def patients_data_dicom_update(patients, ct, mri, xray) -> pd.DataFrame:
                 age = df_dicom.loc[df_dicom["Pseudonym"] == x["Pseudonym"]][
                     "PatientSex"
                 ].values[0]
-                print(f"New sex {x['Pseudonym']}")
             except IndexError:
                 pass
                 # print(f'Pseudonym not in df_dicom data: {x["Pseudonym"]}')
@@ -197,7 +201,6 @@ def patients_data_dicom_update(patients, ct, mri, xray) -> pd.DataFrame:
                 age = df_dicom.loc[df_dicom["Pseudonym"] == x["Pseudonym"]][
                     "ParsedPatientAge"
                 ].values[0]
-                print(f"New age {x['Pseudonym']}")
             except IndexError:
                 pass
         return age
@@ -214,25 +217,37 @@ def patients_data_dicom_update(patients, ct, mri, xray) -> pd.DataFrame:
 class DataExtractor(Configurable):
     """Get unique submitting centre names from the full database."""
 
+    inventory = Service("inventory")
+
     @ContextProcessor
-    def acc(self, context):
+    def acc(self, context, *, inventory):
         records = yield ValueHolder(dict())
+        # At the end of the processing of all previous nodes,
+        # it will continue from here
+
+        # save some memory
+        inventory.purge()
+
         values = records.get()
 
-        ct = values["ct"]
-        mri = values["mri"]
-        xray = values["xray"]
+        ct = pd.DataFrame.from_dict(values["ct"], orient="index")
+        del values["ct"]
+        mri = pd.DataFrame.from_dict(values["mri"], orient="index")
+        del values["mri"]
+        xray = pd.DataFrame.from_dict(values["xray"], orient="index")
+        del values["xray"]
 
         ct.to_csv("ct.csv", index=False, header=True)
         mri.to_csv("mri.csv", index=False, header=True)
         xray.to_csv("xray.csv", index=False, header=True)
 
-        patients = values["patient"]
-        patients.to_csv("patient.csv", index=False, header=True)
+        patient = pd.DataFrame.from_dict(values["patient"], orient="index")
+        del values["patient"]
+        patient.to_csv("patient.csv", index=False, header=True)
 
-        patients = clean_data_df(patients, patient_df_pipeline)
+        patient = clean_data_df(patient, patient_df_pipeline)
 
-        patients_data_dicom_update(patients, ct, mri, xray).to_csv(
+        patient_data_dicom_update(patient, ct, mri, xray).to_csv(
             "patient_clean.csv", index=False, header=True
         )
 
@@ -240,11 +255,8 @@ class DataExtractor(Configurable):
     def __call__(self, records, *args, **kwargs):
         record_type, record = args
         if record_type not in records:
-            records[record_type] = record
-        else:
-            records[record_type] = records[record_type].append(
-                record, ignore_index=True
-            )
+            records[record_type] = dict()
+        records[record_type][len(records[record_type])] = record
 
 
 ###

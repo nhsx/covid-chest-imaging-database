@@ -181,6 +181,11 @@ class Inventory:
     def bucket(self):
         return self.bucket
 
+    def purge(self):
+        self.keys = {}
+        self.enabled = False
+        self.bucket = None
+
     def _filter_iter(self, Prefix):
         """Get an iterator to of known objects with a given prefix
         that can be used by the actual filter functions after transformation
