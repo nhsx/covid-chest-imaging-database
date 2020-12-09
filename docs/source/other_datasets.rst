@@ -24,12 +24,11 @@ Trusts in the UK (see `here <https://www.phosp.org/network/institution-trust/>`_
 PHOSP-COVID is collaborating with the NCCID initiative to ensure that the same
 sites included in the PHOSP-COVID network are also contributing towards the
 NCCID database. This is so that PHOSP-COVID researchers are able to access
-via the NCCID’s data access request process) important data already collected
-for patients via the NCCID study in order to accompany the longitudinal data
-PHOSP-COVID are collecting for patients.
+important data already collected for patients via the NCCID study in order
+to accompany the longitudinal data PHOSP-COVID are collecting for patients.
 
 .. note::
-    **Important information for data contributors to the NCCID** |br|
+    **Important information for data collection sites** |br|
     If you are contacted by the PHOSP-COVID study to upload data but are
     not yet contributing to the NCCID, we would ask that you follow the
     instructions :ref:`here <data collection>` to ensure you are contributing
