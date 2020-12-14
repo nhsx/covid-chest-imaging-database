@@ -129,7 +129,12 @@ def load_clinical_files(*args, inventory):
     latest_file = filtered_file_list[0]
 
     s3_client = boto3.client("s3")
-    result = s3_client.get_object(Bucket=inventory.bucket, Key=latest_file)
+    try:
+        result = s3_client.get_object(Bucket=inventory.bucket, Key=latest_file)
+    except s3_client.exceptions.NoSuchKey as e:
+        logger.info(f"No object found: {latest_file}")
+        return
+
     file_content = result["Body"].read().decode("utf-8")
     json_content = json.loads(file_content)
 
@@ -156,7 +161,12 @@ def load_image_metadata_files(*args, inventory):
     group, modality, series = args
     image_file = series[0]
     s3_client = boto3.client("s3")
-    result = s3_client.get_object(Bucket=inventory.bucket, Key=image_file)
+    try:
+        result = s3_client.get_object(Bucket=inventory.bucket, Key=image_file)
+    except s3_client.exceptions.NoSuchKey as e:
+        logger.info(f"No object found: {image_file}")
+        return
+
     text = result["Body"].read().decode("utf-8")
     data = json.loads(
         text,
