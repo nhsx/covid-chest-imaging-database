@@ -47,6 +47,18 @@ bucket = s3_resource.Bucket(BUCKET_NAME)
 
 DRY_RUN = bool(os.getenv("DRY_RUN", default=False))
 
+DICOM_FIELDS = {
+    "PatientSex",
+    "PatientAge",
+    "StudyDate",
+    "AcquisitionDate",
+    "StudyInstanceUID",
+    "SeriesInstanceUID",
+    "BodyPartExamined",
+    "Manufacturer",
+    "ManufacturerModelName",
+}
+
 
 def get_files_list(file_list, prefix):
     regex = re.compile(rf"^(?P<prefix>.*/)[^/]+$")
@@ -156,8 +168,10 @@ def load_image_metadata_files(*args, inventory):
     data = {k: {"vr": "SQ"} if v is None else v for k, v in data.items()}
     ds = pydicom.Dataset.from_json(data)
     record = {"Pseudonym": ds.PatientID, "group": group}
-    # Should pick and select actually the fields that we are interested in, most of it is useless.
-    record.update({attribute: ds.get(attribute) for attribute in ds.dir()})
+    fields_of_interest = DICOM_FIELDS & set(ds.dir())
+    record.update(
+        {attribute: ds.get(attribute) for attribute in fields_of_interest}
+    )
     yield modality, record
 
 
