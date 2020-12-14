@@ -9,7 +9,7 @@ setuptools.setup(
     name="nccid_redirect",
     version="0.0.1",
 
-    description="An empty CDK Python app",
+    description="A website redirection app for NCCID",
     long_description=long_description,
     long_description_content_type="text/markdown",
 
