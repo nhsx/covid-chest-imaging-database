@@ -57,14 +57,25 @@ class NccidRedirectStack(core.Stack):
             path="/", methods=[_apigw2.HttpMethod.GET], integration=redirect_integration
         )
 
-        origin_target = http_api.url.replace("https://", "", 1)
+        # Change https address into just domain name (while keeping the Cloudformation variables in)
+        origin_target = http_api.url.replace("https://", "", 1).replace("/", "")
         origin = _origins.HttpOrigin(domain_name=origin_target)
         behaviour = _cloudfront.BehaviorOptions(origin=origin)
 
-        distribution = _cloudfront.Distribution(  # noqa: F841
+        distribution = _cloudfront.Distribution(
             self,
             "nccid-redirect-dist",
             default_behavior=behaviour,
             certificate=cert,
             domain_names=[domain_name.value_as_string],
+        )
+        # Explicit dependency is required between the API gateway and Cloudfront distribution
+        distribution.node.add_dependency(http_api)
+
+        # Outputs
+        distribution_domain = core.CfnOutput(  # noqa:  F841
+            self,
+            "nccidRedirectDomain",
+            value=distribution.distribution_domain_name,
+            description="The Cloudfront domain to add to the CNAME records for the redirected domain",
         )
