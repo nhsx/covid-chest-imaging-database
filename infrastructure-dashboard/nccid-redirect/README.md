@@ -37,7 +37,20 @@ At this point you can now synthesize the CloudFormation template for this code.
 $ cdk synth
 ```
 
-To deploy the stack, replace `<CERITFICATE_ARN>` and `<DOMAIN_NAME>` with
+Next, export your AWS credentials to your shell, or if using
+[aws-vault](https://github.com/99designs/aws-vault), run:
+```
+$ aws-vault exec <profile> --no-session
+```
+as the deployment will require IAM changes that doesn't work with session tokens.
+
+To deploy the stack, you might first need to bootstrap your environment:
+```
+$ cdk bootstrap
+```
+which will create the relevant S3 bucket in your default region.
+
+Then run the following deploy command, replacing `<CERITFICATE_ARN>` and `<DOMAIN_NAME>` with
 the relevant values:
 
 ```
