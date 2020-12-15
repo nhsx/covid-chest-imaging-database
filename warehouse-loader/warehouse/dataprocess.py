@@ -2,39 +2,27 @@
 it available for further analysis and display.
 """
 
-import time
-
+import json
 import logging
 import os
+import re
+import time
+from datetime import datetime
 from pathlib import Path
 
 import bonobo
-from bonobo.config import use
 import boto3
 import mondrian
-from bonobo.config import (
-    Configurable,
-    ContextProcessor,
-    Service,
-    use_raw_input,
-)
-from bonobo.util.objects import ValueHolder
-
-import warehouse.warehouseloader as wl  # noqa: E402
-from warehouse.components.services import (
-    Inventory,
-    PipelineConfig,
-    SubFolderList,
-)
-
-from datetime import datetime
-import json
 import pandas as pd
-import re
-import time
 import pydicom
+from bonobo.config import (Configurable, ContextProcessor, Service, use,
+                           use_raw_input)
+from bonobo.util.objects import ValueHolder
 from nccid.cleaning import clean_data_df, patient_df_pipeline
 
+import warehouse.warehouseloader as wl  # noqa: E402
+from warehouse.components.services import (Inventory, PipelineConfig,
+                                           SubFolderList)
 
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
@@ -193,16 +181,15 @@ def load_image_metadata_files(*args, inventory):
     yield modality, record
 
 
-def patient_data_dicom_update(patients, ct, mri, xray) -> pd.DataFrame:
+def patient_data_dicom_update(patients, images) -> pd.DataFrame:
     """
     Fills in missing values for Sex and Age from xray dicom headers.
     """
 
     demo = pd.concat(
         [
-            ct[["Pseudonym", "PatientSex", "PatientAge"]],
-            mri[["Pseudonym", "PatientSex", "PatientAge"]],
-            xray[["Pseudonym", "PatientSex", "PatientAge"]],
+            modality[["Pseudonym", "PatientSex", "PatientAge"]]
+            for modality in images
         ]
     )
     demo["ParsedPatientAge"] = demo["PatientAge"].map(
@@ -261,19 +248,15 @@ class DataExtractor(Configurable):
         inventory.purge()
 
         values = records.get()
-
-        ct = pd.DataFrame.from_dict(values["ct"], orient="index")
-        del values["ct"]
-        mri = pd.DataFrame.from_dict(values["mri"], orient="index")
-        del values["mri"]
-        xray = pd.DataFrame.from_dict(values["xray"], orient="index")
-        del values["xray"]
-
+        images = []
         csv_settings = dict(index=False, header=True, compression="gzip")
 
-        ct.to_csv("ct.csv.gz", **csv_settings)
-        mri.to_csv("mri.csv.gz", **csv_settings)
-        xray.to_csv("xray.csv.gz", **csv_settings)
+        for modality in ["ct", "xray", "mri"]:
+            if modality in values:
+                df = pd.DataFrame.from_dict(values[modality], orient="index")
+                del values[modality]
+                images += [df]
+                df.to_csv(f"{modality}.csv.gz", **csv_settings)
 
         patient = pd.DataFrame.from_dict(values["patient"], orient="index")
         del values["patient"]
@@ -281,7 +264,7 @@ class DataExtractor(Configurable):
 
         patient = clean_data_df(patient, patient_df_pipeline)
 
-        patient_clean = patient_data_dicom_update(patient, ct, mri, xray)
+        patient_clean = patient_data_dicom_update(patient, images)
         patient_clean.to_csv("patient_clean.csv.gz", **csv_settings)
 
     @use_raw_input
