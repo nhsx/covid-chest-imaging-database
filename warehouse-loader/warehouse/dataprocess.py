@@ -57,6 +57,7 @@ DICOM_FIELDS = {
     "BodyPartExamined",
     "Manufacturer",
     "ManufacturerModelName",
+    "Modality",
 }
 
 
@@ -297,9 +298,7 @@ def get_graph(**options):
     graph.add_chain(DataExtractor(), _input=None, _name="extractor")
 
     graph.add_chain(
-        list_clinical_files,
-        load_clinical_files,
-        _output="extractor",
+        list_clinical_files, load_clinical_files, _output="extractor",
     )
 
     graph.add_chain(
