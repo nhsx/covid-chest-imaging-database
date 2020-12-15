@@ -269,19 +269,20 @@ class DataExtractor(Configurable):
         xray = pd.DataFrame.from_dict(values["xray"], orient="index")
         del values["xray"]
 
-        ct.to_csv("ct.csv", index=False, header=True)
-        mri.to_csv("mri.csv", index=False, header=True)
-        xray.to_csv("xray.csv", index=False, header=True)
+        csv_settings = dict(index=False, header=True, compression="gzip")
+
+        ct.to_csv("ct.csv.gz", **csv_settings)
+        mri.to_csv("mri.csv.gz", **csv_settings)
+        xray.to_csv("xray.csv.gz", **csv_settings)
 
         patient = pd.DataFrame.from_dict(values["patient"], orient="index")
         del values["patient"]
-        patient.to_csv("patient.csv", index=False, header=True)
+        patient.to_csv("patient.csv.gz", **csv_settings)
 
         patient = clean_data_df(patient, patient_df_pipeline)
 
-        patient_data_dicom_update(patient, ct, mri, xray).to_csv(
-            "patient_clean.csv", index=False, header=True
-        )
+        patient_clean = patient_data_dicom_update(patient, ct, mri, xray)
+        patient_clean.to_csv("patient_clean.csv.gz", **csv_settings)
 
     @use_raw_input
     def __call__(self, records, *args, **kwargs):
