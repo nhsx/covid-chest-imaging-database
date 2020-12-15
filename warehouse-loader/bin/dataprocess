@@ -33,7 +33,7 @@ main() {
     start=$(date +%s)
 
     # main workload
-    bonobo run -m warehouse.dataprocessing "$@"
+    bonobo run -m warehouse.dataprocess "$@"
 
     exitcode=$?
     # timer end
