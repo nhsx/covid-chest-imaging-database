@@ -117,9 +117,11 @@ class SubFolderList:
     def get(self):
         return self.folder_list
 
+
 def usage():
     process = psutil.Process(os.getpid())
     return process.memory_info()[0] / float(2 ** 20)
+
 
 class Inventory:
     def __init__(self, main_bucket=None, drop_prefix=[]):
@@ -158,20 +160,23 @@ class Inventory:
                             inventory_bucket, inventory_file, f
                         )
                         f.seek(0)
-                        with gzip.open(f, mode='rt') as cf:
+                        with gzip.open(f, mode="rt") as cf:
                             reader = csv.reader(cf)
                             self.keys |= {row[1] for row in reader}
                 if drop_prefix:
                     for prefix in drop_prefix:
                         logger.info(
-                        f"Dropping prefix from inventory file: {prefix}"
+                            f"Dropping prefix from inventory file: {prefix}"
                         )
-                        self.keys = {key for key in self.keys if not key.startswith(prefix)}
+                        self.keys = {
+                            key
+                            for key in self.keys
+                            if not key.startswith(prefix)
+                        }
                 logger.info(f"Using inventory: {len(self.keys)} items")
             except Exception as e:  # noqa: E722
                 logger.warn(f"Skip using inventory due to run time error: {e}")
                 self.enabled = False
-
 
     def enabled(self):
         """Check whether the inventory is to be used or not

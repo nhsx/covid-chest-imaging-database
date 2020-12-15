@@ -6,3 +6,5 @@ boto3==1.13.8
 pydicom==1.4.2
 # internal data management
 pandas==1.1.1
+
+./nccid-0.1.0-py3-none-any.whl

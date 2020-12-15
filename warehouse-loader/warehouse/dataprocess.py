@@ -15,14 +15,22 @@ import boto3
 import mondrian
 import pandas as pd
 import pydicom
-from bonobo.config import (Configurable, ContextProcessor, Service, use,
-                           use_raw_input)
+from bonobo.config import (
+    Configurable,
+    ContextProcessor,
+    Service,
+    use,
+    use_raw_input,
+)
 from bonobo.util.objects import ValueHolder
 from nccid.cleaning import clean_data_df, patient_df_pipeline
 
 import warehouse.warehouseloader as wl  # noqa: E402
-from warehouse.components.services import (Inventory, PipelineConfig,
-                                           SubFolderList)
+from warehouse.components.services import (
+    Inventory,
+    PipelineConfig,
+    SubFolderList,
+)
 
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
