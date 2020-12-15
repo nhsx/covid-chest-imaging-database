@@ -50,8 +50,8 @@ DICOM_FIELDS = {
 }
 
 
-def get_files_list(file_list, prefix):
-    regex = re.compile(rf"^(?P<prefix>.*/)[^/]+$")
+def get_files_list(file_list):
+    regex = re.compile(r"^(?P<prefix>.*/)[^/]+$")
     series_prefix = None
     series_files = []
     for file in file_list:
@@ -77,7 +77,7 @@ def list_clinical_files(inventory):
         # counter = 0
         prefix = f"{group}/data"
         data_files = sorted(inventory.filter_keys(Prefix=prefix))
-        for data_list in get_files_list(data_files, prefix):
+        for data_list in get_files_list(data_files):
             # counter += 1
             yield group, data_list
             # if counter >= 1000:
@@ -91,7 +91,7 @@ def list_image_metadata_files(inventory):
             # counter = 0
             prefix = f"{group}/{modality}-metadata"
             modality_files = sorted(inventory.filter_keys(Prefix=prefix))
-            for series in get_files_list(modality_files, prefix):
+            for series in get_files_list(modality_files):
                 # counter += 1
                 yield group, modality, series
                 # if counter >= 50:
