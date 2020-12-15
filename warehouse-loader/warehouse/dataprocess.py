@@ -6,9 +6,7 @@ import json
 import logging
 import os
 import re
-import time
 from datetime import datetime
-from pathlib import Path
 
 import bonobo
 import boto3
@@ -25,12 +23,7 @@ from bonobo.config import (
 from bonobo.util.objects import ValueHolder
 from nccid.cleaning import clean_data_df, patient_df_pipeline
 
-import warehouse.warehouseloader as wl  # noqa: E402
-from warehouse.components.services import (
-    Inventory,
-    PipelineConfig,
-    SubFolderList,
-)
+from warehouse.components.services import Inventory
 
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
@@ -128,13 +121,12 @@ def load_clinical_files(*args, inventory):
     s3_client = boto3.client("s3")
     try:
         result = s3_client.get_object(Bucket=inventory.bucket, Key=latest_file)
-    except s3_client.exceptions.NoSuchKey as e:
+    except s3_client.exceptions.NoSuchKey:
         logger.info(f"No object found: {latest_file}")
         return
 
     last_modified = result["LastModified"].date()
     file_content = result["Body"].read().decode("utf-8")
-    json_content = json.loads(file_content)
 
     latest_record = json.loads(
         file_content,
@@ -162,7 +154,7 @@ def load_image_metadata_files(*args, inventory):
     s3_client = boto3.client("s3")
     try:
         result = s3_client.get_object(Bucket=inventory.bucket, Key=image_file)
-    except s3_client.exceptions.NoSuchKey as e:
+    except s3_client.exceptions.NoSuchKey:
         logger.info(f"No object found: {image_file}")
         return
 
@@ -213,7 +205,7 @@ def patient_data_dicom_update(patients, images) -> pd.DataFrame:
         sex = x["sex"]
         if sex == "Unknown":
             try:
-                age = df_dicom.loc[df_dicom["Pseudonym"] == x["Pseudonym"]][
+                sex = df_dicom.loc[df_dicom["Pseudonym"] == x["Pseudonym"]][
                     "PatientSex"
                 ].values[0]
             except IndexError:

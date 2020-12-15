@@ -1,14 +1,12 @@
-import logging
-from pathlib import Path
-import mondrian
-import boto3
-import pandas as pd
-import tempfile
-
-import gzip
 import csv
-from sys import getsizeof
+import gzip
+import logging
 import os
+import tempfile
+from pathlib import Path
+
+import boto3
+import mondrian
 import psutil
 
 from warehouse.components.constants import TRAINING_PERCENTAGE
@@ -140,12 +138,10 @@ class Inventory:
                     Prefix=f"{main_bucket}/daily-full-inventory/hive",
                 )["Contents"]
                 latest_symlink = sorted([obj["Key"] for obj in objs])[-1]
-                header_list = ["bucket", "key", "size", "date"]
                 response = s3_client.get_object(
                     Bucket=inventory_bucket, Key=latest_symlink
                 )
                 self.keys = set()
-                counter = 0
                 for line in (
                     response["Body"].read().decode("utf-8").split("\n")
                 ):
