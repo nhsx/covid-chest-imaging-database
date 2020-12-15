@@ -27,13 +27,13 @@ setup(
     ],
     install_requires=[
         # pipeline
-        "bonobo==0.6.4",
+        "bonobo",
         # s3
-        "boto3==1.13.8",
+        "boto3",
         # image data
-        "pydicom==1.4.2",
+        "pydicom",
         # internal data management
-        "pandas==1.1.1",
+        "pandas",
     ]
     # entry_points={
     #     "console_scripts": [

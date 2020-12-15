@@ -35,6 +35,7 @@ BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default="chest-data-warehouse")
 bucket = s3_resource.Bucket(BUCKET_NAME)
 
 DRY_RUN = bool(os.getenv("DRY_RUN", default=False))
+LOCAL_SAVE = bool(os.getenv("LOCAL_SAVE", default=False))
 
 DICOM_FIELDS = {
     "PatientSex",
@@ -249,23 +250,48 @@ class DataExtractor(Configurable):
 
         values = records.get()
         images = []
-        csv_settings = dict(index=False, header=True, compression="gzip")
+        csv_settings = dict(index=False, header=True)
+        collection = {"archive": [], "path": []}
+        if LOCAL_SAVE:
+            path = "."
+        else:
+            batch_date = datetime.now().isoformat()
+            bucket_path = f"s3://{BUCKET_NAME}-processed"
+            path = f"{bucket_path}/{batch_date}"
 
         for modality in ["ct", "xray", "mri"]:
             if modality in values:
                 df = pd.DataFrame.from_dict(values[modality], orient="index")
                 del values[modality]
                 images += [df]
-                df.to_csv(f"{modality}.csv.gz", **csv_settings)
+                output_path = f"{path}/{modality}.csv"
+                df.to_csv(output_path, **csv_settings)
+                collection["archive"] += [modality]
+                collection["path"] += [output_path]
 
         patient = pd.DataFrame.from_dict(values["patient"], orient="index")
         del values["patient"]
-        patient.to_csv("patient.csv.gz", **csv_settings)
+        patient_archive_path = f"{path}/partient.csv"
+        patient.to_csv(patient_archive_path, **csv_settings)
+        collection["archive"] += ["patient"]
+        collection["path"] += [patient_archive_path]
 
         patient = clean_data_df(patient, patient_df_pipeline)
 
         patient_clean = patient_data_dicom_update(patient, images)
-        patient_clean.to_csv("patient_clean.csv.gz", **csv_settings)
+        patient_clean_archive_path = f"{path}/patient_clean.csv"
+        patient_clean.to_csv(f"{path}/patient_clean.csv", **csv_settings)
+        collection["archive"] += ["patient_clean"]
+        collection["path"] += [patient_clean_archive_path]
+
+        # Save a list of latest files
+        if LOCAL_SAVE:
+            collection_path = "latest"
+        else:
+            collection_path = f"{bucket_path}/latest"
+        pd.DataFrame.from_dict(collection, orient="columns").to_csv(
+            collection_path, **csv_settings
+        )
 
     @use_raw_input
     def __call__(self, records, *args, **kwargs):
