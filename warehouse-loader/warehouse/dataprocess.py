@@ -136,6 +136,7 @@ def load_clinical_files(*args, inventory):
         logger.info(f"No object found: {latest_file}")
         return
 
+    last_modified = result["LastModified"].date()
     file_content = result["Body"].read().decode("utf-8")
     json_content = json.loads(file_content)
 
@@ -150,6 +151,7 @@ def load_clinical_files(*args, inventory):
         "filename_earliest_date": min(file_dates),
         "filename_covid_status": covid_positive,
         "filename_latest_date": max(file_dates),
+        "last_modified": last_modified,
         "group": group,
         **latest_record,
     }
@@ -168,6 +170,7 @@ def load_image_metadata_files(*args, inventory):
         logger.info(f"No object found: {image_file}")
         return
 
+    last_modified = result["LastModified"].date()
     text = result["Body"].read().decode("utf-8")
     data = json.loads(
         text,
@@ -178,7 +181,11 @@ def load_image_metadata_files(*args, inventory):
     )
     data = {k: {"vr": "SQ"} if v is None else v for k, v in data.items()}
     ds = pydicom.Dataset.from_json(data)
-    record = {"Pseudonym": ds.PatientID, "group": group}
+    record = {
+        "Pseudonym": ds.PatientID,
+        "group": group,
+        "last_modified": last_modified,
+    }
     fields_of_interest = DICOM_FIELDS & set(ds.dir())
     record.update(
         {attribute: ds.get(attribute) for attribute in fields_of_interest}
