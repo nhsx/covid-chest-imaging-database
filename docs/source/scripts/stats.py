@@ -42,9 +42,17 @@ count_patients_training_positive_images = len(
 count_patients_training_negative_images = len(
     patients_training_negative & patients_with_images
 )
-print(count_patients_training_positive_images, count_patients_training_negative_images)
+
+date_cutoff = datetime.datetime.now() - datetime.timedelta(30)
+recent_patients = sum(
+    pd.to_datetime(patient_clean["filename_earliest_date"]) >= date_cutoff
+)
 
 output += [
+    [
+        "**Total number of patients with images**",
+        f"**{count_patients_training_positive_images+count_patients_training_negative_images:,.0f}**",
+    ],
     [
         "Positive patients with images",
         f"{count_patients_training_positive_images:,.0f}",
@@ -53,27 +61,30 @@ output += [
         "Negative patients with images",
         f"{count_patients_training_negative_images:,.0f}",
     ],
+    ["New patients added in the last 30 days", f"{recent_patients:,.0f}"],
+    ["", ""],
 ]
 
 nhs_trusts = patient_clean["SubmittingCentre"].nunique()
-output += [["Submitting centres (e.g. NHS trusts)", f"{nhs_trusts:,.0f}"]]
+output += [
+    ["**Submitting centres (e.g. NHS trusts)**", f"**{nhs_trusts:,.0f}**"],
+    ["", ""],
+]
 
 ct_studies = ct["StudyInstanceUID"].nunique()
 mri_studies = mri["StudyInstanceUID"].nunique()
 xray_studies = xray["StudyInstanceUID"].nunique()
 
 output += [
+    [
+        "**Total number of image studies**",
+        f"**{ct_studies+mri_studies+xray_studies:,.0f}**",
+    ],
     ["CT image studies", f"{ct_studies:,.0f}"],
     ["MRI image studies", f"{mri_studies:,.0f}"],
     ["X-ray image studies", f"{xray_studies:,.0f}"],
 ]
 
-date_cutoff = datetime.datetime.now() - datetime.timedelta(30)
-recent_patients = sum(
-    pd.to_datetime(patient_clean["filename_earliest_date"]) >= date_cutoff
-)
-output += [["New patients added in the last 30 days", f"{recent_patients:,.0f}"]]
-print(output)
 
 with open("stats.csv", "w") as csvfile:
     statswriter = csv.writer(
