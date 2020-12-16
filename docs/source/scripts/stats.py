@@ -69,16 +69,31 @@ ct_studies = ct["StudyInstanceUID"].nunique()
 mri_studies = mri["StudyInstanceUID"].nunique()
 xray_studies = xray["StudyInstanceUID"].nunique()
 
+img_counts = {
+    "CT image studies": ct_studies,
+    "MRI image studies": mri_studies,
+    "X-ray image studies": xray_studies,
+}
+
+sorted_img_counts = list(
+    map(
+        lambda item: [item[0], f"{item[1]:,.0f}"],
+        sorted(
+            [[item, img_counts[item]] for item in img_counts],
+            key=lambda item: item[1],
+            reverse=True,
+        ),
+    )
+)
+
 output += [
     [
         "**Total number of image studies**",
         f"**{ct_studies+mri_studies+xray_studies:,.0f}**",
-    ],
-    ["CT image studies", f"{ct_studies:,.0f}"],
-    ["MRI image studies", f"{mri_studies:,.0f}"],
-    ["X-ray image studies", f"{xray_studies:,.0f}"],
-    ["", ""],
+    ]
 ]
+output += sorted_img_counts
+output += [["", ""]]
 
 nhs_trusts = patient_clean["SubmittingCentre"].nunique()
 output += [
