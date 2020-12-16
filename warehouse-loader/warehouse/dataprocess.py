@@ -13,8 +13,13 @@ import boto3
 import mondrian
 import pandas as pd
 import pydicom
-from bonobo.config import (Configurable, ContextProcessor, Service, use,
-                           use_raw_input)
+from bonobo.config import (
+    Configurable,
+    ContextProcessor,
+    Service,
+    use,
+    use_raw_input,
+)
 from bonobo.util.objects import ValueHolder
 from botocore.exceptions import ClientError
 from nccid.cleaning import clean_data_df, patient_df_pipeline
