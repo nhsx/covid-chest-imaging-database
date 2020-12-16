@@ -65,12 +65,6 @@ output += [
     ["", ""],
 ]
 
-nhs_trusts = patient_clean["SubmittingCentre"].nunique()
-output += [
-    ["**Submitting centres (e.g. NHS trusts)**", f"**{nhs_trusts:,.0f}**"],
-    ["", ""],
-]
-
 ct_studies = ct["StudyInstanceUID"].nunique()
 mri_studies = mri["StudyInstanceUID"].nunique()
 xray_studies = xray["StudyInstanceUID"].nunique()
@@ -83,6 +77,12 @@ output += [
     ["CT image studies", f"{ct_studies:,.0f}"],
     ["MRI image studies", f"{mri_studies:,.0f}"],
     ["X-ray image studies", f"{xray_studies:,.0f}"],
+    ["", ""],
+]
+
+nhs_trusts = patient_clean["SubmittingCentre"].nunique()
+output += [
+    ["**Submitting centres (e.g. NHS trusts)**", f"**{nhs_trusts:,.0f}**"],
 ]
 
 
