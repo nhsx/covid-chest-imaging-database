@@ -290,6 +290,31 @@ Resources:
         - !Ref ProcessingPolicy
         - !Ref RotateOwnCredentials
 
+  ProcessedDataAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Join ["", ["processed-data-", !Ref "BucketNameParameter"]]
+      Description: Allow reading processed warehouse data
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - "s3:ListBucket"
+              - "s3:GetBucketLocation"
+            Resource:
+              - !GetAtt [WarehouseProcessedBucket, Arn]
+          - Effect: Allow
+            Action:
+              - "s3:GetObject"
+            Resource:
+              - !Join ["", [!GetAtt [WarehouseProcessedBucket, Arn], "/*"]]
+  ProcessedDataAccessGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      ManagedPolicyArns:
+        - !Ref ProcessedDataAccessPolicy
+
   ReadOnlyAccessWholeBucketPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
