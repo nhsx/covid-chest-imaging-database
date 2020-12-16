@@ -13,14 +13,10 @@ import boto3
 import mondrian
 import pandas as pd
 import pydicom
-from bonobo.config import (
-    Configurable,
-    ContextProcessor,
-    Service,
-    use,
-    use_raw_input,
-)
+from bonobo.config import (Configurable, ContextProcessor, Service, use,
+                           use_raw_input)
 from bonobo.util.objects import ValueHolder
+from botocore.exceptions import ClientError
 from nccid.cleaning import clean_data_df, patient_df_pipeline
 
 from warehouse.components.services import Inventory
@@ -35,7 +31,7 @@ BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default="chest-data-warehouse")
 bucket = s3_resource.Bucket(BUCKET_NAME)
 
 DRY_RUN = bool(os.getenv("DRY_RUN", default=False))
-LOCAL_SAVE = bool(os.getenv("LOCAL_SAVE", default=False))
+LOCAL_ONLY = bool(os.getenv("LOCAL_SAVE", default=False))
 
 DICOM_FIELDS = {
     "PatientSex",
@@ -234,6 +230,29 @@ def patient_data_dicom_update(patients, images) -> pd.DataFrame:
     return patients
 
 
+def upload_file(file_name, bucket, object_name=None):
+    """Upload a file to an S3 bucket
+
+    :param file_name: File to upload
+    :param bucket: Bucket to upload to
+    :param object_name: S3 object name. If not specified then file_name is used
+    :return: True if file was uploaded, else False
+    """
+
+    # If S3 object_name was not specified, use file_name
+    if object_name is None:
+        object_name = file_name
+
+    # Upload the file
+    s3_client = boto3.client("s3")
+    try:
+        s3_client.upload_file(file_name, bucket, object_name)
+    except ClientError as e:
+        logging.error(e)
+        return False
+    return True
+
+
 class DataExtractor(Configurable):
     """Get unique submitting centre names from the full database."""
 
@@ -252,46 +271,54 @@ class DataExtractor(Configurable):
         images = []
         csv_settings = dict(index=False, header=True)
         collection = {"archive": [], "path": []}
-        if LOCAL_SAVE:
-            path = "."
-        else:
-            batch_date = datetime.now().isoformat()
-            bucket_path = f"s3://{BUCKET_NAME}-processed"
-            path = f"{bucket_path}/{batch_date}"
+        processed_bucket = BUCKET_NAME + "-processed"
+        batch_date = datetime.now().isoformat()
 
         for modality in ["ct", "xray", "mri"]:
             if modality in values:
                 df = pd.DataFrame.from_dict(values[modality], orient="index")
                 del values[modality]
                 images += [df]
-                output_path = f"{path}/{modality}.csv"
+                file_name = f"{modality}.csv"
+                output_path = file_name
                 df.to_csv(output_path, **csv_settings)
                 collection["archive"] += [modality]
+                if not LOCAL_ONLY:
+                    output_path = f"{batch_date}/{file_name}"
+                    upload_file(file_name, processed_bucket, output_path)
                 collection["path"] += [output_path]
 
         patient = pd.DataFrame.from_dict(values["patient"], orient="index")
         del values["patient"]
-        patient_archive_path = f"{path}/partient.csv"
-        patient.to_csv(patient_archive_path, **csv_settings)
+        file_name = "partient.csv"
+        output_path = file_name
+        patient.to_csv(output_path, **csv_settings)
         collection["archive"] += ["patient"]
-        collection["path"] += [patient_archive_path]
+        if not LOCAL_ONLY:
+            output_path = f"{batch_date}/{file_name}"
+            upload_file(file_name, processed_bucket, output_path)
+        collection["path"] += [output_path]
 
         patient = clean_data_df(patient, patient_df_pipeline)
 
         patient_clean = patient_data_dicom_update(patient, images)
-        patient_clean_archive_path = f"{path}/patient_clean.csv"
-        patient_clean.to_csv(f"{path}/patient_clean.csv", **csv_settings)
+        file_name = "patient_clean.csv"
+        output_path = file_name
+        patient_clean.to_csv(output_path, **csv_settings)
         collection["archive"] += ["patient_clean"]
-        collection["path"] += [patient_clean_archive_path]
+        if not LOCAL_ONLY:
+            output_path = f"{batch_date}/{file_name}"
+            upload_file(file_name, processed_bucket, output_path)
+        collection["path"] += [output_path]
 
         # Save a list of latest files
-        if LOCAL_SAVE:
-            collection_path = "latest"
-        else:
-            collection_path = f"{bucket_path}/latest"
+        file_name = "latest.csv"
+        output_path = file_name
         pd.DataFrame.from_dict(collection, orient="columns").to_csv(
-            collection_path, **csv_settings
+            output_path, **csv_settings
         )
+        if not LOCAL_ONLY:
+            upload_file(file_name, processed_bucket, output_path)
 
     @use_raw_input
     def __call__(self, records, *args, **kwargs):
