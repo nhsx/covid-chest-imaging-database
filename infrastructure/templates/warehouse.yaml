@@ -628,6 +628,8 @@ Resources:
               - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/*"]]
               - !GetAtt [WarehouseInventoryBucket, Arn]
               - !Join ["", [!GetAtt [WarehouseInventoryBucket, Arn], "/*"]]
+              - !GetAtt [WarehouseProcessedBucket, Arn]
+              - !Join ["", [!GetAtt [WarehouseProcessedBucket, Arn], "/*"]]
               # Required to pull from ECR through this endpoint
               - !Sub arn:aws:s3:::prod-${AWS::Region}-starport-layer-bucket/*
       RouteTableIds:
