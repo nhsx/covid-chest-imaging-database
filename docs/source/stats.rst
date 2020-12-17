@@ -1,7 +1,7 @@
 .. _stats:
 
-Statistics
-----------
+Training data statistics
+------------------------
 
 Below you can find high level statistics of the data available in the training set of the database:
 
