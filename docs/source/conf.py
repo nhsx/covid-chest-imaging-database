@@ -65,4 +65,5 @@ html_theme_options = {
 
 html_css_files = [
     'css/nhsx.css',
+    'css/theme_overrides.css',  # override wide tables in RTD theme
 ]
