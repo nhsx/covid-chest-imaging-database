@@ -1,0 +1,48 @@
+name: Generate statistics page
+
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+
+jobs:
+  stats-page:
+
+    runs-on: ubuntu-latest
+    env:
+      working-directory: ./docs/source/scripts
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+
+    - name: Install dependencies
+      working-directory: ${{ env.working-directory }}
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -r ./stats_requirements.txt
+
+    - name: Generate stats
+      working-directory: ${{ env.working-directory }}
+      run: |
+        python stats.py
+
+    - name: Create Pull Request with changes
+      id: cpr
+      uses: peter-evans/create-pull-request@v3
+      with:
+        title: '[Stats] Automatically generated update'
+        body: |
+          Update statistics page
+          - New numbers
+          - Updated with *today's* date
+        branch: stats-update
+        branch-suffix: timestamp
+        delete-branch: true
+
+    - name: Check outputs
+      run: |
+        echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
+        echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"

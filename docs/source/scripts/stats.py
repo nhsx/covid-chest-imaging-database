@@ -4,9 +4,9 @@ import boto3
 import datetime
 import csv
 
-BUCKET = os.getenv("BUCKET")
+BUCKET = os.getenv("AWS_PROCESSED_BUCKET")
 if BUCKET is None:
-    sys.exit("No BUCKET is provided")
+    sys.exit("No bucket info is provided")
 
 df = pd.read_csv(f"s3://{BUCKET}/latest.csv")
 df = df.set_index(["archive"])
