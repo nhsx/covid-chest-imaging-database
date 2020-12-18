@@ -130,8 +130,8 @@ How do I tell if the clinical data files are for positive and negative patients?
 
 There are two files, with ``status`` and ``data`` in the filename, that can be used to
 differentiate between Covid-19 positive and negative patients. Negative patients
-only have a status file, this is because data providers were told to only submit
+only have a ``status`` file, this is because data providers were told to only submit
 the minimum information for the control cohort, to make it easier for them. Positives
-can be identified by the presence of a data file which contains relevant clinical
+can be identified by the presence of a ``data`` file which contains relevant clinical
 information, such as their medical history. Some positive patients will have both files,
 but their status file can be ignored.
