@@ -1,8 +1,27 @@
 .. _faq:
 
-**************************
+************************
+Resources for data users
+************************
+
+
+Data cleaning pipeline
+######################
+
+We have created a `data cleaning pipeline <https://github.com/nhsx/nccid-cleaning>`_ in the form
+of a Python library, which can be used to clean the accompanying clinical data to the images.
+This will help with:
+
+* Correcting format errors
+* Removing anomalous data
+* Remapping categorical values to standardised categories
+* Extracting values embedded within strings
+* Merging data under old or mis-typed column headers into the new/correct fields
+* Standardising the scales of some clinical variables
+
+
 Frequently Asked Questions
-**************************
+##########################
 
 This is a list of Frequently Asked Questions with regards to the NCCID dataset content and usage.  Feel free to
 suggest new entries!
@@ -104,3 +123,15 @@ How can I combine the clinical data into a single table/dataset, selecting only 
 The development team prepared a tool to help you to aggregate JSON metadata and convert the results to CSV files. Please
 check `this repository <https://bitbucket.org/scicomcore/nccid-data-to-csv/>`_, where the README contains all the relevant
 information and the relevant download links.
+
+
+How do I tell if the clinical data files are for positive and negative patients?
+--------------------------------------------------------------------------------
+
+There are two files, with ``status`` and ``data`` in the filename, that can be used to
+differentiate between Covid-19 positive and negative patients. Negative patients
+only have a status file, this is because data providers were told to only submit
+the minimum information for the control cohort, to make it easier for them. Positives
+can be identified by the presence of a data file which contains relevant clinical
+information, such as their medical history. Some positive patients will have both files,
+but their status file can be ignored.

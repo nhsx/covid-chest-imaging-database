@@ -1,5 +1,6 @@
 sphinx==3.0.3
 sphinx_rtd_theme==0.4.3
+sphinx-reredirects
 
 # for the hospital map
 bokeh==2.0.2
