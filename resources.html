@@ -1,0 +1,337 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Resources for data users &mdash; National COVID-19 Chest Image Database  documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/favicon.png"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/nhsx.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme_overrides.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="NCCID Collaborative" href="NCCID_Collaborative.html" />
+    <link rel="prev" title="Accessing the NCCID data" href="data_access.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #003087" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> National COVID-19 Chest Image Database
+          
+
+          
+            
+            <img src="_static/logo.svg" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Technical documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="data_access.html">Accessing the NCCID data</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Resources for data users</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Other Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="NCCID_Collaborative.html">NCCID Collaborative</a></li>
+<li class="toctree-l1"><a class="reference internal" href="project_summaries.html">NCCID project summaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="other_datasets.html">Links to other datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stats.html">Training data statistics</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">National COVID-19 Chest Image Database</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Resources for data users</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/resources.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="resources-for-data-users">
+<span id="faq"></span><h1>Resources for data users<a class="headerlink" href="#resources-for-data-users" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="data-cleaning-pipeline">
+<h2>Data cleaning pipeline<a class="headerlink" href="#data-cleaning-pipeline" title="Permalink to this headline">¶</a></h2>
+<p>We have created a <a class="reference external" href="https://github.com/nhsx/nccid-cleaning">data cleaning pipeline</a> in the form
+of a Python library, which can be used to clean the accompanying clinical data to the images.
+This will help with:</p>
+<ul class="simple">
+<li><p>Correcting format errors</p></li>
+<li><p>Removing anomalous data</p></li>
+<li><p>Remapping categorical values to standardised categories</p></li>
+<li><p>Extracting values embedded within strings</p></li>
+<li><p>Merging data under old or mis-typed column headers into the new/correct fields</p></li>
+<li><p>Standardising the scales of some clinical variables</p></li>
+</ul>
+</div>
+<div class="section" id="frequently-asked-questions">
+<h2>Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permalink to this headline">¶</a></h2>
+<p>This is a list of Frequently Asked Questions with regards to the NCCID dataset content and usage.  Feel free to
+suggest new entries!</p>
+<div class="contents local topic" id="questions">
+<p class="topic-title">Questions:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#how-often-is-new-data-uploaded-to-the-database" id="id2">How often is new data uploaded to the database?</a></p></li>
+<li><p><a class="reference internal" href="#what-is-the-final-covid-status-determined-by-we-re-seeing-patients-with-two-negative-pcrs-with-a-positive-final-covid-status" id="id3">What is the “Final COVID Status” determined by? We’re seeing patients with two negative PCRs with a positive final COVID status.</a></p></li>
+<li><p><a class="reference internal" href="#is-covid-code-normal-the-equivalent-of-regular-covid-19-or-is-it-non-covid-19" id="id4">Is COVID CODE = Normal the equivalent of “regular” Covid-19 or is it non-Covid-19?</a></p></li>
+<li><p><a class="reference internal" href="#what-are-the-cxr-severity-scores" id="id5">What are the CXR severity scores?</a></p></li>
+<li><p><a class="reference internal" href="#is-the-cxr-severity-score-only-available-for-the-first-two-x-ray-studies" id="id6">Is the CXR severity score only available for the first two X-Ray studies?</a></p></li>
+<li><p><a class="reference internal" href="#how-can-i-match-the-clinical-data-points-to-the-corresponding-imaging-scan" id="id7">How can I match the clinical data points to the corresponding imaging scan?</a></p></li>
+<li><p><a class="reference internal" href="#date-format-seems-to-be-inconsistent-across-date-variables-some-are-in-us-format-and-some-are-in-uk-format-why-is-this-is-there-a-pattern" id="id8">Date format seems to be inconsistent across date variables (some are in US format and some are in UK format). Why is this? Is there a pattern?</a></p></li>
+<li><p><a class="reference internal" href="#have-any-of-the-dates-been-changed-systematically-as-part-of-the-anonymisation-process-or-are-the-dates-in-the-dicom-files-and-the-clinical-variables-the-actual-dates-of-scans-and-tests" id="id9">Have any of the dates been changed systematically as part of the anonymisation process? Or are the dates in the DICOM files and the clinical variables the actual dates of scans and tests?</a></p></li>
+<li><p><a class="reference internal" href="#there-are-cases-where-patients-have-multiple-json-files-why-is-this-which-one-is-the-correct-one" id="id10">There are cases where patients have multiple JSON files. Why is this? Which one is the correct one?</a></p></li>
+<li><p><a class="reference internal" href="#how-can-i-combine-the-clinical-data-into-a-single-table-dataset-selecting-only-the-most-recent-data-and-or-data-files-for-each-patient" id="id11">How can I combine the clinical data into a single table/dataset, selecting only the most recent “data” and/or “data” files for each patient?</a></p></li>
+<li><p><a class="reference internal" href="#how-do-i-tell-if-the-clinical-data-files-are-for-positive-and-negative-patients" id="id12">How do I tell if the clinical data files are for positive and negative patients?</a></p></li>
+</ul>
+</div>
+<div class="section" id="how-often-is-new-data-uploaded-to-the-database">
+<h3>How often is new data uploaded to the database?<a class="headerlink" href="#how-often-is-new-data-uploaded-to-the-database" title="Permalink to this headline">¶</a></h3>
+<p>It varies but we are aiming for a new data release every week.</p>
+</div>
+<div class="section" id="what-is-the-final-covid-status-determined-by-we-re-seeing-patients-with-two-negative-pcrs-with-a-positive-final-covid-status">
+<h3>What is the “Final COVID Status” determined by? We’re seeing patients with two negative PCRs with a positive final COVID status.<a class="headerlink" href="#what-is-the-final-covid-status-determined-by-we-re-seeing-patients-with-two-negative-pcrs-with-a-positive-final-covid-status" title="Permalink to this headline">¶</a></h3>
+<p>The Final COVID Status is the final status that is available for each patient.
+The fact that there are patients with multiple negative swab results and the final
+status which is positive is an example of what happens sometimes in practice:
+patients might get tested several times producing negative results, and then finally
+result positive. This might be because sometimes tests are not accurate or because
+patients fell ill between the initial and the final test.</p>
+</div>
+<div class="section" id="is-covid-code-normal-the-equivalent-of-regular-covid-19-or-is-it-non-covid-19">
+<h3>Is COVID CODE = Normal the equivalent of “regular” Covid-19 or is it non-Covid-19?<a class="headerlink" href="#is-covid-code-normal-the-equivalent-of-regular-covid-19-or-is-it-non-covid-19" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">COVID</span> <span class="pre">CODE</span> <span class="pre">=</span> <span class="pre">Normal</span></code> refers to the cases where the X-Rays do not show signs of Covid-19,
+this might be because the patient does not have it or because the patient has only very
+mild symptoms.</p>
+</div>
+<div class="section" id="what-are-the-cxr-severity-scores">
+<h3>What are the CXR severity scores?<a class="headerlink" href="#what-are-the-cxr-severity-scores" title="Permalink to this headline">¶</a></h3>
+<p>The severity scores associated with the chest X-Ray studies are subjective descriptions
+provided by the radiologist reviewing the images, on a scale of three severity levels
+(Mild = 1, Moderate = 2, Severe = 3).</p>
+</div>
+<div class="section" id="is-the-cxr-severity-score-only-available-for-the-first-two-x-ray-studies">
+<h3>Is the CXR severity score only available for the first two X-Ray studies?<a class="headerlink" href="#is-the-cxr-severity-score-only-available-for-the-first-two-x-ray-studies" title="Permalink to this headline">¶</a></h3>
+<p>Yes,the severity information is only available for the first two X-Ray studies
+for each patient.</p>
+</div>
+<div class="section" id="how-can-i-match-the-clinical-data-points-to-the-corresponding-imaging-scan">
+<h3>How can I match the clinical data points to the corresponding imaging scan?<a class="headerlink" href="#how-can-i-match-the-clinical-data-points-to-the-corresponding-imaging-scan" title="Permalink to this headline">¶</a></h3>
+<p>The temporal information should help you match the information in the sheet
+with the relevant imaging study: <code class="docutils literal notranslate"><span class="pre">Date</span> <span class="pre">of</span> <span class="pre">1st</span> <span class="pre">CXR</span></code> and <code class="docutils literal notranslate"><span class="pre">Date</span> <span class="pre">of</span> <span class="pre">2nd</span> <span class="pre">CXR</span></code>
+are the dates in which the first two X-Ray scans were taken and correspond to the
+two severity values, the time information in the X-Ray’s DICOM should then allow
+you to identify the imaging scans that match with those dates.</p>
+</div>
+<div class="section" id="date-format-seems-to-be-inconsistent-across-date-variables-some-are-in-us-format-and-some-are-in-uk-format-why-is-this-is-there-a-pattern">
+<h3>Date format seems to be inconsistent across date variables (some are in US format and some are in UK format). Why is this? Is there a pattern?<a class="headerlink" href="#date-format-seems-to-be-inconsistent-across-date-variables-some-are-in-us-format-and-some-are-in-uk-format-why-is-this-is-there-a-pattern" title="Permalink to this headline">¶</a></h3>
+<p>Yes, it is true that the date format is not consistent across all variables, but it
+should be consistent within each single variable (i.e. if it is UK format, all entries
+for that variable are in UK format).</p>
+<p>The dates of the Date of acquisition of 1st RT-PCR and Date of acquisition of 2n RT-PCR are in
+US format, however we have seen there are a few instances where some sites have inputted
+additional text in these fields which will require a small amount of cleaning
+(e.g. <code class="docutils literal notranslate"><span class="pre">Date</span> <span class="pre">of</span> <span class="pre">1st</span> <span class="pre">CXR</span></code> with value <code class="docutils literal notranslate"><span class="pre">[TEXT]</span> <span class="pre">-</span> <span class="pre">2020-03-27</span></code>).</p>
+<p>All other dates should be in UK or ISO format.</p>
+</div>
+<div class="section" id="have-any-of-the-dates-been-changed-systematically-as-part-of-the-anonymisation-process-or-are-the-dates-in-the-dicom-files-and-the-clinical-variables-the-actual-dates-of-scans-and-tests">
+<h3>Have any of the dates been changed systematically as part of the anonymisation process? Or are the dates in the DICOM files and the clinical variables the actual dates of scans and tests?<a class="headerlink" href="#have-any-of-the-dates-been-changed-systematically-as-part-of-the-anonymisation-process-or-are-the-dates-in-the-dicom-files-and-the-clinical-variables-the-actual-dates-of-scans-and-tests" title="Permalink to this headline">¶</a></h3>
+<p>Most dates in the DICOM files have been offset. The excludes the Acquisition date
+(if present) and the Study Date, so these can be used to identify the time of scan.
+In addition, the patient’s DOB has been reset to the year of birth followed by 0101.
+The dates in the clinical data have not been touched.</p>
+</div>
+<div class="section" id="there-are-cases-where-patients-have-multiple-json-files-why-is-this-which-one-is-the-correct-one">
+<h3>There are cases where patients have multiple JSON files. Why is this? Which one is the correct one?<a class="headerlink" href="#there-are-cases-where-patients-have-multiple-json-files-why-is-this-which-one-is-the-correct-one" title="Permalink to this headline">¶</a></h3>
+<p>Situations with patients who have multiple JSON files can occur when the sites that
+contribute data to NCCID have uploaded data, then revised/corrected and then
+re-uploaded it. We are not currently over-writing files, as it would make data management
+harder. We suggest that for each patient you utilise the latest JSON file that you have available.</p>
+<p>Finally, there can also be cases in which the same patient went to two different hospitals,
+and for which images have been received from two centres separately. In similar situations,
+the older JSON files should be considered.</p>
+</div>
+<div class="section" id="how-can-i-combine-the-clinical-data-into-a-single-table-dataset-selecting-only-the-most-recent-data-and-or-data-files-for-each-patient">
+<h3>How can I combine the clinical data into a single table/dataset, selecting only the most recent “data” and/or “data” files for each patient?<a class="headerlink" href="#how-can-i-combine-the-clinical-data-into-a-single-table-dataset-selecting-only-the-most-recent-data-and-or-data-files-for-each-patient" title="Permalink to this headline">¶</a></h3>
+<p>The development team prepared a tool to help you to aggregate JSON metadata and convert the results to CSV files. Please
+check <a class="reference external" href="https://bitbucket.org/scicomcore/nccid-data-to-csv/">this repository</a>, where the README contains all the relevant
+information and the relevant download links.</p>
+</div>
+<div class="section" id="how-do-i-tell-if-the-clinical-data-files-are-for-positive-and-negative-patients">
+<h3>How do I tell if the clinical data files are for positive and negative patients?<a class="headerlink" href="#how-do-i-tell-if-the-clinical-data-files-are-for-positive-and-negative-patients" title="Permalink to this headline">¶</a></h3>
+<p>There are two files, with <code class="docutils literal notranslate"><span class="pre">status</span></code> and <code class="docutils literal notranslate"><span class="pre">data</span></code> in the filename, that can be used to
+differentiate between Covid-19 positive and negative patients. Negative patients
+only have a status file, this is because data providers were told to only submit
+the minimum information for the control cohort, to make it easier for them. Positives
+can be identified by the presence of a data file which contains relevant clinical
+information, such as their medical history. Some positive patients will have both files,
+but their status file can be ignored.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="NCCID_Collaborative.html" class="btn btn-neutral float-right" title="NCCID Collaborative" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="data_access.html" class="btn btn-neutral float-left" title="Accessing the NCCID data" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, NHSX; All content is available under the Open Government Licence v3.0, except where otherwise stated.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+The source code to this site is available on <a href="https://github.com/nhsx/covid-chest-imaging-database/">GitHub</a>.
+
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

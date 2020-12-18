@@ -165,6 +165,7 @@ Information Regulations 2002) ceases effect.
    :caption: Technical documentation
 
    data_access
+   resources
 
 .. toctree::
    :hidden:
@@ -174,5 +175,4 @@ Information Regulations 2002) ceases effect.
    project_summaries
    other_datasets
    stats
-   faq
 
