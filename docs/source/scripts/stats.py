@@ -1,12 +1,14 @@
-import pandas as pd
-import os
-import boto3
-import datetime
 import csv
+import datetime
+import os
+import sys
+
+import boto3
+import pandas as pd
 
 BUCKET = os.getenv("AWS_PROCESSED_BUCKET")
 if BUCKET is None:
-    sys.exit("No bucket info is provided")
+    sys.exit("No bucket info is provided (via the AWS_PROCESSED_BUCKET env var)")
 
 df = pd.read_csv(f"s3://{BUCKET}/latest.csv")
 df = df.set_index(["archive"])
@@ -14,7 +16,7 @@ df = df.set_index(["archive"])
 
 def load_training_data(archive, df):
     path = df.at[archive, "path"]
-    data = pd.read_csv(f"s3://{BUCKET}/{path}")
+    data = pd.read_csv(f"s3://{BUCKET}/{path}", low_memory=False)
     return data[data["group"] == "training"]
 
 
