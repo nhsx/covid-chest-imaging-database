@@ -70,4 +70,3 @@ html_css_files = [
 ]
 
 redirects = {"faq": "resources.html"}
-exclude_patterns = [page + ".rst" for page in redirects]
