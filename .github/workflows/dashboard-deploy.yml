@@ -1,13 +1,13 @@
+name: Deploy Dashboard
+
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - 'dashboard/**'
       - 'infrastructure-dashboard/**'
       - '.github/workflows/dashboard-deploy.yml'
-
-name: Deploy Dashboard
 
 jobs:
   deploy:
