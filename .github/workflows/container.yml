@@ -13,9 +13,8 @@ jobs:
       - name: hadolint on all Dockerfiles
         run: |
           find infrastructure/container -name Dockerfile | xargs -I{} sh -c "echo Checking {}; hadolint {}"
-          find infrastructure-dashboard/dashboard -name Dockerfile | xargs -I{} sh -c "echo Checking {}; hadolint {}"
+          find dashboard/ -name Dockerfile | xargs -I{} sh -c "echo Checking {}; hadolint {}"
       - name: shellcheck on container scripts
         run: |
           apk add --no-cache shellcheck
           find infrastructure/container -name "*.sh" | xargs -I{} sh -c "echo Checking {}; shellcheck {}"
-          find infrastructure-dashboard/dashboard -name "*.sh" | xargs -I{} sh -c "echo Checking {}; shellcheck {}"
