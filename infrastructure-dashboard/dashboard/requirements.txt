@@ -1,0 +1,11 @@
+# aws-cdk.core
+
+# aws_cdk.aws-ec2
+# aws_cdk.aws-certificatemanager
+# aws_cdk.aws-cloudfront
+# aws_cdk.aws-cloudfront-origins
+# aws_cdk.aws-ecs
+# aws_cdk.aws-ecs-patterns
+# aws_cdk.aws-ecr
+
+-e .
