@@ -46,18 +46,22 @@ jobs:
     - name: cdk diff
       uses: youyo/aws-cdk-github-actions@v1
       with:
+        cdk_version: '1.82.0'
         cdk_subcommand: 'diff'
         actions_comment: true
-        working_dir: 'infrastructure-dashboard/dashboard/'
+        working_dir: 'infrastructure-dashboard/dashboard'
+        debug_log: true
 
     - name: cdk deploy
       id: cdk-deploy
       uses: youyo/aws-cdk-github-actions@v1
       with:
+        cdk_version: '1.82.0'
         cdk_subcommand: 'deploy'
         actions_comment: true
-        working_dir: 'infrastructure-dashboard/dashboard/'
+        working_dir: 'infrastructure-dashboard/dashboard'
         cdk_args: "--require-approval never --parameters imageTag=${{ github.sha }} --parameters certArn=${{ secrets.AWS_DASHBOARD_CERTIFICATE_ARN }} --parameters domainName=${{ secrets.DASHBOARD_DOMAIN }}"
+        debug_log: true
 
     # The above command is successful even if the deploy fails, so catch the non-zero exit
     # as suggested in https://github.com/youyo/aws-cdk-github-actions/issues/2#issuecomment-562963182
