@@ -1,12 +1,12 @@
 Metric,Value
-**Total number of patients with images**,"**7,175**"
-Positive patients with images,"3,295"
-Negative patients with images,"3,880"
-New patients added in the last 30 days,0
+**Total number of patients with images**,"**7,324**"
+Positive patients with images,"3,433"
+Negative patients with images,"3,891"
+New patients added in the last 30 days,255
 ,
-**Total number of image studies**,"**22,382**"
-X-ray image studies,"19,389"
-CT image studies,"2,980"
+**Total number of image studies**,"**23,009**"
+X-ray image studies,"19,933"
+CT image studies,"3,063"
 MRI image studies,13
 ,
 **Submitting centres (e.g. NHS trusts)**,**19**
