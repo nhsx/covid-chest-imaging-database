@@ -58,7 +58,7 @@ jobs:
         run: |
           curl -H "Accept: application/vnd.github.ant-man-preview+json" -H "Authorization: token ${{ github.token }}" -X POST -H 'Content-Type: application/json' -d '{"state": "success", "environment_url": "'"http://${{ secrets.AWS_DOCS_PREVIEW_BUCKET }}.s3-website.${{ secrets.AWS_DOCS_PREVIEW_BUCKET_REGION }}.amazonaws.com/${{ github.event.pull_request.head.sha }}/"'"}' ${{ steps.deployment.outputs.statuses_url }}
 
-      - name: Update deployment status (success)
+      - name: Update deployment status (failure)
         if: failure()
         run: |
           curl -H "Accept: application/vnd.github.ant-man-preview+json" -H "Authorization: token ${{ github.token }}" -X POST -H 'Content-Type: application/json' -d '{"state": "failure"}' ${{ steps.deployment.outputs.statuses_url }}
