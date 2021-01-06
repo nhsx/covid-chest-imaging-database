@@ -80,9 +80,14 @@ class DashboardStack(core.Stack):
         )
 
         origin = _origins.HttpOrigin(
-            domain_name=fargate_service.load_balancer.load_balancer_dns_name
+            domain_name=fargate_service.load_balancer.load_balancer_dns_name,
+            protocol_policy=_cloudfront.OriginProtocolPolicy.HTTP_ONLY,
         )
-        behaviour = _cloudfront.BehaviorOptions(origin=origin)
+        behaviour = _cloudfront.BehaviorOptions(
+            origin=origin,
+            cache_policy=_cloudfront.CachePolicy.CACHING_DISABLED,
+            viewer_protocol_policy=_cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        )
 
         distribution = _cloudfront.Distribution(
             self,
