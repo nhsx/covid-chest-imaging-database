@@ -63,3 +63,73 @@ command.
  * `cdk docs`        open CDK documentation
 
 Enjoy!
+
+
+## GitHub Action
+
+This stack can be deployed both manually or using a [GitHub Action](https://github.com/features/actions)
+automatically. The action uses 3rd party developed CDK actions at the moment, and
+requires a number of [secrets](https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets)
+to be set.
+
+* `AWS_KEY_ID`: the key ID of a set of credentials for an AWS IAM user that is used to deploy the stack in the action
+* `AWS_SECRET_ACCESS_KEY`: the secret part of the key
+* `AWS_DASHBOARD_CERTIFICATE_ARN`: the HTTPS certificate to use
+* `DASHBOARD_DOMAIN`: the domain to set up (it should be covered by the certificate above)
+
+### Deployment permissions
+
+To deploy this stack as a GitHub Action, the associated IAM user/key will have to
+have at least these permissions (possibly more)
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "GeneralResources",
+            "Effect": "Allow",
+            "Action": [
+                "iam:GetRole",
+                "iam:PassRole",
+                "cloudfront:*",
+                "secretsmanager:*",
+                "logs:*",
+                "ecs:*",
+                "ec2:*",
+                "iam:CreateRole",
+                "iam:DeleteRole",
+                "ecr:*",
+                "elasticloadbalancing:*",
+                "iam:PutRolePolicy"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "CloudformationAllow",
+            "Effect": "Allow",
+            "Action": "cloudformation:*",
+            "Resource": [
+                "<Deployed CloudFormation Stack ARN>",
+                "<CDKToolkit CloudFormation Stack ARN>"
+            ]
+        },
+        {
+            "Sid": "CloudformationDeny",
+            "Effect": "Deny",
+            "Action": "cloudformation:DeleteStack",
+            "Resource": [
+                "<Deployed CloudFormation Stack ARN>",
+                "<CDKToolkit CloudFormation Stack ARN>"
+            ]
+        }
+    ]
+}
+```
+
+where the `<Deployed CloudFormation Stack ARN>` and `<CDKToolkit CloudFormation Stack ARN>`
+values need to inserted. (Alternatively allow all Cloudformation resources as well in the
+first block).
+
+Likely some other `iam:` actions need whitelisting as well, but this is the currently
+best knowledge.
