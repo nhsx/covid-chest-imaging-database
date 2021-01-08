@@ -5,8 +5,8 @@ Resources for data users
 ************************
 
 
-Data cleaning pipeline
-######################
+Data cleaning pipeline and guidelines
+#####################################
 
 We have created a `data cleaning pipeline <https://github.com/nhsx/nccid-cleaning>`_ in the form
 of a Python library, which can be used to clean the accompanying clinical data to the images.
@@ -19,6 +19,13 @@ This will help with:
 * Merging data under old or mis-typed column headers into the new/correct fields
 * Standardising the scales of some clinical variables
 
+In addition, we have created guidelines for interpreting the clinical data, compiled in
+:download:`this spreadsheet <docs/NCCID_schema_compliance_v2.1.xlsx>`.
+This will help with:
+
+* Understanding what the expected data format is for each field
+* Highlighting where there are known erroneous entries for each field
+* Recommending remedial actions for erroneous entries within each field
 
 Frequently Asked Questions
 ##########################
