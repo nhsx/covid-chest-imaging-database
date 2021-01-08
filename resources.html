@@ -164,8 +164,8 @@
             
   <div class="section" id="resources-for-data-users">
 <span id="faq"></span><h1>Resources for data users<a class="headerlink" href="#resources-for-data-users" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="data-cleaning-pipeline">
-<h2>Data cleaning pipeline<a class="headerlink" href="#data-cleaning-pipeline" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="data-cleaning-pipeline-and-guidelines">
+<h2>Data cleaning pipeline and guidelines<a class="headerlink" href="#data-cleaning-pipeline-and-guidelines" title="Permalink to this headline">¶</a></h2>
 <p>We have created a <a class="reference external" href="https://github.com/nhsx/nccid-cleaning">data cleaning pipeline</a> in the form
 of a Python library, which can be used to clean the accompanying clinical data to the images.
 This will help with:</p>
@@ -177,6 +177,14 @@ This will help with:</p>
 <li><p>Merging data under old or mis-typed column headers into the new/correct fields</p></li>
 <li><p>Standardising the scales of some clinical variables</p></li>
 </ul>
+<p>In addition, we have created guidelines for interpreting the clinical data, compiled in
+<a class="reference download internal" download="" href="_downloads/667c9c3b46bc384316bd90a282e9a1b9/NCCID_schema_compliance_v2.1.xlsx"><code class="xref download docutils literal notranslate"><span class="pre">this</span> <span class="pre">spreadsheet</span></code></a>.
+This will help with:</p>
+<ul class="simple">
+<li><p>Understanding what the expected data format is for each field</p></li>
+<li><p>Highlighting where there are known erroneous entries for each field</p></li>
+<li><p>Recommending remedial actions for erroneous entries within each field</p></li>
+</ul>
 </div>
 <div class="section" id="frequently-asked-questions">
 <h2>Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permalink to this headline">¶</a></h2>
@@ -185,17 +193,17 @@ suggest new entries!</p>
 <div class="contents local topic" id="questions">
 <p class="topic-title">Questions:</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="#how-often-is-new-data-uploaded-to-the-database" id="id2">How often is new data uploaded to the database?</a></p></li>
-<li><p><a class="reference internal" href="#what-is-the-final-covid-status-determined-by-we-re-seeing-patients-with-two-negative-pcrs-with-a-positive-final-covid-status" id="id3">What is the “Final COVID Status” determined by? We’re seeing patients with two negative PCRs with a positive final COVID status.</a></p></li>
-<li><p><a class="reference internal" href="#is-covid-code-normal-the-equivalent-of-regular-covid-19-or-is-it-non-covid-19" id="id4">Is COVID CODE = Normal the equivalent of “regular” Covid-19 or is it non-Covid-19?</a></p></li>
-<li><p><a class="reference internal" href="#what-are-the-cxr-severity-scores" id="id5">What are the CXR severity scores?</a></p></li>
-<li><p><a class="reference internal" href="#is-the-cxr-severity-score-only-available-for-the-first-two-x-ray-studies" id="id6">Is the CXR severity score only available for the first two X-Ray studies?</a></p></li>
-<li><p><a class="reference internal" href="#how-can-i-match-the-clinical-data-points-to-the-corresponding-imaging-scan" id="id7">How can I match the clinical data points to the corresponding imaging scan?</a></p></li>
-<li><p><a class="reference internal" href="#date-format-seems-to-be-inconsistent-across-date-variables-some-are-in-us-format-and-some-are-in-uk-format-why-is-this-is-there-a-pattern" id="id8">Date format seems to be inconsistent across date variables (some are in US format and some are in UK format). Why is this? Is there a pattern?</a></p></li>
-<li><p><a class="reference internal" href="#have-any-of-the-dates-been-changed-systematically-as-part-of-the-anonymisation-process-or-are-the-dates-in-the-dicom-files-and-the-clinical-variables-the-actual-dates-of-scans-and-tests" id="id9">Have any of the dates been changed systematically as part of the anonymisation process? Or are the dates in the DICOM files and the clinical variables the actual dates of scans and tests?</a></p></li>
-<li><p><a class="reference internal" href="#there-are-cases-where-patients-have-multiple-json-files-why-is-this-which-one-is-the-correct-one" id="id10">There are cases where patients have multiple JSON files. Why is this? Which one is the correct one?</a></p></li>
-<li><p><a class="reference internal" href="#how-can-i-combine-the-clinical-data-into-a-single-table-dataset-selecting-only-the-most-recent-data-and-or-data-files-for-each-patient" id="id11">How can I combine the clinical data into a single table/dataset, selecting only the most recent “data” and/or “data” files for each patient?</a></p></li>
-<li><p><a class="reference internal" href="#how-do-i-tell-if-the-clinical-data-files-are-for-positive-and-negative-patients" id="id12">How do I tell if the clinical data files are for positive and negative patients?</a></p></li>
+<li><p><a class="reference internal" href="#how-often-is-new-data-uploaded-to-the-database" id="id1">How often is new data uploaded to the database?</a></p></li>
+<li><p><a class="reference internal" href="#what-is-the-final-covid-status-determined-by-we-re-seeing-patients-with-two-negative-pcrs-with-a-positive-final-covid-status" id="id2">What is the “Final COVID Status” determined by? We’re seeing patients with two negative PCRs with a positive final COVID status.</a></p></li>
+<li><p><a class="reference internal" href="#is-covid-code-normal-the-equivalent-of-regular-covid-19-or-is-it-non-covid-19" id="id3">Is COVID CODE = Normal the equivalent of “regular” Covid-19 or is it non-Covid-19?</a></p></li>
+<li><p><a class="reference internal" href="#what-are-the-cxr-severity-scores" id="id4">What are the CXR severity scores?</a></p></li>
+<li><p><a class="reference internal" href="#is-the-cxr-severity-score-only-available-for-the-first-two-x-ray-studies" id="id5">Is the CXR severity score only available for the first two X-Ray studies?</a></p></li>
+<li><p><a class="reference internal" href="#how-can-i-match-the-clinical-data-points-to-the-corresponding-imaging-scan" id="id6">How can I match the clinical data points to the corresponding imaging scan?</a></p></li>
+<li><p><a class="reference internal" href="#date-format-seems-to-be-inconsistent-across-date-variables-some-are-in-us-format-and-some-are-in-uk-format-why-is-this-is-there-a-pattern" id="id7">Date format seems to be inconsistent across date variables (some are in US format and some are in UK format). Why is this? Is there a pattern?</a></p></li>
+<li><p><a class="reference internal" href="#have-any-of-the-dates-been-changed-systematically-as-part-of-the-anonymisation-process-or-are-the-dates-in-the-dicom-files-and-the-clinical-variables-the-actual-dates-of-scans-and-tests" id="id8">Have any of the dates been changed systematically as part of the anonymisation process? Or are the dates in the DICOM files and the clinical variables the actual dates of scans and tests?</a></p></li>
+<li><p><a class="reference internal" href="#there-are-cases-where-patients-have-multiple-json-files-why-is-this-which-one-is-the-correct-one" id="id9">There are cases where patients have multiple JSON files. Why is this? Which one is the correct one?</a></p></li>
+<li><p><a class="reference internal" href="#how-can-i-combine-the-clinical-data-into-a-single-table-dataset-selecting-only-the-most-recent-data-and-or-data-files-for-each-patient" id="id10">How can I combine the clinical data into a single table/dataset, selecting only the most recent “data” and/or “data” files for each patient?</a></p></li>
+<li><p><a class="reference internal" href="#how-do-i-tell-if-the-clinical-data-files-are-for-positive-and-negative-patients" id="id11">How do I tell if the clinical data files are for positive and negative patients?</a></p></li>
 </ul>
 </div>
 <div class="section" id="how-often-is-new-data-uploaded-to-the-database">
