@@ -151,6 +151,29 @@ Resources:
               ArnLike:
                   aws:SourceArn: !GetAtt [WarehouseBucket, Arn]
 
+  # Processed data bucket
+  WarehouseProcessedBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AccessControl: Private
+      BucketName: !Join ["", [!Ref "BucketNameParameter", "-processed"]]
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+        IgnorePublicAcls: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: "BucketRecycling"
+            ExpirationInDays: 90
+            Status: Enabled
+
   # IAM
   RotateOwnCredentials:
     Type: AWS::IAM::ManagedPolicy
@@ -225,6 +248,72 @@ Resources:
       ManagedPolicyArns:
         - !Ref ETLPolicy
         - !Ref RotateOwnCredentials
+
+  ProcessingPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Join ["", ["processing-", !Ref "BucketNameParameter"]]
+      Description: Allow data processing operations on the warehouse content
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - "s3:ListBucket"
+              - "s3:GetBucketLocation"
+            Resource:
+              - !GetAtt [WarehouseBucket, Arn]
+              - !GetAtt [WarehouseInventoryBucket, Arn]
+              - !GetAtt [WarehouseProcessedBucket, Arn]
+          - Effect: Allow
+            Action:
+              - "s3:GetObject"
+            Resource:
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/training/*"]]
+              - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/validation/*"]]
+              - !Join ["", [!GetAtt [WarehouseInventoryBucket, Arn], "/*"]]
+              - !Join ["", [!GetAtt [WarehouseProcessedBucket, Arn], "/*"]]
+          - Effect: Allow
+            Action:
+              - "s3:PutObject"
+            Resource:
+              - !Join ["", [!GetAtt [WarehouseProcessedBucket, Arn], "/*"]]
+          - Effect: Allow
+            Action:
+              - "sns:Publish"
+            Resource:
+              - !Ref Notifications
+  ProcessingGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      ManagedPolicyArns:
+        - !Ref ProcessingPolicy
+        - !Ref RotateOwnCredentials
+
+  ProcessedDataAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Join ["", ["processed-data-", !Ref "BucketNameParameter"]]
+      Description: Allow reading processed warehouse data
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - "s3:ListBucket"
+              - "s3:GetBucketLocation"
+            Resource:
+              - !GetAtt [WarehouseProcessedBucket, Arn]
+          - Effect: Allow
+            Action:
+              - "s3:GetObject"
+            Resource:
+              - !Join ["", [!GetAtt [WarehouseProcessedBucket, Arn], "/*"]]
+  ProcessedDataAccessGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      ManagedPolicyArns:
+        - !Ref ProcessedDataAccessPolicy
 
   ReadOnlyAccessWholeBucketPolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -564,6 +653,8 @@ Resources:
               - !Join ["", [!GetAtt [WarehouseBucket, Arn], "/*"]]
               - !GetAtt [WarehouseInventoryBucket, Arn]
               - !Join ["", [!GetAtt [WarehouseInventoryBucket, Arn], "/*"]]
+              - !GetAtt [WarehouseProcessedBucket, Arn]
+              - !Join ["", [!GetAtt [WarehouseProcessedBucket, Arn], "/*"]]
               # Required to pull from ECR through this endpoint
               - !Sub arn:aws:s3:::prod-${AWS::Region}-starport-layer-bucket/*
       RouteTableIds:
@@ -710,6 +801,40 @@ Resources:
               awslogs-group: !Ref TaskLogGroup
               awslogs-stream-prefix: ecs
 
+  # The the actual pipeline task
+  ProcessingTaskdefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family:  !Sub "${AWS::StackName}-ProcessingTaskdefinition"
+      RequiresCompatibilities:
+        - "FARGATE"
+      Cpu: "1024"  # 1 vCPU
+      Memory: "8GB"
+      NetworkMode: "awsvpc"
+      ExecutionRoleArn: !GetAtt [ECSTaskExecutionRole, Arn]
+      TaskRoleArn: !GetAtt [ProcessingRole, Arn]
+      ContainerDefinitions:
+        -
+          Name: "pipeline"
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AWS::StackName}-pipeline:prod"
+          Essential: true
+          Command:
+            - dataprocess
+          Environment:
+            - Name: COMMIT
+              Value: master
+            - Name: WAREHOUSE_BUCKET
+              Value: !Ref WarehouseBucket
+            - Name: TOPIC_ARN
+              Value: !Ref Notifications
+          # Send logs to CloudWatch Logs
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Ref TaskLogGroup
+              awslogs-stream-prefix: ecs
+
   TaskLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -729,6 +854,19 @@ Resources:
       Path: /
       ManagedPolicyArns:
         - !Ref ETLPolicy
+
+  ProcessingRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs-tasks.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      ManagedPolicyArns:
+        - !Ref ProcessingPolicy
 
   Notifications:
     Type: AWS::SNS::Topic
