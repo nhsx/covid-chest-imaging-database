@@ -7,6 +7,7 @@ from aws_cdk import (
     aws_cloudfront as _cloudfront,
     aws_cloudfront_origins as _origins,
     aws_secretsmanager as secretsmanager,
+    aws_s3 as s3,
     core,
 )
 
@@ -34,6 +35,13 @@ class DashboardStack(core.Stack):
             type="String",
             description="Image tag to deploy as container",
         )
+
+        processed_bucket_name = core.CfnParameter(
+            self,
+            "processedBucket",
+            type="String",
+            description="Name of the S3 bucket holding the processed data",
+        )
         # End: Input variables
 
         # Create VPC and Fargate Cluster
@@ -59,9 +67,13 @@ class DashboardStack(core.Stack):
                     repository=repository, tag=image_tag.value_as_string
                 ),
                 "secrets": [service_secret],
+                "environment": {"PROCESSED_BUCKET": processed_bucket_name.value_as_string}
             },
             platform_version=ecs.FargatePlatformVersion.VERSION1_4,
         )
+
+        processed_bucket = s3.Bucket.from_bucket_name(self, id="ProcessedBucket", bucket_name=processed_bucket_name.value_as_string)
+        processed_bucket.grant_read(fargate_service.task_definition.task_role)
 
         fargate_service.service.connections.security_groups[0].add_ingress_rule(
             peer=ec2.Peer.ipv4(vpc.vpc_cidr_block),
@@ -69,6 +81,7 @@ class DashboardStack(core.Stack):
             description="Allow HTTP inbound from VPC",
         )
 
+        # Output values
         core.CfnOutput(
             self,
             "LoadBalancerDNS",
