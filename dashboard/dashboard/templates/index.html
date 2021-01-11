@@ -1,0 +1,72 @@
+{% from "macros/navbar.html" import navbar %}
+{% extends "base.html" %}
+{% block title %}<title>Dash Bootstrap Components</title>{% endblock %}
+{% block header %}{{ navbar("home") }}{% endblock %}
+{% block body %}
+<div class="container mb-5">
+  <div class="dbcd-masthead">
+    <div class="row justify-content-center">
+      <div class="col-auto px-5 align-self-center">
+        <div style="width:250px;height:250px;margin:auto;">
+          <object
+            type="image/svg+xml"
+            data="https://cdn.opensource.faculty.ai/dbc/assets/logo.svg"
+            style="width:100%;height:100%;"
+          >
+            dash-bootstrap-components logo
+          </object>
+        </div>
+      </div>
+    </div>
+    <div class="row justify-content-center mt-3">
+      <div class="col col-md-10 col-lg-8 col-xl-6 text-center">
+        <h1 class="font-weight-light">Dash Bootstrap Components</h1>
+        <p class="lead">
+          <i>dash-bootstrap-components</i> is a library of Bootstrap components
+          for Plotly Dash, that makes it easier to build consistently styled
+          apps with complex, responsive layouts.
+        </p>
+        <a
+          class="btn btn-outline-secondary"
+          href="https://github.com/facultyai/dash-bootstrap-components"
+          >Source Code</a
+        >
+        <a class="btn btn-secondary" href="/docs">Get Started »</a>
+      </div>
+    </div>
+  </div>
+  <hr />
+  <div class="dbcd-main">
+    <h2>Get started quickly</h2>
+    <div class="row mt-3 mb-5">
+      <div class="col">
+        <p class="lead">
+          Dash Bootstrap Components can be easily installed with
+          <code>pip</code> or <code>conda</code>.
+        </p>
+        <p class="lead">
+          Once installed, just link a Bootstrap stylesheet and start using the
+          components exactly like you would use other Dash component libraries.
+        </p>
+        <a href="/docs/quickstart" class="btn btn-secondary">Quickstart »</a>
+      </div>
+      <div class="col-12 col-lg-6 mt-4 mt-lg-0">
+        <pre><code class="language-sh">pip install dash-bootstrap-components</code></pre>
+        <pre><code class="language-python">import dash
+import dash_bootstrap_components as dbc
+
+app = dash.Dash(
+    external_stylesheets=[dbc.themes.BOOTSTRAP]
+)
+
+app.layout = dbc.Alert(
+    "Hello, Bootstrap!", className="m-5"
+)
+
+if __name__ == "__main__":
+    app.run_server()</code></pre>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
