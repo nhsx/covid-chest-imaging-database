@@ -8,5 +8,4 @@ Flask-Caching===1.9.0
 pandas==1.2.0
 boto3==1.16.51
 flask-oidc==1.4.0
-
 s3fs==0.4.2

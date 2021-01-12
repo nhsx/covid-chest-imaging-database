@@ -2,6 +2,9 @@ import pandas as pd
 
 
 class Dataset:
+    """The dataset that powers the dashboard.
+    """
+
     def __init__(self, data_latest_path):
         self.data = {"ct": None, "mri": None, "xray": None, "patient": None}
         self.data_latest_path = data_latest_path
@@ -24,7 +27,6 @@ class Dataset:
         self.data["mri"] = self._load_training_data("mri", df)
         self.data["xray"] = self._load_training_data("xray", df)
         self.data["patient"] = self._load_training_data("patient_clean", df)
-        print(self.data)
 
     def _load_training_data(self, archive, df):
         base_path = str(self.data_latest_path).rstrip("latest.csv")

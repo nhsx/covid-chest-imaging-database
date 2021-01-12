@@ -8,16 +8,16 @@
 </ul>
 {%- endmacro %}
 
-{% macro sidenav(items, active="quickstart", active_child="alert") -%}
+{% macro sidenav(items, active="summary", active_child="alert") -%}
 <div class="d-flex align-items-center py-2 d-lg-none dbcd-nav-header">
-  <span class="font-weight-light" style="font-size:1.2rem">Documentation</span>
+  <span class="font-weight-light" style="font-size:1.2rem">Pages</span>
   <button
     class="btn btn-link ml-auto dbcd-nav-toggle"
     data-toggle="collapse"
     data-target="#dbcd-nav"
     aria-controls="dbcd-nav"
     aria-expanded="false"
-    aria-label="Toggle docs navigation"
+    aria-label="Toggle dashboard navigation"
   >
     <svg
       xmlns="http://www.w3.org/2000/svg"

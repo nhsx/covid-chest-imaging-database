@@ -1,11 +1,20 @@
+"""Create and manage all the pages in the dashboard
+
+"""
+
 import os
 from pathlib import Path
 
 import dash
 import dash_bootstrap_components as dbc
+from flask import render_template_string
 from jinja2 import Environment, FileSystemLoader
 
+from dataset import Dataset
+
+# The specific pages
 from .summary import create_app as summary_create_app
+from .hospitals import create_app as hospitals_create_app
 
 SERVE_LOCALLY = True
 HERE = Path(__file__).parent
@@ -20,7 +29,7 @@ INDEX_STRING_TEMPLATE = """{% from "macros/navbar.html" import navbar %}
 {% block title %}
 <title>{{ "{%title%}" }}</title>
 {% endblock %}
-{% block header %}{{ navbar("docs") }}{% endblock %}
+{% block header %}{{ navbar("pages") }}{% endblock %}
 {% block content %}
 {{ "{%app_entry%}" }}
 {% endblock %}
@@ -32,15 +41,32 @@ INDEX_STRING_TEMPLATE = """{% from "macros/navbar.html" import navbar %}
 {% endblock %}
 """
 
+def _url_format(slug):
+    return slug.replace(" ", "_")
 
-def register_pages(dataset):
-    pages = {"summary": {"creator": summary_create_app}}
+def register_pages(data: Dataset, server):
+    """Create all the Dash app pages and register themwith a Flask
+    server.
+
+    Parameters
+    ----------
+    data : dataset.Dataset
+        The main dataset which is used for analysis.
+    server :
+        The server which is hosting all these pages.
+
+    Returns
+    -------
+    dict
+        A mapping for routes -> Dash app for the server implement
+    """
+    pages = {"summary": {"creator": summary_create_app}, "hospital sites": {"creator": hospitals_create_app}}
 
     sidenav_items = [
         {
-            "name": slug,
-            "href": f"/pages/{slug}",
-            "label": slug.capitalize(),
+            "name": _url_format(slug),
+            "href": f"/pages/{_url_format(slug)}",
+            "label": slug.title(),
         }
         for slug in pages
     ]
@@ -51,19 +77,22 @@ def register_pages(dataset):
 
     for slug in pages:
         kwargs = {
-            "external_stylesheets": ["/static/loading.css", dbc.themes.SKETCHY],
-            "requests_pathname_prefix": "/pages/summary/",
+            "external_stylesheets": [
+                "/static/loading.css",
+                dbc.themes.SKETCHY,
+            ],
             "serve_locally": SERVE_LOCALLY,
             "suppress_callback_exceptions": True,
             "index_string": template.render(
                 sidenav_items=sidenav_items,
-                sidenav_active=slug,
-                # active_child="summary",
+                sidenav_active=_url_format(slug),
             ),
             "update_title": None,
+            "server": server,
+            "routes_pathname_prefix": f"/pages/{_url_format(slug)}/",
         }
-        app = pages[slug]["creator"](dataset, **kwargs)
+        app = pages[slug]["creator"](data, **kwargs)
         app.title = f"NCCID > {slug.capitalize}"
-        routes[f"/pages/{slug}"] = app
+        routes[f"/pages/{_url_format(slug)}"] = app
 
     return routes
