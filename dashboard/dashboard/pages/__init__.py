@@ -12,9 +12,8 @@ from jinja2 import Environment, FileSystemLoader
 
 from dataset import Dataset
 
-# The specific pages
-from .summary import create_app as summary_create_app
 from .hospitals import create_app as hospitals_create_app
+from .summary import create_app as summary_create_app
 
 SERVE_LOCALLY = True
 HERE = Path(__file__).parent
