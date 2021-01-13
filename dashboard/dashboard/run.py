@@ -42,7 +42,7 @@ tl = Timeloop()
 
 @tl.job(interval=timedelta(minutes=1))
 def reload_data():
-    logger.info("Periodic data reload starting.")
+    server.logger.info("Periodic data reload starting.")
     data.load_data()
 
 

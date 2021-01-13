@@ -38,7 +38,7 @@ def generate_oidc_client_secrets(secrets):
         "client_id": secrets["okta_client_id"],
         "client_secret": secrets["okta_client_secret"],
         "redirect_uris": [
-            "http://localhost:8080/authorization-code/callback",
+            "/authorization-code/callback"
         ],
         "issuer": f"https://{secrets['okta_auth_domain']}/oauth2/default",
         "token_uri": f"https://{secrets['okta_auth_domain']}/oauth2/default/v1/token",
