@@ -1,49 +1,4 @@
 {% macro navbar(active="home", user="") -%}
-<!-- <nav class="navbar sticky-top navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
-    <span class="mr-2 bg-white" style="padding:2px;border-radius:4px">
-      <img
-        src="/static/images/nhs_logo.png"
-        width="36"
-        height="36"
-        alt="NCCID Dashboard logo"
-      />
-    </span>
-
-    <a href="/" class="d-lg-none navbar-brand mr-0">NCCID Dashboard</a>
-    <button
-      class="navbar-toggler"
-      type="button"
-      data-toggle="collapse"
-      data-target="#dbcdNavbar"
-      aria-controls="dbcdNavbar"
-      aria-expanded="false"
-      aria-label="Toggle navigation"
-    >
-      <span class="navbar-toggler-icon"></span>
-    </button>
-
-    <div class="collapse navbar-collapse" id="dbcdNavbar">
-      <ul class="navbar-nav mr-auto">
-        <li class="nav-item{{' active' if active == 'home' else ''}}">
-          <a class="nav-link" href="/">Home</a>
-        </li>
-
-        <li class="nav-item{{' active' if active == 'pages' else ''}}">
-          <a class="nav-link" href="/pages">Pages</a>
-        </li>
-      <ul>
-      {% if active == 'pages' %}
-      <ul class="navbar-nav">
-          <li class="nav-item">
-          <form method="post" action="/logout" class="navbar-form navbar-right">
-            <button id="logout-button" type="submit" class="btn btn-info">Logout</button>
-          </form>
-        </li>
-      </ul>
-      {% endif %} -->
-
-
 <nav class="navbar navbar-expand-md navbar-dark bg-primary">
   <a class="navbar-brand abs" href="/">NCCID Dashboard</a>
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsingNavbar">
@@ -59,39 +14,6 @@
       </li>
     </ul>
     {% endif %}
-  </div>
-</nav>
-
-        <!-- <li class="nav-item{{' active' if active == 'more' else ''}} dropdown">
-          <a
-            class="nav-link dropdown-toggle"
-            href="#"
-            id="navbarDropdown"
-            role="button"
-            data-toggle="dropdown"
-            aria-haspopup="true"
-            aria-expanded="false"
-          >
-            More
-          </a> -->
-          <!-- <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-            <a class="dropdown-item" href="/changelog">Changelog</a>
-            <a
-              class="dropdown-item"
-              href="https://github.com/facultyai/dash-bootstrap-components/issues/new?template=bug-report.md"
-              >Report a bug</a
-            >
-            <a
-              class="dropdown-item"
-              href="https://github.com/facultyai/dash-bootstrap-components/blob/master/.github/CONTRIBUTING.md"
-              >Contribute</a
-            >
-            <div class="dropdown-divider"></div>
-            <a class="dropdown-item" href="https://faculty.ai">Faculty AI</a>
-          </div> -->
-        <!-- </li>
-      </ul> -->
-    </div>
   </div>
 </nav>
 {%- endmacro %}
