@@ -13,12 +13,17 @@ from aws_cdk import (
 
 
 class DashboardStack(core.Stack):
-    def __init__(self, scope: core.Construct, construct_id: str, **kwargs) -> None:
+    def __init__(
+        self, scope: core.Construct, construct_id: str, **kwargs
+    ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         # Domain name to redirect
         domain_name = core.CfnParameter(
-            self, "domainName", type="String", description="Domain name to redirect",
+            self,
+            "domainName",
+            type="String",
+            description="Domain name to redirect",
         )
 
         # Here we use a specific certificate from parameter values
@@ -41,6 +46,13 @@ class DashboardStack(core.Stack):
             "processedBucket",
             type="String",
             description="Name of the S3 bucket holding the processed data",
+        )
+
+        cookie_secret = core.CfnParameter(
+            self,
+            "cookieSecret",
+            type="String",
+            description="The secret value to encrypt the login cookies by the dashboard.",
         )
         # End: Input variables
 
@@ -67,15 +79,24 @@ class DashboardStack(core.Stack):
                     repository=repository, tag=image_tag.value_as_string
                 ),
                 "secrets": [service_secret],
-                "environment": {"PROCESSED_BUCKET": processed_bucket_name.value_as_string}
+                "environment": {
+                    "AWS_PROCESSED_BUCKET": processed_bucket_name.value_as_string,
+                    "COOKIE_SECRET": cookie_secret.value_as_string,
+                },
             },
             platform_version=ecs.FargatePlatformVersion.VERSION1_4,
         )
 
-        processed_bucket = s3.Bucket.from_bucket_name(self, id="ProcessedBucket", bucket_name=processed_bucket_name.value_as_string)
+        processed_bucket = s3.Bucket.from_bucket_name(
+            self,
+            id="ProcessedBucket",
+            bucket_name=processed_bucket_name.value_as_string,
+        )
         processed_bucket.grant_read(fargate_service.task_definition.task_role)
 
-        fargate_service.service.connections.security_groups[0].add_ingress_rule(
+        fargate_service.service.connections.security_groups[
+            0
+        ].add_ingress_rule(
             peer=ec2.Peer.ipv4(vpc.vpc_cidr_block),
             connection=ec2.Port.tcp(80),
             description="Allow HTTP inbound from VPC",
