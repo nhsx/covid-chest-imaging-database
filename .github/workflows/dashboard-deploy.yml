@@ -60,7 +60,7 @@ jobs:
         cdk_subcommand: 'deploy'
         actions_comment: true
         working_dir: 'infrastructure-dashboard/dashboard'
-        cdk_args: "--require-approval never --parameters imageTag=${{ github.sha }} --parameters certArn=${{ secrets.AWS_DASHBOARD_CERTIFICATE_ARN }} --parameters domainName=${{ secrets.DASHBOARD_DOMAIN }} --parameters processedBucket=${{ secrets.PROCESSED_BUCKET }}"
+        cdk_args: "--require-approval never --parameters imageTag=${{ github.sha }} --parameters certArn=${{ secrets.AWS_DASHBOARD_CERTIFICATE_ARN }} --parameters domainName=${{ secrets.DASHBOARD_DOMAIN }} --parameters processedBucket=${{ secrets.AWS_PROCESSED_BUCKET }}"
         debug_log: true
 
     # The above command is successful even if the deploy fails, so catch the non-zero exit
