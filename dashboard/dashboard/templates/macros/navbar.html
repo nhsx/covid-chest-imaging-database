@@ -44,31 +44,23 @@
       {% endif %} -->
 
 
-      <nav class="navbar navbar-expand-md navbar-dark bg-primary">
-        <a class="navbar-brand abs" href="#">NCCID Dashboard</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsingNavbar">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="navbar-collapse collapse" id="collapsingNavbar">
-            <!-- <ul class="navbar-nav">
-                <li class="nav-item active">
-                    <a class="nav-link" href="/pages/summary/">Summary</a>
-                </li>
-            </ul> -->
-            {% if active == 'pages' %}
-            <ul class="navbar-nav ml-auto">
-              <li class="nav-item">
-                {% if user != '' %}
-                Hello {{ user }}!
-                {% endif %}
-                <form method="post" action="/logout" class="navbar-form navbar-right">
-                  <button id="logout-button" type="submit" class="btn btn-info">Logout</button>
-                </form>
-              </li>
-            </ul>
-            {% endif %} -->
-        </div>
-    </nav>
+<nav class="navbar navbar-expand-md navbar-dark bg-primary">
+  <a class="navbar-brand abs" href="/">NCCID Dashboard</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsingNavbar">
+      <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="navbar-collapse collapse" id="collapsingNavbar">
+    {% if active == 'pages' %}
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item">
+        <form method="post" action="/logout" class="navbar-form navbar-right">
+          <button id="logout-button" type="submit" class="btn btn-info">Logout</button>
+        </form>
+      </li>
+    </ul>
+    {% endif %}
+  </div>
+</nav>
 
         <!-- <li class="nav-item{{' active' if active == 'more' else ''}} dropdown">
           <a

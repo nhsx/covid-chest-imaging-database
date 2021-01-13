@@ -1,4 +1,3 @@
-
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -12,25 +11,37 @@ from dash.dependencies import Input, Output
 
 # external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
+
 def create_app(data, dataset, **kwargs):
     app = dash.Dash(__name__, **kwargs)
 
     # assume you have a "long-form" data frame
     # see https://plotly.com/python/px-arguments/ for more options
-    df = pd.DataFrame({
-        "Fruit": ["Apples", "Oranges", "Bananas", "Apples", "Oranges", "Bananas"],
-        "Amount": [4, 1, 2, 2, 4, 5],
-        "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"]
-    })
+    df = pd.DataFrame(
+        {
+            "Fruit": [
+                "Apples",
+                "Oranges",
+                "Bananas",
+                "Apples",
+                "Oranges",
+                "Bananas",
+            ],
+            "Amount": [4, 1, 2, 2, 4, 5],
+            "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"],
+        }
+    )
 
     fig = px.bar(df, x="Fruit", y="Amount", color="City", barmode="group")
 
     text_input = html.Div(
-    [
-        dbc.Input(id="input", placeholder="Type something...", type="text"),
-        html.Br(),
-        html.P(id="output"),
-    ]
+        [
+            dbc.Input(
+                id="input", placeholder="Type something...", type="text"
+            ),
+            html.Br(),
+            html.P(id="output"),
+        ]
     )
 
     buttons = html.Div(
@@ -47,22 +58,19 @@ def create_app(data, dataset, **kwargs):
         ]
     )
 
-    app.layout = html.Div(children=[
-        html.H1(children='Hello Dash'),
-
-        html.Div(children='''
+    app.layout = html.Div(
+        children=[
+            html.H1(children="Hello Dash"),
+            html.Div(
+                children="""
             Dash: A web application framework for Python.
-        '''),
-
-        dcc.Graph(
-            id='example-graph',
-            figure=fig
-        ), 
-
-        text_input,
-
-        buttons
-    ])
+        """
+            ),
+            dcc.Graph(id="example-graph", figure=fig),
+            text_input,
+            buttons,
+        ]
+    )
 
     @app.callback(Output("output", "children"), [Input("input", "value")])
     def output_text(value):
@@ -72,4 +80,4 @@ def create_app(data, dataset, **kwargs):
 
 
 def capital(text):
-    return text.title() if text else ''
+    return text.title() if text else ""

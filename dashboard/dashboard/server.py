@@ -29,7 +29,7 @@ def create_server():
             return redirect(url_for("pages"))
         else:
             try:
-                return render_template("index.html", oidc=oidc)
+                return render_template("index.html")
             except TemplateNotFound:
                 abort(404)
 
@@ -48,5 +48,13 @@ def create_server():
     @oidc.require_login
     def pages():
         return redirect("/pages/summary", 302)
+
+
+    def _oidc_error(message='Not Authorized', code=None):
+        try:
+            return render_template("index.html", alert=message)
+        except TemplateNotFound:
+            abort(404)
+    oidc._oidc_error = _oidc_error
 
     return server, oidc

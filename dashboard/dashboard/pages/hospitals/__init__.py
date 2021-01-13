@@ -54,7 +54,7 @@ def serve_layout(data: Dataset) -> html.Div:
     )
     row5 = html.Tr(
         [html.Td("Number of Xray studies"), html.Td(number_xray_studies)],
-        className="table-danger"
+        className="table-danger",
     )
 
     table_body = [html.Tbody([row1, row2, row3, row4, row5])]
@@ -64,7 +64,6 @@ def serve_layout(data: Dataset) -> html.Div:
         bordered=True,
         responsive=True,
     )
-
 
     card_content = [
         dbc.CardHeader("Work in Progress"),
@@ -81,8 +80,10 @@ def serve_layout(data: Dataset) -> html.Div:
     page = html.Div(
         children=[
             html.H1(children="Hospital Sites"),
-            dbc.Alert("👷 This page hasn't been filled in yet.", color="warning")
-       ]
+            dbc.Alert(
+                "👷 This page hasn't been filled in yet.", color="warning"
+            ),
+        ]
     )
     return page
 

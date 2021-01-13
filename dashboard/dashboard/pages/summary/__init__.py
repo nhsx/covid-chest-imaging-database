@@ -34,21 +34,31 @@ def serve_layout(data: Dataset) -> html.Div:
     number_patients = patient["Pseudonym"].nunique()
     pos_patients = set(patient[patient["filename_covid_status"]]["Pseudonym"])
     neg_patients = set(patient[~patient["filename_covid_status"]]["Pseudonym"])
-    training_patients = set(patient[patient["group"] == "training"]["Pseudonym"])
-    validation_patients = set(patient[patient["group"] == "validation"]["Pseudonym"])
+    training_patients = set(
+        patient[patient["group"] == "training"]["Pseudonym"]
+    )
+    validation_patients = set(
+        patient[patient["group"] == "validation"]["Pseudonym"]
+    )
 
     number_training_patients = len(training_patients)
     number_validation_patients = len(validation_patients)
 
     number_pos_training_patients = len(training_patients & pos_patients)
     number_pos_validation_patients = len(validation_patients & pos_patients)
-    number_pos_patients = number_pos_training_patients + number_pos_validation_patients
+    number_pos_patients = (
+        number_pos_training_patients + number_pos_validation_patients
+    )
 
     number_neg_training_patients = len(training_patients & neg_patients)
     number_neg_validation_patients = len(validation_patients & neg_patients)
-    number_neg_patients = number_neg_training_patients + number_neg_validation_patients
+    number_neg_patients = (
+        number_neg_training_patients + number_neg_validation_patients
+    )
 
-    date_cutoff = datetime.datetime.now() - datetime.timedelta(RECENT_CUTOFF_DAYS)
+    date_cutoff = datetime.datetime.now() - datetime.timedelta(
+        RECENT_CUTOFF_DAYS
+    )
     recent_training_patients = sum(
         pd.to_datetime(
             patient[patient["group"] == "training"]["filename_earliest_date"]
@@ -102,7 +112,9 @@ def serve_layout(data: Dataset) -> html.Div:
     )
     row4 = html.Tr(
         [
-            html.Td(f"New patients added in the last {RECENT_CUTOFF_DAYS} days"),
+            html.Td(
+                f"New patients added in the last {RECENT_CUTOFF_DAYS} days"
+            ),
             html.Td(numformat(recent_patients)),
             html.Td(numformat(recent_training_patients)),
             html.Td(numformat(recent_validation_patients)),
@@ -122,7 +134,9 @@ def serve_layout(data: Dataset) -> html.Div:
     number_validation_ct_studies = ct[ct["group"] == "validation"][
         "StudyInstanceUID"
     ].nunique()
-    number_ct_studies = number_training_ct_studies + number_validation_ct_studies
+    number_ct_studies = (
+        number_training_ct_studies + number_validation_ct_studies
+    )
     mri = data.data["mri"]
     number_training_mri_studies = mri[mri["group"] == "training"][
         "StudyInstanceUID"
@@ -130,7 +144,9 @@ def serve_layout(data: Dataset) -> html.Div:
     number_validation_mri_studies = mri[mri["group"] == "validation"][
         "StudyInstanceUID"
     ].nunique()
-    number_mri_studies = number_training_mri_studies + number_validation_mri_studies
+    number_mri_studies = (
+        number_training_mri_studies + number_validation_mri_studies
+    )
     xray = data.data["xray"]
     number_training_xray_studies = xray[xray["group"] == "training"][
         "StudyInstanceUID"
@@ -138,7 +154,9 @@ def serve_layout(data: Dataset) -> html.Div:
     number_validation_xray_studies = xray[xray["group"] == "validation"][
         "StudyInstanceUID"
     ].nunique()
-    number_xray_studies = number_training_xray_studies + number_validation_xray_studies
+    number_xray_studies = (
+        number_training_xray_studies + number_validation_xray_studies
+    )
 
     img_counts = {
         "CT image studies": [
@@ -207,8 +225,6 @@ def serve_layout(data: Dataset) -> html.Div:
                 [
                     html.Th("Submitting centres"),
                     html.Th("Total"),
-                    html.Th("Training"),
-                    html.Th("Validation"),
                 ]
             ),
             className="thead-dark",
@@ -221,8 +237,6 @@ def serve_layout(data: Dataset) -> html.Div:
                     [
                         html.Td("Number of submitting centres (e.g. trusts)"),
                         html.Td(numformat(trusts)),
-                        html.Td(numformat(training_trusts)),
-                        html.Td(numformat(validation_trusts)),
                     ]
                 )
             ]

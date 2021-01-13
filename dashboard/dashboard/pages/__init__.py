@@ -41,8 +41,10 @@ INDEX_STRING_TEMPLATE = """{% from "macros/navbar.html" import navbar %}
 {% endblock %}
 """
 
+
 def _url_format(slug):
     return slug.replace(" ", "_")
+
 
 def register_pages(data: Dataset, server):
     """Create all the Dash app pages and register themwith a Flask
@@ -60,7 +62,10 @@ def register_pages(data: Dataset, server):
     dict
         A mapping for routes -> Dash app for the server implement
     """
-    pages = {"summary": {"creator": summary_create_app}, "hospital sites": {"creator": hospitals_create_app}}
+    pages = {
+        "summary": {"creator": summary_create_app},
+        "hospital sites": {"creator": hospitals_create_app},
+    }
 
     sidenav_items = [
         {

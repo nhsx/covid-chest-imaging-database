@@ -11,26 +11,38 @@ from dash.dependencies import Input, Output
 from flask_caching import Cache
 
 # external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-cache = Cache(config={'CACHE_TYPE': 'simple'})
+cache = Cache(config={"CACHE_TYPE": "simple"})
+
 
 @cache.cached(timeout=10)
 def serve_layout(dataset):
     # assume you have a "long-form" data frame
     # see https://plotly.com/python/px-arguments/ for more options
-    df = pd.DataFrame({
-        "Fruit": ["Apples", "Oranges", "Bananas", "Apples", "Oranges", "Bananas"],
-        "Amount": [4, 1, 2, 2, 4, 5],
-        "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"]
-    })
+    df = pd.DataFrame(
+        {
+            "Fruit": [
+                "Apples",
+                "Oranges",
+                "Bananas",
+                "Apples",
+                "Oranges",
+                "Bananas",
+            ],
+            "Amount": [4, 1, 2, 2, 4, 5],
+            "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"],
+        }
+    )
 
     fig = px.bar(df, x="Fruit", y="Amount", color="City", barmode="group")
 
     text_input = html.Div(
-    [
-        dbc.Input(id="input", placeholder="Type something...", type="text"),
-        html.Br(),
-        html.P(id="output"),
-    ]
+        [
+            dbc.Input(
+                id="input", placeholder="Type something...", type="text"
+            ),
+            html.Br(),
+            html.P(id="output"),
+        ]
     )
 
     buttons = html.Div(
@@ -48,28 +60,28 @@ def serve_layout(dataset):
     )
 
     badge = dbc.Button(
-    ["DataCounter", dbc.Badge(dataset.get_counter(), color="light", className="ml-1")],
-    color="primary",
+        [
+            "DataCounter",
+            dbc.Badge(dataset.get_counter(), color="light", className="ml-1"),
+        ],
+        color="primary",
     )
 
-    return html.Div(children=[
-        html.H1(children='Hello Dash'),
-
-        html.Div(children='''
+    return html.Div(
+        children=[
+            html.H1(children="Hello Dash"),
+            html.Div(
+                children="""
             Dash: A web application framework for Python.
-        '''),
+        """
+            ),
+            badge,
+            dcc.Graph(id="example-graph", figure=fig),
+            text_input,
+            buttons,
+        ]
+    )
 
-        badge,
-
-        dcc.Graph(
-            id='example-graph',
-            figure=fig
-        ),
-
-        text_input,
-
-        buttons
-    ])
 
 def create_app(data, dataset, **kwargs):
     app = dash.Dash(__name__, **kwargs)
@@ -124,21 +136,21 @@ def create_app(data, dataset, **kwargs):
     #     dcc.Graph(
     #         id='example-graph',
     #         figure=fig
-    #     ), 
+    #     ),
 
     #     text_input,
 
     #     buttons
     # ])
-    app.layout = lambda : serve_layout(dataset)
+    app.layout = lambda: serve_layout(dataset)
 
     @app.callback(Output("output", "children"), [Input("input", "value")])
     def output_text(value):
-        return capital(value, data) if value else ''
+        return capital(value, data) if value else ""
 
     return app
 
 
 def capital(text, data):
     text = data.get_text() + ": " + text
-    return text.title() if text else ''
+    return text.title() if text else ""
