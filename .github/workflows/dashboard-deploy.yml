@@ -46,7 +46,7 @@ jobs:
     - name: cdk diff
       uses: youyo/aws-cdk-github-actions@v1
       with:
-        cdk_version: '1.83.0'
+        cdk_version: '1.85.0'
         cdk_subcommand: 'diff'
         actions_comment: true
         working_dir: 'infrastructure-dashboard/dashboard'
@@ -56,11 +56,11 @@ jobs:
       id: cdk-deploy
       uses: youyo/aws-cdk-github-actions@v1
       with:
-        cdk_version: '1.83.0'
+        cdk_version: '1.85.0'
         cdk_subcommand: 'deploy'
         actions_comment: true
         working_dir: 'infrastructure-dashboard/dashboard'
-        cdk_args: "--require-approval never --parameters imageTag=${{ github.sha }} --parameters certArn=${{ secrets.AWS_DASHBOARD_CERTIFICATE_ARN }} --parameters domainName=${{ secrets.DASHBOARD_DOMAIN }} --parameters processedBucket=${{ secrets.PROCESSED_BUCKET }}"
+        cdk_args: "--require-approval never --parameters imageTag=${{ github.sha }} --parameters certArn=${{ secrets.AWS_DASHBOARD_CERTIFICATE_ARN }} --parameters domainName=${{ secrets.DASHBOARD_DOMAIN }} --parameters processedBucket=${{ secrets.AWS_PROCESSED_BUCKET }} --parameters cookieSecret=${{ secrets.DASHBOARD_COOKIE_SECRET }}"
         debug_log: true
 
     # The above command is successful even if the deploy fails, so catch the non-zero exit

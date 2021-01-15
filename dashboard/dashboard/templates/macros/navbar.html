@@ -1,0 +1,20 @@
+{% macro navbar(active="home", user="") -%}
+<nav class="navbar navbar-expand-md navbar-dark bg-primary">
+  <a class="navbar-brand abs" href="/">NCCID Dashboard</a>
+  <span class="badge badge-pill badge-warning" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="This version of the dashboard is in development.">Development</span>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsingNavbar">
+      <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="navbar-collapse collapse" id="collapsingNavbar">
+    {% if active == 'pages' %}
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item">
+        <form method="post" action="/logout" class="navbar-form navbar-right">
+          <button id="logout-button" type="submit" class="btn btn-info">Logout</button>
+        </form>
+      </li>
+    </ul>
+    {% endif %}
+  </div>
+</nav>
+{%- endmacro %}
