@@ -8,6 +8,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY dashboard/ ./
 
-ENV GUNICORN_CMD_ARGS="--bind=0.0.0.0:80 --workers=1 --log-level=debug"
-
-CMD ["gunicorn", "run:server"]
+CMD ["gunicorn", "-c", "guniconf.py", "run:server"]
