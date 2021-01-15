@@ -46,7 +46,7 @@ jobs:
     - name: cdk diff
       uses: youyo/aws-cdk-github-actions@v1
       with:
-        cdk_version: '1.83.0'
+        cdk_version: '1.85.0'
         cdk_subcommand: 'diff'
         actions_comment: true
         working_dir: 'infrastructure-dashboard/dashboard'
@@ -56,7 +56,7 @@ jobs:
       id: cdk-deploy
       uses: youyo/aws-cdk-github-actions@v1
       with:
-        cdk_version: '1.83.0'
+        cdk_version: '1.85.0'
         cdk_subcommand: 'deploy'
         actions_comment: true
         working_dir: 'infrastructure-dashboard/dashboard'
