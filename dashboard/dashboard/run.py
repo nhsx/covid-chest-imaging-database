@@ -52,4 +52,4 @@ if __name__ == "__main__":
     from werkzeug.serving import run_simple
 
     tl.start(block=False)
-    run_simple("localhost", 8080, server, use_reloader=True)
+    run_simple("localhost", 8888, server, use_reloader=True)
