@@ -120,7 +120,9 @@ class DashboardStack(core.Stack):
         )
         behaviour = _cloudfront.BehaviorOptions(
             origin=origin,
+            allowed_methods=_cloudfront.AllowedMethods.ALLOW_ALL,
             cache_policy=_cloudfront.CachePolicy.CACHING_DISABLED,
+            origin_request_policy=_cloudfront.OriginRequestPolicy.ALL_VIEWER,
             viewer_protocol_policy=_cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         )
 
