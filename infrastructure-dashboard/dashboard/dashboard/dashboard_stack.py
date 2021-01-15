@@ -82,7 +82,7 @@ class DashboardStack(core.Stack):
                 "environment": {
                     "AWS_PROCESSED_BUCKET": processed_bucket_name.value_as_string,
                     "COOKIE_SECRET_KEY": cookie_secret.value_as_string,
-                    "DASHBOARD_DOMAIN": domainName.value_as_string,
+                    "DASHBOARD_DOMAIN": domain_name.value_as_string,
                 },
             },
             platform_version=ecs.FargatePlatformVersion.VERSION1_4,
