@@ -6,7 +6,7 @@ from flask_oidc import OpenIDConnect
 from jinja2 import TemplateNotFound
 
 
-def config_prepare():
+def config_prepare(logger=None):
     if os.environ.get("0") is not None:
         secrets = json.loads(os.environ.get("0"))
         client_secrets = generate_oidc_client_secrets(secrets)
@@ -17,9 +17,15 @@ def config_prepare():
     else:
         oidc_client_secrets = "./client_secrets.json"
 
+    default_cookie_secret_key = "NotVerySecretBecauseNotRandom"
     cookie_secret_key = os.environ.get(
-        "COOKIE_SECRET_KEY", "NotVerySecretBecauseNotSet"
+        "COOKIE_SECRET_KEY", default_cookie_secret_key
     )
+    if cookie_secret_key == default_cookie_secret_key:
+        logger.warning(
+            "The cookie secret is note set, supply it by the COOKIE_SECRET_KEY env var!"
+        )
+
     cookie_secure = False if os.environ.get("COOKIE_INSECURE") else True
 
     config = {
@@ -37,9 +43,7 @@ def generate_oidc_client_secrets(secrets):
         "auth_uri": f"https://{secrets['okta_auth_domain']}/oauth2/default/v1/authorize",
         "client_id": secrets["okta_client_id"],
         "client_secret": secrets["okta_client_secret"],
-        "redirect_uris": [
-            "/authorization-code/callback"
-        ],
+        "redirect_uris": ["/authorization-code/callback"],
         "issuer": f"https://{secrets['okta_auth_domain']}/oauth2/default",
         "token_uri": f"https://{secrets['okta_auth_domain']}/oauth2/default/v1/token",
         "token_introspection_uri": f"https://{secrets['okta_auth_domain']}/oauth2/default/v1/introspect",
@@ -54,7 +58,7 @@ def create_server():
     """
     server = Flask(__name__)
 
-    config_update = config_prepare()
+    config_update = config_prepare(server.logger)
 
     server.config.update(config_update)
 
