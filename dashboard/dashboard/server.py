@@ -35,6 +35,14 @@ def config_prepare(logger=None):
         "OIDC_SCOPES": ["openid", "profile"],
         "OIDC_CALLBACK_ROUTE": "/authorization-code/callback",
     }
+    # Set the actual domain to pass on the right value
+    # if not set, it should work for localhost (the automatic URL discovery via Flask)
+    if os.environ.get("DASHBOARD_DOMAIN"):
+        protocol = "https" if cookie_secure else "http"
+        config[
+            "OVERWRITE_REDIRECT_URI"
+        ] = f"{protocol}://{os.environ.get('DASHBOARD_DOMAIN')}/authorization-code/callback"
+
     return config
 
 

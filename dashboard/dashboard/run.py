@@ -40,7 +40,7 @@ for view_func in server.view_functions:
 tl = Timeloop()
 
 
-@tl.job(interval=timedelta(minutes=1))
+@tl.job(interval=timedelta(hours=4))
 def reload_data():
     server.logger.info("Periodic data reload starting.")
     data.load_data()
@@ -52,4 +52,4 @@ if __name__ == "__main__":
     from werkzeug.serving import run_simple
 
     tl.start(block=False)
-    run_simple("localhost", 8080, server, use_reloader=True)
+    run_simple("localhost", 8888, server, use_reloader=True)
