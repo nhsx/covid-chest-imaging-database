@@ -40,7 +40,7 @@ for view_func in server.view_functions:
 tl = Timeloop()
 
 
-@tl.job(interval=timedelta(minutes=1))
+@tl.job(interval=timedelta(hours=4))
 def reload_data():
     server.logger.info("Periodic data reload starting.")
     data.load_data()
