@@ -227,7 +227,7 @@ download: s3://nccid-data-warehouse-prod/training/ct/Covid1/1.2.3/A.B.C/x.y.z.dc
 data and images that you don’t have locally:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Remove items from this array that you don&#39;t want to download</span>
 <span class="nv">modalities</span><span class="o">=(</span><span class="s2">&quot;data&quot;</span> <span class="s2">&quot;ct&quot;</span> <span class="s2">&quot;ct-metadata&quot;</span> <span class="s2">&quot;mri&quot;</span> <span class="s2">&quot;mri-metadata&quot;</span> <span class="s2">&quot;xray&quot;</span> <span class="s2">&quot;xray-metadata&quot;</span><span class="o">)</span>
-<span class="k">for</span> modality in <span class="si">${</span><span class="nv">modalities</span><span class="p">[@]</span><span class="si">}</span><span class="p">;</span> <span class="k">do</span>
+<span class="k">for</span> modality <span class="k">in</span> <span class="si">${</span><span class="nv">modalities</span><span class="p">[@]</span><span class="si">}</span><span class="p">;</span> <span class="k">do</span>
   aws s3 sync <span class="s2">&quot;s3://nccid-data-warehouse-prod/training/</span><span class="si">${</span><span class="nv">modality</span><span class="si">}</span><span class="s2">&quot;</span> <span class="s2">&quot;</span><span class="si">${</span><span class="nv">modality</span><span class="si">}</span><span class="s2">&quot;</span>
 <span class="k">done</span>
 </pre></div>
