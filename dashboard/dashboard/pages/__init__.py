@@ -13,6 +13,7 @@ from jinja2 import Environment, FileSystemLoader
 from dataset import Dataset
 
 from .hospitals import create_app as hospitals_create_app
+from .patients import create_app as patients_create_app
 from .summary import create_app as summary_create_app
 
 SERVE_LOCALLY = True
@@ -64,6 +65,7 @@ def register_pages(data: Dataset, server):
     pages = {
         "summary": {"creator": summary_create_app},
         "hospital sites": {"creator": hospitals_create_app},
+        "patients": {"creator": patients_create_app},
     }
 
     sidenav_items = [
