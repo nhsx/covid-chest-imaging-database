@@ -96,7 +96,7 @@ def register_pages(data: Dataset, server):
             "routes_pathname_prefix": f"/pages/{_url_format(slug)}/",
         }
         app = pages[slug]["creator"](data, **kwargs)
-        app.title = f"NCCID > {slug.capitalize}"
+        app.title = f"NCCID > {slug.title()}"
         routes[f"/pages/{_url_format(slug)}"] = app
 
     return routes
