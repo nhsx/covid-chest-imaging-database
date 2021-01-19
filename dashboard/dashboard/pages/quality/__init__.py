@@ -6,6 +6,8 @@ import dash_table
 import pandas as pd
 from dash.dependencies import Input, Output
 from flask_caching import Cache
+import plotly.graph_objs as go
+import plotly.express as px
 
 from dataset import Dataset
 from pages import tools
@@ -30,12 +32,37 @@ def serve_layout(data: Dataset) -> html.Div:
         The HTML componets of the page layout, wrapped in  div
     """
 
+    patient = data.data["patient"]
+    covid_positives = patient.loc[patient.filename_covid_status]
+    completeness = pd.DataFrame(
+        {
+            "Not-Null": (
+                (~covid_positives.isnull()).sum() * 100 / len(covid_positives)
+            ),
+            "Nulls": (
+                covid_positives.isnull().sum() * 100 / len(covid_positives)
+            ),
+        }
+    ).sort_values(by="Nulls")
+    fig = px.bar(completeness, x=completeness.index, y=["Nulls", "Not-Null"])
+    fig.update_layout(
+        barmode="stack",
+        xaxis_tickangle=-45,
+        title="Completeness of Fields (Covid Positive only)",
+        xaxis_title="Fields",
+        yaxis_title="% of Nulls",
+        legend_title="",
+    )
+    fig.update_traces(hovertemplate=None)
+    fig.update_layout(hovermode="x")
+
+    graph = dcc.Graph(id="completeness-graph", figure=fig)
+
     page = html.Div(
         children=[
             html.H1(children="Data Quality"),
-            dbc.Alert(
-                "👷 This page hasn't been filled in yet.", color="warning"
-            ),
+            html.H2("Completeness of Fields"),
+            graph,
         ]
     )
 

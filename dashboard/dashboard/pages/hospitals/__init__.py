@@ -108,6 +108,7 @@ def serve_layout(data: Dataset) -> html.Div:
     page = html.Div(
         children=[
             html.H1(children="Hospital Sites"),
+            html.H2("Sites Overview"),
             selector,
             # html.Div(
             #     [
@@ -129,17 +130,19 @@ def serve_layout(data: Dataset) -> html.Div:
             # ),
             html.Br(),
             html.Div(id="hospital-table"),
-            html.Br(),
-            html.Div(id="hospital-datatable"),
-            html.Br(),
+            # html.Br(),
+            # html.Div(id="hospital-datatable"),
+            html.Hr(),
+            html.H2("Data Over Time"),
+            # html.Br(),
+            html.Div(id="patients-swabs"),
             html.Label(
                 [
-                    "Select Submitting Centre/Site to filter below",
+                    "Select Submitting Centre/Site to filter above",
                 ],
                 htmlFor="hospital-filter",
             ),
             centres_select,
-            html.Div(id="patients-swabs"),
         ]
     )
 
@@ -174,12 +177,12 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
     def set_hostpital_table(covid_status, order_column):
         return create_hospital_table(data, covid_status, order_column)
 
-    @app.callback(
-        Output("hospital-datatable", "children"),
-        [Input("covid-status", "value")],
-    )
-    def set_hostpital_datatable(value):
-        return create_hospital_datatable(data, value)
+    # @app.callback(
+    #     Output("hospital-datatable", "children"),
+    #     [Input("covid-status", "value")],
+    # )
+    # def set_hostpital_datatable(value):
+    #     return create_hospital_datatable(data, value)
 
     @app.callback(
         Output("patients-swabs", "children"),
@@ -248,109 +251,127 @@ def create_hospital_table(data, covid_status, order_column):
         "Image Studies": study_counts,
     }
     df = pd.DataFrame(data=d)
-    df_sorted = df.sort_values(by=[order_column], ascending=False)
-
-    rows = []
-    for index, row in df_sorted.iterrows():
-        rows += [
-            html.Tr(
-                [
-                    html.Td(row["Submitting Centre/Site"]),
-                    html.Td(row["First Submission"]),
-                    html.Td(
-                        numformat(row["Patients"]), className="text-right"
-                    ),
-                    html.Td(
-                        numformat(row["Image Studies"]), className="text-right"
-                    ),
-                ]
-            )
-        ]
-
-    table_body = [html.Tbody(rows)]
-    table = dbc.Table(table_header + table_body, bordered=True)
-
-    return table
-
-
-def create_hospital_datatable(data, covid_status):
-    patient = data.data["patient"]
-    if covid_status == "positive":
-        patient = patient[patient["filename_covid_status"]]
-    elif covid_status == "negative":
-        patient = patient[~patient["filename_covid_status"]]
-
-    ct = data.data["ct"]
-    mri = data.data["mri"]
-    xray = data.data["xray"]
-
-    submitting_centres = sorted(patient["SubmittingCentre"].unique())
-    earliest_dates = []
-    patient_counts = []
-    study_counts = []
-    for centre in submitting_centres:
-        patient_ids = set(
-            patient[patient["SubmittingCentre"] == centre]["Pseudonym"]
-        )
-        patient_counts += [len(patient_ids)]
-        ct_studies = ct[ct["Pseudonym"].isin(patient_ids)][
-            "StudyInstanceUID"
-        ].nunique()
-        mri_studies = mri[mri["Pseudonym"].isin(patient_ids)][
-            "StudyInstanceUID"
-        ].nunique()
-        xray_studies = xray[xray["Pseudonym"].isin(patient_ids)][
-            "StudyInstanceUID"
-        ].nunique()
-        study_counts += [ct_studies + mri_studies + xray_studies]
-
-        earliest = patient[patient["SubmittingCentre"] == centre][
-            "filename_earliest_date"
-        ].min()
-        earliest_dates += [earliest]
-
-    d = {
-        "Submitting Centres/Sites": submitting_centres,
-        "First Submission": earliest_dates,
-        "Patients": patient_counts,
-        "Image Studies": study_counts,
-    }
-    df = pd.DataFrame(data=d)
-    table = dash_table.DataTable(
-        id="table",
-        columns=[{"name": i, "id": i} for i in df.columns],
-        data=df.to_dict("records"),
-        sort_action="native",
+    df_sorted = df.sort_values(
+        by=[order_column], ascending=(order_column == "Submitting Centre/Site")
     )
 
+    # rows = []
+    # for index, row in df_sorted.iterrows():
+    #     rows += [
+    #         html.Tr(
+    #             [
+    #                 html.Td(row["Submitting Centre/Site"]),
+    #                 html.Td(row["First Submission"]),
+    #                 html.Td(
+    #                     numformat(row["Patients"]), className="text-right"
+    #                 ),
+    #                 html.Td(
+    #                     numformat(row["Image Studies"]), className="text-right"
+    #                 ),
+    #             ]
+    #         )
+    #     ]
+    # table_body = [html.Tbody(rows)]
+    # table = dbc.Table(table_header + table_body, bordered=True)
+
+    table = dbc.Table.from_dataframe(df_sorted)
     return table
+
+
+# def create_hospital_datatable(data, covid_status):
+#     patient = data.data["patient"]
+#     if covid_status == "positive":
+#         patient = patient[patient["filename_covid_status"]]
+#     elif covid_status == "negative":
+#         patient = patient[~patient["filename_covid_status"]]
+
+#     ct = data.data["ct"]
+#     mri = data.data["mri"]
+#     xray = data.data["xray"]
+
+#     submitting_centres = sorted(patient["SubmittingCentre"].unique())
+#     earliest_dates = []
+#     patient_counts = []
+#     study_counts = []
+#     for centre in submitting_centres:
+#         patient_ids = set(
+#             patient[patient["SubmittingCentre"] == centre]["Pseudonym"]
+#         )
+#         patient_counts += [len(patient_ids)]
+#         ct_studies = ct[ct["Pseudonym"].isin(patient_ids)][
+#             "StudyInstanceUID"
+#         ].nunique()
+#         mri_studies = mri[mri["Pseudonym"].isin(patient_ids)][
+#             "StudyInstanceUID"
+#         ].nunique()
+#         xray_studies = xray[xray["Pseudonym"].isin(patient_ids)][
+#             "StudyInstanceUID"
+#         ].nunique()
+#         study_counts += [ct_studies + mri_studies + xray_studies]
+
+#         earliest = patient[patient["SubmittingCentre"] == centre][
+#             "filename_earliest_date"
+#         ].min()
+#         earliest_dates += [earliest]
+
+#     d = {
+#         "Submitting Centres/Sites": submitting_centres,
+#         "First Submission": earliest_dates,
+#         "Patients": patient_counts,
+#         "Image Studies": study_counts,
+#     }
+#     df = pd.DataFrame(data=d)
+#     table = dash_table.DataTable(
+#         id="table",
+#         columns=[{"name": i, "id": i} for i in df.columns],
+#         data=df.to_dict("records"),
+#         sort_action="native",
+#     )
+
+#     return table
 
 
 def create_hospital_swabs(data, centre):
     if centre is None:
         title_filter = "All Submitting Centres"
-        patients = data.data["patient"].copy()
+        patient = data.data["patient"].copy()
     else:
-        patients = data.data["patient"][
+        patient = data.data["patient"][
             data.data["patient"]["SubmittingCentre"] == centre
         ]
         title_filter = centre
 
     # patients["latest_swab_date"] = pd.to_datetime(patients["latest_swab_date"])
 
-    x = (
-        patients.groupby(["latest_swab_date"])
+    counts = (
+        patient.rename(columns={"filename_covid_status": "Covid Status"})
+        .groupby(["filename_earliest_date", "Covid Status"])
         .count()
         .sort_index()["Pseudonym"]
+        .unstack()
         .cumsum()
-        .sort_index()
         .fillna(method="ffill")
+        .rename(columns={True: "Positive", False: "Negative"})
+        .sort_index()
     )
 
     fig = go.Figure(
-        data=[go.Scatter(x=x.index, y=x)],
+        data=[
+            go.Scatter(
+                x=counts.index,
+                y=counts["Positive"],
+                mode="lines+markers",
+                name="Positive",
+            ),
+            go.Scatter(
+                x=counts.index,
+                y=counts["Negative"],
+                mode="lines+markers",
+                name="Negative",
+            ),
+        ],
         layout={
-            "title": f"Cumulative Number of Patients Swab-Tested: {title_filter}"
+            "title": f"Cumulative Number of Patients by COVID status: {title_filter}"
         },
     )
     graph = dcc.Graph(id="example-graph", figure=fig)
