@@ -60,7 +60,9 @@ class DashboardStack(core.Stack):
         # NOTE: Limit AZs to avoid reaching resource quotas
         vpc = ec2.Vpc(self, "DashboardVPC", max_azs=2)
 
-        cluster = ecs.Cluster(self, "DashboardCluster", vpc=vpc)
+        cluster = ecs.Cluster(
+            self, "DashboardCluster", vpc=vpc, container_insights=True
+        )
 
         repository = ecr.Repository(
             self, "DashboardRepository", repository_name="nccid-dashboard"
@@ -103,13 +105,6 @@ class DashboardStack(core.Stack):
             description="Allow HTTP inbound from VPC",
         )
 
-        # Output values
-        core.CfnOutput(
-            self,
-            "LoadBalancerDNS",
-            value=fargate_service.load_balancer.load_balancer_dns_name,
-        )
-
         cert = _acm.Certificate.from_certificate_arn(
             self, "cert", cert_arn.value_as_string
         )
@@ -136,8 +131,14 @@ class DashboardStack(core.Stack):
         # Explicit dependency setup
         distribution.node.add_dependency(fargate_service.load_balancer)
 
-        # Outputs
-        distribution_domain = core.CfnOutput(  # noqa:  F841
+        # Output values
+        core.CfnOutput(
+            self,
+            "LoadBalancerDNS",
+            value=fargate_service.load_balancer.load_balancer_dns_name,
+        )
+
+        core.CfnOutput(
             self,
             "nccidDashboardDomain",
             value=distribution.distribution_domain_name,
