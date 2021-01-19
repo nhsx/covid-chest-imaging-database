@@ -4,10 +4,10 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objs as go
 from dash.dependencies import Input, Output
 from flask_caching import Cache
-import plotly.graph_objs as go
-import plotly.express as px
 
 from dataset import Dataset
 from pages import tools
