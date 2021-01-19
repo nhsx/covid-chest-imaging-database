@@ -9,7 +9,7 @@ from dash.dependencies import Input, Output
 from flask_caching import Cache
 
 from dataset import Dataset
-from pages import tools
+from pages.tools import numformat
 
 cache = Cache(config={"CACHE_TYPE": "simple"})
 
@@ -40,16 +40,6 @@ def serve_layout(data: Dataset) -> html.Div:
         id="hospital-filter",
     )
 
-    #     df = pd.read_csv('https://raw.githubusercontent.com/plotly/datasets/master/solar.csv')
-    #     table = dash_table.DataTable(
-    #     id='table',
-    #     columns=[{"name": i, "id": i} for i in df.columns],
-    #     data=df.to_dict('records'),
-    #     sort_action='native',
-    #     # style_as_list_view=True,
-    #     row_deletable=True,
-    # )
-
     covid_status_select = dcc.Dropdown(
         options=[
             {"label": "All patients", "value": "all"},
@@ -61,15 +51,82 @@ def serve_layout(data: Dataset) -> html.Div:
         id="covid-status",
     )
 
+    table_order_select = dcc.Dropdown(
+        options=[
+            {
+                "label": "Submitting Centre/Site",
+                "value": "Submitting Centre/Site",
+            },
+            {"label": "First Submission", "value": "First Submission"},
+            {"label": "Patients", "value": "Patients"},
+            {"label": "Image Studies", "value": "Image Studies"},
+        ],
+        value="Submitting Centre/Site",
+        clearable=False,
+        id="table-order",
+    )
+
+    selector = html.Div(
+        [
+            dbc.Row(
+                [
+                    dbc.Col(
+                        html.Div(
+                            [
+                                html.Label(
+                                    [
+                                        "Select COVID-19 status to filter the data below.",
+                                    ],
+                                    htmlFor="hospital-filter",
+                                ),
+                                covid_status_select,
+                            ]
+                        ),
+                        md=6,
+                        sm=12,
+                    ),
+                    dbc.Col(
+                        html.Div(
+                            [
+                                html.Label(
+                                    [
+                                        "Select table ordering column.",
+                                    ],
+                                    htmlFor="table-order",
+                                ),
+                                table_order_select,
+                            ]
+                        ),
+                        md=6,
+                        sm=12,
+                    ),
+                ]
+            )
+        ]
+    )
+
     page = html.Div(
         children=[
             html.H1(children="Hospital Sites"),
-            html.Label(
-                [
-                    "Select COVID-19 status to filter the data below.",
-                    covid_status_select,
-                ]
-            ),
+            selector,
+            # html.Div(
+            #     [
+            #         html.Label(
+            #             [
+            #                 "Select COVID-19 status to filter the data below.",
+            #             ],
+            #             htmlFor="hospital-filter",
+            #         ),
+            #         covid_status_select,
+            #         html.Label(
+            #             [
+            #                 "Select table ordering column.",
+            #             ],
+            #             htmlFor="table-order",
+            #         ),
+            #         table_order_select,
+            #     ]
+            # ),
             html.Br(),
             html.Div(id="hospital-table"),
             html.Br(),
@@ -110,10 +167,12 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
     app.layout = lambda: serve_layout(data)
 
     @app.callback(
-        Output("hospital-table", "children"), [Input("covid-status", "value")]
+        Output("hospital-table", "children"),
+        Input("covid-status", "value"),
+        Input("table-order", "value"),
     )
-    def set_hostpital_table(value):
-        return create_hospital_table(data, value)
+    def set_hostpital_table(covid_status, order_column):
+        return create_hospital_table(data, covid_status, order_column)
 
     @app.callback(
         Output("hospital-datatable", "children"),
@@ -132,7 +191,7 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
     return app
 
 
-def create_hospital_table(data, covid_status):
+def create_hospital_table(data, covid_status, order_column):
     patient = data.data["patient"]
     if covid_status == "positive":
         patient = patient[patient["filename_covid_status"]]
@@ -158,13 +217,14 @@ def create_hospital_table(data, covid_status):
     ]
 
     submitting_centres = sorted(patient["SubmittingCentre"].unique())
-
-    rows = []
+    earliest_dates = []
+    patient_counts = []
+    study_counts = []
     for centre in submitting_centres:
         patient_ids = set(
             patient[patient["SubmittingCentre"] == centre]["Pseudonym"]
         )
-        patient_count = len(patient_ids)
+        patient_counts += [len(patient_ids)]
         ct_studies = ct[ct["Pseudonym"].isin(patient_ids)][
             "StudyInstanceUID"
         ].nunique()
@@ -174,17 +234,35 @@ def create_hospital_table(data, covid_status):
         xray_studies = xray[xray["Pseudonym"].isin(patient_ids)][
             "StudyInstanceUID"
         ].nunique()
-        total_studies = ct_studies + mri_studies + xray_studies
+        study_counts += [ct_studies + mri_studies + xray_studies]
+
         earliest = patient[patient["SubmittingCentre"] == centre][
             "filename_earliest_date"
         ].min()
+        earliest_dates += [earliest]
+
+    d = {
+        "Submitting Centre/Site": submitting_centres,
+        "First Submission": earliest_dates,
+        "Patients": patient_counts,
+        "Image Studies": study_counts,
+    }
+    df = pd.DataFrame(data=d)
+    df_sorted = df.sort_values(by=[order_column], ascending=False)
+
+    rows = []
+    for index, row in df_sorted.iterrows():
         rows += [
             html.Tr(
                 [
-                    html.Td(centre),
-                    html.Td(earliest),
-                    html.Td(patient_count),
-                    html.Td(total_studies),
+                    html.Td(row["Submitting Centre/Site"]),
+                    html.Td(row["First Submission"]),
+                    html.Td(
+                        numformat(row["Patients"]), className="text-right"
+                    ),
+                    html.Td(
+                        numformat(row["Image Studies"]), className="text-right"
+                    ),
                 ]
             )
         ]
