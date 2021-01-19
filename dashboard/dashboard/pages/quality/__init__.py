@@ -62,6 +62,15 @@ def serve_layout(data: Dataset) -> html.Div:
         children=[
             html.H1(children="Data Quality"),
             html.H2("Completeness of Fields"),
+            html.P(
+                "Completeness of the clinical data after applying the "
+                + "cleaning pipeline, which removes erroneous entries such "
+                + "as blank spaces, extracts numerical measurements from "
+                + "string entries, and fills missing demographics using "
+                + "DICOM header information. For each field of the clinical "
+                + "data, the percentage of entries with non-null values are "
+                + "shown against the percentage of null values."
+            ),
             graph,
         ]
     )

@@ -143,6 +143,10 @@ def serve_layout(data: Dataset) -> html.Div:
                 htmlFor="hospital-filter",
             ),
             centres_select,
+            html.P(
+                "Note: click the × mark to clear the selection above and show data for all submitting centres.",
+                id="centres-note",
+            ),
         ]
     )
 
@@ -188,8 +192,15 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
         Output("patients-swabs", "children"),
         [Input("hospital-filter", "value")],
     )
-    def set_hospital_swabs(value):
-        return create_hospital_swabs(data, value)
+    def set_hospital_counts(centre):
+        return create_hospital_counts(data, centre)
+
+    @app.callback(
+        Output("centres-note", "className"),
+        Input("hospital-filter", "value"),
+    )
+    def toggle_centres_note_visibility(centre):
+        return "invisible" if centre is None else "visible"
 
     return app
 
@@ -331,7 +342,7 @@ def create_hospital_table(data, covid_status, order_column):
 #     return table
 
 
-def create_hospital_swabs(data, centre):
+def create_hospital_counts(data, centre):
     if centre is None:
         title_filter = "All Submitting Centres"
         patient = data.data["patient"].copy()
