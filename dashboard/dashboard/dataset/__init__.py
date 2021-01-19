@@ -2,8 +2,7 @@ import pandas as pd
 
 
 class Dataset:
-    """The dataset that powers the dashboard.
-    """
+    """The dataset that powers the dashboard."""
 
     def __init__(self, data_latest_path):
         self.data = {"ct": None, "mri": None, "xray": None, "patient": None}
