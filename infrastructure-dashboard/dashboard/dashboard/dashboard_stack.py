@@ -60,7 +60,9 @@ class DashboardStack(core.Stack):
         # NOTE: Limit AZs to avoid reaching resource quotas
         vpc = ec2.Vpc(self, "DashboardVPC", max_azs=2)
 
-        cluster = ecs.Cluster(self, "DashboardCluster", vpc=vpc)
+        cluster = ecs.Cluster(
+            self, "DashboardCluster", vpc=vpc, container_insights=True
+        )
 
         repository = ecr.Repository(
             self, "DashboardRepository", repository_name="nccid-dashboard"
