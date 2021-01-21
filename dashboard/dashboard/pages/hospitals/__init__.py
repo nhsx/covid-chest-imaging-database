@@ -13,7 +13,6 @@ from pages.tools import numformat
 
 cache = Cache(config={"CACHE_TYPE": "simple"})
 
-
 # Caching is done so that when the dataset's values
 # are updated, the page will pull in the updated values.
 @cache.cached(timeout=180)
@@ -377,21 +376,24 @@ def create_hospital_counts(data, centre):
         .sort_index()
     )
 
+    lines = []
+    colors = {"Positive": "red", "Negative": "blue"}
+    for group in colors:
+        if group in counts:
+            lines += [
+                go.Scatter(
+                    x=counts.index,
+                    y=counts[group],
+                    mode="lines+markers",
+                    name=group,
+                    showlegend=True,
+                    marker=dict(color=colors[group]),
+                    line_shape="hv",
+                )
+            ]
+
     fig = go.Figure(
-        data=[
-            go.Scatter(
-                x=counts.index,
-                y=counts["Positive"],
-                mode="lines+markers",
-                name="Positive",
-            ),
-            go.Scatter(
-                x=counts.index,
-                y=counts["Negative"],
-                mode="lines+markers",
-                name="Negative",
-            ),
-        ],
+        data=lines,
         layout={
             "title": f"Cumulative Number of Patients by COVID status: {title_filter}"
         },
