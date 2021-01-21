@@ -13,7 +13,6 @@ from pages.tools import numformat
 
 cache = Cache(config={"CACHE_TYPE": "simple"})
 
-
 # Caching is done so that when the dataset's values
 # are updated, the page will pull in the updated values.
 @cache.cached(timeout=180)
@@ -129,13 +128,24 @@ def serve_layout(data: Dataset) -> html.Div:
             #     ]
             # ),
             html.Br(),
-            html.Div(id="hospital-table"),
+            dcc.Loading(
+                id="loading-hospital-table",
+                type="dot",
+                color="black",
+                children=html.Div(id="hospital-table"),
+            ),
+            # html.Div(id="hospital-table"),
             # html.Br(),
             # html.Div(id="hospital-datatable"),
             html.Hr(),
             html.H2("Data Over Time"),
             # html.Br(),
-            html.Div(id="patients-swabs"),
+            dcc.Loading(
+                id="loading-patients-swabs",
+                type="dot",
+                color="black",
+                children=html.Div(id="patients-swabs"),
+            ),
             html.Label(
                 [
                     "Select Submitting Centre/Site to filter above",
@@ -366,21 +376,24 @@ def create_hospital_counts(data, centre):
         .sort_index()
     )
 
+    lines = []
+    colors = {"Positive": "red", "Negative": "blue"}
+    for group in colors:
+        if group in counts:
+            lines += [
+                go.Scatter(
+                    x=counts.index,
+                    y=counts[group],
+                    mode="lines+markers",
+                    name=group,
+                    showlegend=True,
+                    marker=dict(color=colors[group]),
+                    line_shape="hv",
+                )
+            ]
+
     fig = go.Figure(
-        data=[
-            go.Scatter(
-                x=counts.index,
-                y=counts["Positive"],
-                mode="lines+markers",
-                name="Positive",
-            ),
-            go.Scatter(
-                x=counts.index,
-                y=counts["Negative"],
-                mode="lines+markers",
-                name="Negative",
-            ),
-        ],
+        data=lines,
         layout={
             "title": f"Cumulative Number of Patients by COVID status: {title_filter}"
         },
