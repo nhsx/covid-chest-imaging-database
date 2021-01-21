@@ -129,13 +129,24 @@ def serve_layout(data: Dataset) -> html.Div:
             #     ]
             # ),
             html.Br(),
-            html.Div(id="hospital-table"),
+            dcc.Loading(
+                id="loading-hospital-table",
+                type="dot",
+                color="black",
+                children=html.Div(id="hospital-table"),
+            ),
+            # html.Div(id="hospital-table"),
             # html.Br(),
             # html.Div(id="hospital-datatable"),
             html.Hr(),
             html.H2("Data Over Time"),
             # html.Br(),
-            html.Div(id="patients-swabs"),
+            dcc.Loading(
+                id="loading-patients-swabs",
+                type="dot",
+                color="black",
+                children=html.Div(id="patients-swabs"),
+            ),
             html.Label(
                 [
                     "Select Submitting Centre/Site to filter above",
