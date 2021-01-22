@@ -739,6 +739,7 @@ Resources:
   SubmittingcentresTaskdefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
+      Family:  !Sub "${AWS::StackName}-SubmittingCentres"
       RequiresCompatibilities:
         - "FARGATE"
       Cpu: "512"  # 0.5 vCPU
@@ -772,6 +773,7 @@ Resources:
   PipelineTaskdefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
+      Family:  !Sub "${AWS::StackName}-Pipeline"
       RequiresCompatibilities:
         - "FARGATE"
       Cpu: "2048"  # 2 vCPU
