@@ -55,7 +55,6 @@ def load_inventory(prefixes):
 df = pd.read_csv(f"s3://{PROCESSED_BUCKET}/latest.csv")
 df = df.set_index(["archive"])
 
-output = [["Metric", "Value"]]
 
 patient_clean = load_training_data("patient_clean", df)
 ct = load_training_data("ct", df)
@@ -85,7 +84,7 @@ recent_patients = sum(
     pd.to_datetime(patient_clean["filename_earliest_date"]) >= date_cutoff
 )
 
-output += [
+output = [
     [
         "**Total number of patients with images**",
         f"**{count_patients_training_positive_images+count_patients_training_negative_images:,.0f}**",
@@ -99,8 +98,13 @@ output += [
         f"{count_patients_training_negative_images:,.0f}",
     ],
     ["New patients added in the last 30 days", f"{recent_patients:,.0f}"],
-    ["", ""],
 ]
+with open("stats_patients.csv", "w") as csvfile:
+    statswriter = csv.writer(
+        csvfile, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
+    )
+    statswriter.writerows(output)
+
 
 # Images metrics
 ct_studies = ct["StudyInstanceUID"].nunique()
@@ -124,14 +128,18 @@ sorted_img_counts = list(
     )
 )
 
-output += [
+output = [
     [
         "**Total number of image studies**",
         f"**{ct_studies+mri_studies+xray_studies:,.0f}**",
     ]
 ]
 output += sorted_img_counts
-output += [["", ""]]
+with open("stats_images.csv", "w") as csvfile:
+    statswriter = csv.writer(
+        csvfile, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
+    )
+    statswriter.writerows(output)
 
 # Data storage metrics
 prefix_sums = load_inventory(
@@ -144,6 +152,9 @@ data_storage = {
     "MRI image storage": prefix_sums["training/mri/"] / (1024 ** 3),
     "X-ray image storage": prefix_sums["training/xray/"] / (1024 ** 3),
 }
+remainder_storage = total_storage - sum(
+    [data_storage[modality] for modality in data_storage]
+)
 
 sorted_data_storage = list(
     map(
@@ -156,23 +167,28 @@ sorted_data_storage = list(
     )
 )
 
-output += [
+output = [
     [
         "**Total image, image metadata, and clinical data storage**",
         f"**{total_storage:,.0f}GB**",
     ]
 ]
 output += sorted_data_storage
-output += [["", ""]]
+output += [
+    ["Clinical data and image metadata export", f"{remainder_storage:,.0f}GB"]
+]
+with open("stats_storage.csv", "w") as csvfile:
+    statswriter = csv.writer(
+        csvfile, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
+    )
+    statswriter.writerows(output)
 
 # Submitting centres metrics
 nhs_trusts = patient_clean["SubmittingCentre"].nunique()
-output += [
+output = [
     ["**Submitting centres (e.g. NHS trusts)**", f"**{nhs_trusts:,.0f}**"],
 ]
-
-
-with open("stats.csv", "w") as csvfile:
+with open("stats_submittingcentres.csv", "w") as csvfile:
     statswriter = csv.writer(
         csvfile, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
     )
