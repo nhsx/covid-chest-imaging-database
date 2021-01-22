@@ -12,6 +12,7 @@ if WAREHOUSE_BUCKET is None:
         "No bucket info is provided (via the AWS_WAREHOUSE_BUCKET env var)"
     )
 
+# Fixed names for the bucket, as the warehouse is wired up
 PROCESSED_BUCKET = f"{WAREHOUSE_BUCKET}-processed"
 INVENTORY_BUCKET = f"{WAREHOUSE_BUCKET}-inventory"
 
