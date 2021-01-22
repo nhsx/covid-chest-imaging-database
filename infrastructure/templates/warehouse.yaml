@@ -775,7 +775,7 @@ Resources:
       RequiresCompatibilities:
         - "FARGATE"
       Cpu: "2048"  # 2 vCPU
-      Memory: "12GB"
+      Memory: "14GB"
       NetworkMode: "awsvpc"
       ExecutionRoleArn: !GetAtt [ECSTaskExecutionRole, Arn]
       TaskRoleArn: !GetAtt [PipelineRole, Arn]
