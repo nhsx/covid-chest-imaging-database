@@ -7,9 +7,26 @@ Below you can find high level statistics of the data available in the training s
 
 .. rst-class:: right-align-right-col
 .. csv-table::
-   :file: scripts/stats.csv
-   :widths: auto
-   :header-rows: 1
+   :file: scripts/stats_patients.csv
+   :widths: 80, 20
+   :align: center
+
+.. rst-class:: right-align-right-col
+.. csv-table::
+   :file: scripts/stats_images.csv
+   :widths: 80, 20
+   :align: center
+
+.. rst-class:: right-align-right-col
+.. csv-table::
+   :file: scripts/stats_storage.csv
+   :widths: 80, 20
+   :align: center
+
+.. rst-class:: right-align-right-col
+.. csv-table::
+   :file: scripts/stats_submittingcentres.csv
+   :widths: 80, 20
    :align: center
 
 .. include:: scripts/stats_date.txt
