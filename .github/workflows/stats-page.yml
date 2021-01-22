@@ -30,7 +30,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_PROCESSED_BUCKET: ${{ secrets.AWS_PROCESSED_BUCKET }}
+          AWS_WAREHOUSE_BUCKET: ${{ secrets.AWS_WAREHOUSE_BUCKET }}
         run: python stats.py
 
       - name: Create Pull Request with changes
