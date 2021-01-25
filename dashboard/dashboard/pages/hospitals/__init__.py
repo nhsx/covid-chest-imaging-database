@@ -76,7 +76,7 @@ def serve_layout(data: Dataset) -> html.Div:
                                     [
                                         "Select COVID-19 status to filter the data below.",
                                     ],
-                                    htmlFor="hospital-filter",
+                                    htmlFor="covid-status",
                                 ),
                                 covid_status_select,
                             ]
