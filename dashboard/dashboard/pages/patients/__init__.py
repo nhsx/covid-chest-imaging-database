@@ -10,6 +10,7 @@ from flask_caching import Cache
 
 from dataset import Dataset
 from pages import tools
+from pages.tools import numformat
 
 cache = Cache(config={"CACHE_TYPE": "simple"})
 
@@ -231,16 +232,32 @@ def create_gender_breakdown(data):
     validation = patient[patient["group"] == "validation"][
         "sex_update"
     ].value_counts()
+    n_patients = patient.count()
+
+    # total_column = [f"{numformat(total['M'])} ({total['M']/n_patients:.1f}%)",
+    #  f"{total['F']}", f"{total['Unknown']}", 0]
+
+    def calculate_column(dataset):
+        genders = ["M", "F", "Unknown"]
+        num = sum([dataset[g] for g in genders])
+        column = [
+            "{} ({:.1%})".format(numformat(dataset[g]), dataset[g] / num)
+            for g in genders
+        ]
+        n_mf = dataset["M"] + dataset["F"]
+        column += [
+            "{:d}:{:d}%".format(
+                round(dataset["M"] / n_mf * 100),
+                round(dataset["F"] / n_mf * 100),
+            )
+        ]
+        return column
 
     gender = {
-        "Gender": ["Male", "Female", "Unknown"],
-        "Total": [total["M"], total["F"], total["Unknown"]],
-        "Training set": [training["M"], training["F"], training["Unknown"]],
-        "Validation set": [
-            validation["M"],
-            validation["F"],
-            validation["Unknown"],
-        ],
+        "Gender": ["Male", "Female", "Unknown", "Male:Female ratio"],
+        "Total": calculate_column(total),
+        "Training set": calculate_column(training),
+        "Validation set": calculate_column(validation),
     }
 
     df = pd.DataFrame(
