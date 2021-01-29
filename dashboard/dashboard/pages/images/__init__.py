@@ -124,7 +124,12 @@ def serve_layout(data: Dataset) -> html.Div:
         children=[
             html.H1(children="Images"),
             selector,
-            html.Div(id="image-timeseries-plot"),
+            dcc.Loading(
+                id="loading-image-timeseries-plot",
+                type="dot",
+                color="black",
+                children=html.Div(id="image-timeseries-plot"),
+            ),
         ]
     )
 
@@ -208,7 +213,7 @@ def create_image_series(data, group, covid_status, centre):
         go.Scatter(
             x=ct_timeseries.index,
             y=ct_timeseries,
-            mode="lines+markers",
+            mode="lines",
             name="CT Studies",
             showlegend=True,
             # marker=dict(color=colors[group]),
@@ -217,7 +222,7 @@ def create_image_series(data, group, covid_status, centre):
         go.Scatter(
             x=xray_timeseries.index,
             y=xray_timeseries,
-            mode="lines+markers",
+            mode="lines",
             name="X-ray Studies",
             showlegend=True,
             # marker=dict(color=colors[group]),
