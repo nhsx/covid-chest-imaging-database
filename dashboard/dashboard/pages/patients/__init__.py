@@ -5,6 +5,7 @@ import dash_html_components as html
 import dash_table
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from dash.dependencies import Input, Output
 from flask_caching import Cache
 
@@ -78,7 +79,7 @@ def serve_layout(data: Dataset) -> html.Div:
                             [
                                 html.Label(
                                     [
-                                        "Select COVID-19 status",
+                                        "Select COVID-19 status (Ethnicity plot only)",
                                     ],
                                     htmlFor="covid-status-select",
                                 ),
@@ -146,10 +147,9 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
     @app.callback(
         Output("age-breakdown-plot", "children"),
         Input("dataset-select", "value"),
-        Input("covid-status-select", "value"),
     )
-    def set_age_breakdown(group, covid_status):
-        return create_age_breakdown(data, group, covid_status)
+    def set_age_breakdown(group):
+        return create_age_breakdown(data, group)
 
     @app.callback(
         Output("ethnicity-breakdown-plot", "children"),
@@ -162,7 +162,7 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
     return app
 
 
-def create_age_breakdown(data, group, covid_status):
+def create_age_breakdown(data, group):
     patient = data.data["patient"]
     # Filter for group
     if group != "all":
@@ -171,22 +171,53 @@ def create_age_breakdown(data, group, covid_status):
     else:
         title_group = "All data"
 
-    # Filter for status
-    if covid_status == "positive":
-        patient = patient[patient["filename_covid_status"]]
-        title_status = "Positive patients"
-    elif covid_status == "negative":
-        patient = patient[~patient["filename_covid_status"]]
-        title_status = "Negative patients"
-    else:
-        title_status = "All patients"
+    patient_postive = patient[patient["filename_covid_status"]]
+    patient_negative = patient[~patient["filename_covid_status"]]
 
-    fig = px.histogram(
-        patient,
-        x="age_update",
-        title=f"Age Distribution of Patients, {title_group}, {title_status}",
-        labels={"age_update": "Age", "filename_covid_status": "Covid status"},
-        #    color="group"
+    def age_cdf(df):
+        stats_df = (
+            df.groupby("age_update")["age_update"]
+            .agg("count")
+            .pipe(pd.DataFrame)
+            .rename(columns={"age_update": "frequency"})
+        )
+        stats_df["pdf"] = stats_df["frequency"] / sum(stats_df["frequency"])
+        stats_df["cdf"] = stats_df["pdf"].cumsum()
+        stats_df = stats_df.reset_index()
+        return stats_df
+
+    age_positive = age_cdf(patient_postive)
+    age_negative = age_cdf(patient_negative)
+
+    lines = [
+        go.Scatter(
+            x=age_positive.age_update,
+            y=age_positive.cdf * 100,
+            mode="lines",
+            name="Positive",
+            showlegend=True,
+            # marker=dict(color=colors[group]),
+            line_shape="hv",
+        ),
+        go.Scatter(
+            x=age_negative.age_update,
+            y=age_negative.cdf * 100,
+            mode="lines",
+            name="Negative",
+            showlegend=True,
+            # marker=dict(color=colors[group]),
+            line_shape="hv",
+        ),
+    ]
+
+    fig = go.Figure(
+        data=lines,
+        layout={
+            "title": f"Cummulative age distribution by covid status, {title_group}",
+            "xaxis_title": "Age",
+            "yaxis_title": "Cummulative proportion (%)",
+            "legend_title": "Covid status",
+        },
     )
     graph = dcc.Graph(id="age-histogram", figure=fig)
     return graph
