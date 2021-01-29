@@ -211,7 +211,9 @@ def create_ethnicity_breakdown(data, group, covid_status):
     else:
         title_status = "All patients"
 
-    ethnic_groups = ["Asian", "Black", "White", "Multiple", "Other", "Unknown"]
+    # This will sort ethnic groups by descending order
+    ethnic_groups = list(patient["ethnicity"].value_counts().keys())
+
     fig = px.histogram(
         patient,
         x="ethnicity",
