@@ -196,7 +196,7 @@ def create_image_series(data, group, covid_status, centre):
         )
         # Extend time series on front and back
         extra = pd.Series(
-            [0, result.max()], index=["2020-05-25", pd.to_datetime("today")]
+            [0, result.max()], index=["2020-05-10", pd.to_datetime("today")]
         )
         extra.index = pd.to_datetime(extra.index)
         result = result.append(extra).sort_index()
