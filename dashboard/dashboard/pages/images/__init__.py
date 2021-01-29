@@ -43,7 +43,7 @@ def serve_layout(data: Dataset) -> html.Div:
 
     dataset_select = dcc.Dropdown(
         options=[
-            {"label": "All all data", "value": "all"},
+            {"label": "All data", "value": "all"},
             {"label": "Training set", "value": "training"},
             {"label": "Validation set", "value": "validation"},
         ],
@@ -124,7 +124,12 @@ def serve_layout(data: Dataset) -> html.Div:
         children=[
             html.H1(children="Images"),
             selector,
-            html.Div(id="image-timeseries-plot"),
+            dcc.Loading(
+                id="loading-image-timeseries-plot",
+                type="dot",
+                color="black",
+                children=html.Div(id="image-timeseries-plot"),
+            ),
         ]
     )
 
@@ -191,7 +196,7 @@ def create_image_series(data, group, covid_status, centre):
         )
         # Extend time series on front and back
         extra = pd.Series(
-            [0, result.max()], index=["2020-05-25", pd.to_datetime("today")]
+            [0, result.max()], index=["2020-05-10", pd.to_datetime("today")]
         )
         extra.index = pd.to_datetime(extra.index)
         result = result.append(extra).sort_index()
@@ -208,7 +213,7 @@ def create_image_series(data, group, covid_status, centre):
         go.Scatter(
             x=ct_timeseries.index,
             y=ct_timeseries,
-            mode="lines+markers",
+            mode="lines",
             name="CT Studies",
             showlegend=True,
             # marker=dict(color=colors[group]),
@@ -217,7 +222,7 @@ def create_image_series(data, group, covid_status, centre):
         go.Scatter(
             x=xray_timeseries.index,
             y=xray_timeseries,
-            mode="lines+markers",
+            mode="lines",
             name="X-ray Studies",
             showlegend=True,
             # marker=dict(color=colors[group]),

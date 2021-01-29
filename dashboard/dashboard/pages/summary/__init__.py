@@ -202,7 +202,22 @@ def serve_layout(data: Dataset) -> html.Div:
             className="thead-dark",
         )
     ]
+
+    def sum_image_counts(col=0):
+        """Get sums of image counts actoss modalities for each set"""
+        return sum([v[col] for v in img_counts.values()])
+
     image_rows = [
+        html.Tr(
+            [
+                html.Td("Across all modalities"),
+                html.Td(numformat(sum_image_counts(0))),
+                html.Td(numformat(sum_image_counts(1))),
+                html.Td(numformat(sum_image_counts(2))),
+            ]
+        ),
+    ]
+    image_rows += [
         html.Tr([html.Td(img[0])] + [html.Td(val) for val in img[1]])
         for img in sorted_img_counts
     ]

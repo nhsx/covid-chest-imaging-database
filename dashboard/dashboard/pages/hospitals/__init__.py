@@ -375,6 +375,19 @@ def create_hospital_counts(data, centre):
         .rename(columns={True: "Positive", False: "Negative"})
         .sort_index()
     )
+    counts.index = pd.to_datetime(counts.index)
+
+    # Extend time series on front and back
+    extra = pd.DataFrame(
+        [
+            [0] * len(counts.columns),
+            [counts[col].max() for col in counts.columns],
+        ],
+        columns=counts.columns,
+        index=["2020-05-10", pd.to_datetime("today")],
+    )
+    extra.index = pd.to_datetime(extra.index)
+    counts = counts.append(extra).sort_index()
 
     lines = []
     colors = {"Positive": "red", "Negative": "blue"}
@@ -384,7 +397,7 @@ def create_hospital_counts(data, centre):
                 go.Scatter(
                     x=counts.index,
                     y=counts[group],
-                    mode="lines+markers",
+                    mode="lines",
                     name=group,
                     showlegend=True,
                     marker=dict(color=colors[group]),
