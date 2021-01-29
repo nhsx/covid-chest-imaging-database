@@ -43,7 +43,7 @@ def serve_layout(data: Dataset) -> html.Div:
 
     dataset_select = dcc.Dropdown(
         options=[
-            {"label": "All all data", "value": "all"},
+            {"label": "All data", "value": "all"},
             {"label": "Training set", "value": "training"},
             {"label": "Validation set", "value": "validation"},
         ],
