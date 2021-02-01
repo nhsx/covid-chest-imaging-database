@@ -213,9 +213,9 @@ def create_age_breakdown(data, group):
     fig = go.Figure(
         data=lines,
         layout={
-            "title": f"Cummulative age distribution by covid status, {title_group}",
+            "title": f"Cumulative age distribution by covid status, {title_group}",
             "xaxis_title": "Age",
-            "yaxis_title": "Cummulative proportion (%)",
+            "yaxis_title": "Cumulative proportion (%)",
             "legend_title": "Covid status",
         },
     )
