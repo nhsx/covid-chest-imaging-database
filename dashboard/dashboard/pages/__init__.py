@@ -7,6 +7,7 @@ from pathlib import Path
 
 import dash
 import dash_bootstrap_components as dbc
+import plotly.io as pio
 from flask import render_template_string
 from jinja2 import Environment, FileSystemLoader
 
@@ -105,4 +106,17 @@ def register_pages(data: Dataset, server):
         app.title = f"NCCID > {slug.title()}"
         routes[f"/pages/{_url_format(slug)}"] = app
 
+    set_plotly_theme()
     return routes
+
+
+def set_plotly_theme(theme="plotly_white"):
+    """Set the default theme for Plotly, globally
+
+    Change this function to change Plotly plotting themese
+    Either change the default value, or implement a completely
+    new theme as described at
+    https://plotly.com/python/templates/#specifying-a-default-themes#creating-themes
+    """
+    # Currently using default theme by name
+    pio.templates.default = theme
