@@ -9,15 +9,6 @@ class Dataset:
         self.data_latest_path = data_latest_path
         self.load_data()
 
-    def get_counter(self):
-        return self.counter
-
-    def reset_counter(self):
-        self.counter = 0
-
-    def inc_counter(self, step=1):
-        self.counter += step
-
     def load_data(self):
         df = pd.read_csv(self.data_latest_path)
         df = df.set_index(["archive"])
