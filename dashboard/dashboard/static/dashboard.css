@@ -208,6 +208,7 @@ span.hljs-meta {
 .dbcd-nav-link:hover {
   color: rgba(0, 0, 0, 0.75);
   text-decoration: none;
+  box-shadow: -3px 0 0 #000;
 }
 
 .dbcd-nav-item.active > .dbcd-nav-link {
