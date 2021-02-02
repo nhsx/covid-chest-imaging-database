@@ -408,7 +408,8 @@ def create_hospital_counts(data, centre):
     fig = go.Figure(
         data=lines,
         layout={
-            "title": f"Cumulative Number of Patients by COVID status: {title_filter}"
+            "title": f"Cumulative Number of Patients by COVID status: {title_filter}",
+            "xaxis_title": "Date of upload to the warehouse before processing.",
         },
     )
     graph = dcc.Graph(id="example-graph", figure=fig)

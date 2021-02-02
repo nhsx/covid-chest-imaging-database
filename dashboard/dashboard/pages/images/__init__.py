@@ -232,7 +232,10 @@ def create_image_series(data, group, covid_status, centre):
 
     fig = go.Figure(
         data=lines,
-        layout={"title": f"Cumulative Number of Image Studies"},
+        layout={
+            "title": f"Cumulative Number of Image Studies",
+            "xaxis_title": "Date of release to data users",
+        },
     )
     graph = dcc.Graph(id="example-graph", figure=fig)
     return graph
