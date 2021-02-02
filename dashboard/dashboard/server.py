@@ -7,6 +7,8 @@ from jinja2 import TemplateNotFound
 
 
 def config_prepare(logger=None):
+    # Environment "0" contains the Oauth2 secrets provided
+    # via AWS Secrets Manager
     if os.environ.get("0") is not None:
         secrets = json.loads(os.environ.get("0"))
         client_secrets = generate_oidc_client_secrets(secrets)
