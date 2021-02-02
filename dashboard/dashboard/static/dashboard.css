@@ -199,20 +199,22 @@ span.hljs-meta {
 
 .dbcd-nav-link {
   display: block;
-  padding: 0.25rem 0rem;
+  padding: 0.25rem 0.2rem;
   font-weight: 500;
   font-size: 1.25rem;
   color: rgba(0, 0, 0, 0.65);
+  border-left: 4px solid transparent;
 }
 
 .dbcd-nav-link:hover {
   color: rgba(0, 0, 0, 0.75);
   text-decoration: none;
-  box-shadow: -3px 0 0 #000;
+  border-left: 4px solid rgba(0, 0, 0, 0.55);
 }
 
 .dbcd-nav-item.active > .dbcd-nav-link {
   color: rgba(0, 0, 0, 0.85);
+  border-left: 4px solid rgba(0, 0, 0, 0.95);
 }
 
 .dbcd-nav-links ul > li {
