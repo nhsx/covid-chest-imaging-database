@@ -30,4 +30,4 @@ def show_last_update(data):
     """Element to display in a page, showing the last update
     by the underlying data storage."""
     t = time.strftime("%c", data.get_last_update())
-    return html.Div(f"Data last updated: {t}")
+    return html.Div(f"Data last updated: {t}", id="data-last-update")

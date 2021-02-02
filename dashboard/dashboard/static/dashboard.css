@@ -288,3 +288,8 @@ span.hljs-meta {
   font-size: 1.25rem;
   font-weight: 400;
 }
+
+#data-last-update {
+  font-weight: 100;
+  font-style: italic;
+}
