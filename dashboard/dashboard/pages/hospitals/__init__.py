@@ -6,16 +6,11 @@ import dash_table
 import pandas as pd
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output
-from flask_caching import Cache
 
 from dataset import Dataset
-from pages.tools import numformat
+from pages.tools import numformat, show_last_update
 
-cache = Cache(config={"CACHE_TYPE": "simple"})
 
-# Caching is done so that when the dataset's values
-# are updated, the page will pull in the updated values.
-@cache.cached(timeout=180)
 def serve_layout(data: Dataset) -> html.Div:
     """Create the page layout for the summary page
 
@@ -157,6 +152,7 @@ def serve_layout(data: Dataset) -> html.Div:
                 "Note: click the × mark to clear the selection above and show data for all submitting centres.",
                 id="centres-note",
             ),
+            show_last_update(data),
         ]
     )
 
@@ -179,7 +175,6 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
         The Dash app to display on the given page.
     """
     app = dash.Dash(__name__, **kwargs)
-    cache.init_app(app.server)
 
     app.layout = lambda: serve_layout(data)
 
@@ -408,7 +403,8 @@ def create_hospital_counts(data, centre):
     fig = go.Figure(
         data=lines,
         layout={
-            "title": f"Cumulative Number of Patients by COVID status: {title_filter}"
+            "title": f"Cumulative Number of Patients by COVID status: {title_filter}",
+            "xaxis_title": "Date of upload to the warehouse before processing.",
         },
     )
     graph = dcc.Graph(id="example-graph", figure=fig)

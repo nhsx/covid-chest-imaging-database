@@ -7,17 +7,12 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output
-from flask_caching import Cache
 
+import pages.quality.columns as columns
 from dataset import Dataset
-from pages import tools
-
-cache = Cache(config={"CACHE_TYPE": "simple"})
+from pages.tools import show_last_update
 
 
-# Caching is done so that when the dataset's values
-# are updated, the page will pull in the updated values.
-@cache.cached(timeout=180)
 def serve_layout(data: Dataset) -> html.Div:
     """Create the page layout for the summary page
 
@@ -31,32 +26,65 @@ def serve_layout(data: Dataset) -> html.Div:
     dash_html_components.Div
         The HTML componets of the page layout, wrapped in  div
     """
-
     patient = data.data["patient"]
-    covid_positives = patient.loc[patient.filename_covid_status]
-    completeness = pd.DataFrame(
-        {
-            "Not-Null": (
-                (~covid_positives.isnull()).sum() * 100 / len(covid_positives)
-            ),
-            "Nulls": (
-                covid_positives.isnull().sum() * 100 / len(covid_positives)
-            ),
-        }
-    ).sort_values(by="Nulls")
-    fig = px.bar(completeness, x=completeness.index, y=["Nulls", "Not-Null"])
-    fig.update_layout(
-        barmode="stack",
-        xaxis_tickangle=-45,
-        title="Completeness of Fields (Covid Positive only)",
-        xaxis_title="Fields",
-        yaxis_title="% of Nulls",
-        legend_title="",
+    centres = sorted(patient["SubmittingCentre"].unique())
+    centres_select = dcc.Dropdown(
+        placeholder="Select a submitting site / centre to filter",
+        options=[{"label": centre, "value": centre} for centre in centres],
+        id="hospital-filter",
     )
-    fig.update_traces(hovertemplate=None)
-    fig.update_layout(hovermode="x")
 
-    graph = dcc.Graph(id="completeness-graph", figure=fig)
+    columns_values = [
+        {"label": f"{key} fields", "value": key} for key in columns.COLS_MAP
+    ]
+    variables_select = dcc.Dropdown(
+        options=[
+            {"label": f"{key} fields", "value": key}
+            for key in columns.COLS_MAP
+        ],
+        value="All",
+        clearable=False,
+        id="variables-filter",
+    )
+
+    selector = html.Div(
+        [
+            dbc.Row(
+                [
+                    dbc.Col(
+                        html.Div(
+                            [
+                                html.Label(
+                                    [
+                                        "Submitting centre filtering.",
+                                    ],
+                                    htmlFor="hospital-filter",
+                                ),
+                                centres_select,
+                            ]
+                        ),
+                        md=8,
+                        sm=12,
+                    ),
+                    dbc.Col(
+                        html.Div(
+                            [
+                                html.Label(
+                                    [
+                                        "Select fields to show.",
+                                    ],
+                                    htmlFor="variables-filter",
+                                ),
+                                variables_select,
+                            ]
+                        ),
+                        md=4,
+                        sm=12,
+                    ),
+                ]
+            )
+        ]
+    )
 
     page = html.Div(
         children=[
@@ -71,7 +99,21 @@ def serve_layout(data: Dataset) -> html.Div:
                 + "data, the percentage of entries with non-null values are "
                 + "shown against the percentage of null values."
             ),
-            graph,
+            selector,
+            dcc.Loading(
+                id="completeness-chart-loader",
+                type="dot",
+                color="black",
+                children=html.Div(id="completeness-chart"),
+            ),
+            html.Hr(),
+            dcc.Loading(
+                id="completeness-table-loader",
+                type="dot",
+                color="black",
+                children=html.Div(id="completeness-table"),
+            ),
+            show_last_update(data),
         ]
     )
 
@@ -94,8 +136,109 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
         The Dash app to display on the given page.
     """
     app = dash.Dash(__name__, **kwargs)
-    cache.init_app(app.server)
 
     app.layout = lambda: serve_layout(data)
 
+    @app.callback(
+        Output("completeness-chart", "children"),
+        Input("hospital-filter", "value"),
+        Input("variables-filter", "value"),
+    )
+    def set_completeness_chart(centre, fields):
+        return create_completeness_chart(data, centre, fields)
+
+    @app.callback(
+        Output("completeness-table", "children"),
+        Input("hospital-filter", "value"),
+        Input("variables-filter", "value"),
+    )
+    def set_completeness_table(centre, fields):
+        return create_completeness_table(data, centre, fields)
+
     return app
+
+
+def create_completeness_chart(data, centre, fields):
+    patient = data.data["patient"]
+    covid_positives = patient.loc[patient.filename_covid_status]
+
+    if centre is not None:
+        covid_positives = covid_positives[
+            covid_positives["SubmittingCentre"] == centre
+        ]
+    else:
+        centre = "All centres"
+
+    covid_positives = covid_positives[columns.COLS_MAP[fields]]
+    if covid_positives.empty:
+        return dbc.Alert(
+            f"{centre} doesn't seem to have any positive patients, please select another centre!",
+            color="warning",
+        )
+
+    completeness = pd.DataFrame(
+        {
+            "Not-Null": (
+                (~covid_positives.isnull()).sum() * 100 / len(covid_positives)
+            ),
+            "Nulls": (
+                covid_positives.isnull().sum() * 100 / len(covid_positives)
+            ),
+        }
+    ).sort_values(by="Nulls")
+    completeness["Not-Null"].fillna(0)
+    completeness["Nulls"].fillna(100)
+
+    fig = px.bar(completeness, x=completeness.index, y=["Nulls", "Not-Null"])
+    fig.update_layout(
+        barmode="stack",
+        xaxis_tickangle=-45,
+        title=f"Completeness of Fields (Covid Positive only):{centre}, {fields} fields",
+        xaxis_title="Fields",
+        yaxis_title="% of Nulls",
+        legend_title="",
+    )
+    fig.update_traces(hovertemplate=None)
+    fig.update_layout(hovermode="x")
+
+    graph = dcc.Graph(id="completeness-graph", figure=fig)
+    return graph
+
+
+def create_completeness_table(data, centre, fields):
+    patient = data.data["patient"]
+    covid_positives = patient.loc[patient.filename_covid_status]
+
+    if centre is not None:
+        covid_positives = covid_positives[
+            covid_positives["SubmittingCentre"] == centre
+        ]
+
+    covid_positives = covid_positives[columns.COLS_MAP[fields]]
+    if covid_positives.empty:
+        # The graph already sends a warning, no need here
+        return html.Span()
+
+    completeness = (
+        pd.DataFrame(
+            {
+                "Completeness": (
+                    (~covid_positives.isnull()).sum()
+                    * 100
+                    / len(covid_positives)
+                ),
+            }
+        )
+        .sort_values(by="Completeness", ascending=False)
+        .reset_index()
+        .rename(columns={"index": "Field"})
+    )
+    completeness["Completeness"].fillna(0)
+    completeness["Completeness"] = completeness["Completeness"].apply(
+        lambda x: f"{x:.0f}%"
+    )
+
+    table = dbc.Table.from_dataframe(
+        completeness, striped=True, bordered=True, hover=True
+    )
+    return table

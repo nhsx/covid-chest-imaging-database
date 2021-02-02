@@ -74,10 +74,6 @@ dash==1.18.1 \
 dash_renderer==1.8.3 \
     --hash=sha256:f7ab2b922f4f0850bae0e9793cec99f8a1a241e5f7f5786e367ddd9e41d2b170
     # via dash
-flask-caching===1.9.0 \
-    --hash=sha256:a0356ad868b1d8ec2d0e675a6fe891c41303128f8904d5d79e180d8b3f952aff \
-    --hash=sha256:e6ef2e2af84e13c4fd32c1839c1943a42f11b6b0fbcfdd6bf46547ea5482dbfe
-    # via -r requirements.in
 flask-compress==1.8.0 \
     --hash=sha256:c132590e7c948877a96d675c13cbfa64edec0faafa2381678dea6f36aa49a552 \
     --hash=sha256:fda1b8a834176c485c7018a4b9326599311afbaaa08a715771c1fd9021f871fa
@@ -91,7 +87,6 @@ flask==1.1.2 \
     # via
     #   -r requirements.in
     #   dash
-    #   flask-caching
     #   flask-compress
     #   flask-oidc
 fsspec==0.8.5 \

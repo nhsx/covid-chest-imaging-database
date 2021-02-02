@@ -8,17 +8,11 @@ import dash_table
 import pandas as pd
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output
-from flask_caching import Cache
 
 from dataset import Dataset
-from pages import tools
-
-cache = Cache(config={"CACHE_TYPE": "simple"})
+from pages.tools import show_last_update
 
 
-# Caching is done so that when the dataset's values
-# are updated, the page will pull in the updated values.
-@cache.cached(timeout=180)
 def serve_layout(data: Dataset) -> html.Div:
     """Create the page layout for the summary page
 
@@ -130,6 +124,7 @@ def serve_layout(data: Dataset) -> html.Div:
                 color="black",
                 children=html.Div(id="image-timeseries-plot"),
             ),
+            show_last_update(data),
         ]
     )
 
@@ -152,7 +147,6 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
         The Dash app to display on the given page.
     """
     app = dash.Dash(__name__, **kwargs)
-    cache.init_app(app.server)
 
     app.layout = lambda: serve_layout(data)
 
@@ -232,7 +226,10 @@ def create_image_series(data, group, covid_status, centre):
 
     fig = go.Figure(
         data=lines,
-        layout={"title": f"Cumulative Number of Image Studies"},
+        layout={
+            "title": f"Cumulative Number of Image Studies",
+            "xaxis_title": "Date of release to data users",
+        },
     )
     graph = dcc.Graph(id="example-graph", figure=fig)
     return graph

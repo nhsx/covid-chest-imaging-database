@@ -7,6 +7,8 @@ from jinja2 import TemplateNotFound
 
 
 def config_prepare(logger=None):
+    # Environment "0" contains the Oauth2 secrets provided
+    # via AWS Secrets Manager
     if os.environ.get("0") is not None:
         secrets = json.loads(os.environ.get("0"))
         client_secrets = generate_oidc_client_secrets(secrets)
@@ -108,6 +110,6 @@ def create_server():
     @server.errorhandler(404)
     def page_not_found(e):
         # note that we set the 404 status explicitly
-        return render_template('404.html'), 404
+        return render_template("404.html"), 404
 
     return server, oidc

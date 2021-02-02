@@ -7,18 +7,12 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from dash.dependencies import Input, Output
-from flask_caching import Cache
 
 from dataset import Dataset
 from pages import tools
-from pages.tools import numformat
-
-cache = Cache(config={"CACHE_TYPE": "simple"})
+from pages.tools import numformat, show_last_update
 
 
-# Caching is done so that when the dataset's values
-# are updated, the page will pull in the updated values.
-@cache.cached(timeout=180)
 def serve_layout(data: Dataset) -> html.Div:
     """Create the page layout for the summary page
 
@@ -118,6 +112,7 @@ def serve_layout(data: Dataset) -> html.Div:
                 color="black",
                 children=html.Div(id="ethnicity-breakdown-plot"),
             ),
+            show_last_update(data),
         ]
     )
 
@@ -140,7 +135,6 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
         The Dash app to display on the given page.
     """
     app = dash.Dash(__name__, **kwargs)
-    cache.init_app(app.server)
 
     app.layout = lambda: serve_layout(data)
 
@@ -174,51 +168,39 @@ def create_age_breakdown(data, group):
     patient_postive = patient[patient["filename_covid_status"]]
     patient_negative = patient[~patient["filename_covid_status"]]
 
-    def age_cdf(df):
-        stats_df = (
-            df.groupby("age_update")["age_update"]
-            .agg("count")
-            .pipe(pd.DataFrame)
-            .rename(columns={"age_update": "frequency"})
-        )
-        stats_df["pdf"] = stats_df["frequency"] / sum(stats_df["frequency"])
-        stats_df["cdf"] = stats_df["pdf"].cumsum()
-        stats_df = stats_df.reset_index()
-        return stats_df
+    def biground(x, base=5):
+        return base * round(x / base)
 
-    age_positive = age_cdf(patient_postive)
-    age_negative = age_cdf(patient_negative)
-
-    lines = [
-        go.Scatter(
-            x=age_positive.age_update,
-            y=age_positive.cdf * 100,
-            mode="lines",
-            name="Positive",
-            showlegend=True,
-            # marker=dict(color=colors[group]),
-            line_shape="hv",
-        ),
-        go.Scatter(
-            x=age_negative.age_update,
-            y=age_negative.cdf * 100,
-            mode="lines",
-            name="Negative",
-            showlegend=True,
-            # marker=dict(color=colors[group]),
-            line_shape="hv",
-        ),
-    ]
-
+    xbins = dict(  # bins used for histogram
+        start=0, end=biground(patient["age_update"].max()), size=5
+    )
     fig = go.Figure(
-        data=lines,
         layout={
-            "title": f"Cumulative age distribution by covid status, {title_group}",
+            "title": f"Age distribution by Covid status, {title_group}",
             "xaxis_title": "Age",
-            "yaxis_title": "Cumulative proportion (%)",
+            "yaxis_title": "% of Patients",
             "legend_title": "Covid status",
         },
     )
+    fig.add_trace(
+        go.Histogram(
+            x=patient_postive["age_update"],
+            name="Positive",
+            histnorm="percent",
+            xbins=xbins,
+        )
+    )
+    fig.add_trace(
+        go.Histogram(
+            x=patient_negative["age_update"],
+            name="Negative",
+            histnorm="percent",
+            xbins=xbins,
+        )
+    )
+    fig.update_layout(barmode="overlay")
+    fig.update_traces(opacity=0.75)
+
     graph = dcc.Graph(id="age-histogram", figure=fig)
     return graph
 
