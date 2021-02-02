@@ -7,7 +7,7 @@ import pandas as pd
 
 from dataset import Dataset
 from pages import tools
-from pages.tools import numformat
+from pages.tools import numformat, show_last_update
 
 RECENT_CUTOFF_DAYS = 30
 
@@ -275,6 +275,7 @@ def serve_layout(data: Dataset) -> html.Div:
             ),
             table2,
             table3,
+            show_last_update(data),
         ]
     )
     return page

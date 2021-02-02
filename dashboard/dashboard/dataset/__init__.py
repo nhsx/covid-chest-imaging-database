@@ -1,4 +1,5 @@
 import pandas as pd
+import time
 
 
 class Dataset:
@@ -17,9 +18,13 @@ class Dataset:
         self.data["mri"] = self._load_training_data("mri", df)
         self.data["xray"] = self._load_training_data("xray", df)
         self.data["patient"] = self._load_training_data("patient_clean", df)
+        self.last_update_time = time.gmtime()
 
     def _load_training_data(self, archive, df):
         base_path = str(self.data_latest_path).rstrip("latest.csv")
         archive_path = f"{base_path}{df.at[archive, 'path']}"
         data = pd.read_csv(archive_path, low_memory=False)
         return data
+
+    def get_last_update(self):
+        return self.last_update_time

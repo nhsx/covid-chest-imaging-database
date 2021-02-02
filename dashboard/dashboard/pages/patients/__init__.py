@@ -10,7 +10,7 @@ from dash.dependencies import Input, Output
 
 from dataset import Dataset
 from pages import tools
-from pages.tools import numformat
+from pages.tools import numformat, show_last_update
 
 
 def serve_layout(data: Dataset) -> html.Div:
@@ -112,6 +112,7 @@ def serve_layout(data: Dataset) -> html.Div:
                 color="black",
                 children=html.Div(id="ethnicity-breakdown-plot"),
             ),
+            show_last_update(data),
         ]
     )
 

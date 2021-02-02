@@ -10,7 +10,7 @@ import plotly.graph_objs as go
 from dash.dependencies import Input, Output
 
 from dataset import Dataset
-from pages import tools
+from pages.tools import show_last_update
 
 
 def serve_layout(data: Dataset) -> html.Div:
@@ -124,6 +124,7 @@ def serve_layout(data: Dataset) -> html.Div:
                 color="black",
                 children=html.Div(id="image-timeseries-plot"),
             ),
+            show_last_update(data),
         ]
     )
 

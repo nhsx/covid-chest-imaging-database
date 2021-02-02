@@ -8,7 +8,7 @@ import plotly.graph_objs as go
 from dash.dependencies import Input, Output
 
 from dataset import Dataset
-from pages.tools import numformat
+from pages.tools import numformat, show_last_update
 
 
 def serve_layout(data: Dataset) -> html.Div:
@@ -152,6 +152,7 @@ def serve_layout(data: Dataset) -> html.Div:
                 "Note: click the × mark to clear the selection above and show data for all submitting centres.",
                 id="centres-note",
             ),
+            show_last_update(data),
         ]
     )
 
