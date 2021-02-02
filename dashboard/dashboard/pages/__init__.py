@@ -89,7 +89,7 @@ def register_pages(data: Dataset, server):
         kwargs = {
             "external_stylesheets": [
                 "/static/loading.css",
-                dbc.themes.SKETCHY,
+                dbc.themes.YETI,
             ],
             "serve_locally": SERVE_LOCALLY,
             "suppress_callback_exceptions": True,
