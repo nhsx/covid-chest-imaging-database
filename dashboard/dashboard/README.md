@@ -75,6 +75,13 @@ are working with (`https://cube-...`).
 * should copy `env.template` to `.env` in the same folder, and fill in the
   `Okta domain`, `Client ID` and `Client secret` values as appropriate.
 
+The server will be run on port `8888`, which is normally used by Jupyter, so you will have
+to stop the Jupyter service before the next step:
+
+```shell
+sudo sv stop jupyter
+```
+
 Then start up the server with:
 
 ```shell
