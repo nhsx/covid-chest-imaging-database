@@ -8,7 +8,7 @@ import plotly.express as px
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output
 
-import pages.quality.columns as columns
+from . import columns
 from dataset import Dataset
 from pages.tools import show_last_update
 
