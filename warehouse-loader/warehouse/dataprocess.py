@@ -244,15 +244,14 @@ def calculate_prefix_sums(prefixes):
         Prefix=f"{BUCKET_NAME}/daily-full-inventory/hive",
     )["Contents"]
     latest_symlink = sorted([obj["Key"] for obj in objs])[-1]
-    header_list = ["bucket", "key", "size", "date"]
     response = s3_client.get_object(
         Bucket=INVENTORY_BUCKET, Key=latest_symlink
     )
     prefix_sums = {key: 0 for key in prefixes}
     for inventory_file in response["Body"].read().decode("utf-8").split("\n"):
-        inventory_file_name = inventory_file.replace(
-            f"s3://{INVENTORY_BUCKET}/", ""
-        )
+        # inventory_file_name = inventory_file.replace(
+        #     f"s3://{INVENTORY_BUCKET}/", ""
+        # )
         # print(f"Downloading inventory file: {inventory_file_name}")
         data = pd.read_csv(
             inventory_file,
