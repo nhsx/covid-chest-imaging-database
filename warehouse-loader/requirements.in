@@ -7,4 +7,6 @@ pydicom==1.4.2
 # internal data management
 pandas==1.1.5
 
+#dataprocessing
+s3fs==0.4.2
 ./nccid-0.1.0-py3-none-any.whl

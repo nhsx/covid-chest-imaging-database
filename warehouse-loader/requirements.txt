@@ -19,7 +19,7 @@ boto3==1.13.8 \
 botocore==1.16.26 \
     --hash=sha256:318b487b9496bf162883fce9ce137b1cd864a968bb0c9e70e0e44c4a62cf2d3c \
     --hash=sha256:34f4324d15245482a78f1f1b71861982f3e30ed22245bf2e1ec112b5dac5b349 \
-    # via boto3, s3transfer
+    # via boto3, s3fs, s3transfer
 certifi==2020.11.8 \
     --hash=sha256:1f422849db327d534e3d0c5f02a263458c3955ec0aae4ff09b95f195c59f4edd \
     --hash=sha256:f05def092c44fbf25834a51509ef6e631dc19765ab8a57b4e7ab85531f0a9cf4 \
@@ -41,6 +41,10 @@ fs==2.4.11 \
     --hash=sha256:cc99d476b500f993df8ef697b96dc70928ca2946a455c396a566efe021126767 \
     --hash=sha256:cd6b178f373a0370feac8612fd3c142aa6a5cadd3d471b525b08db4d3b511c9c \
     # via bonobo
+fsspec==0.8.5 \
+    --hash=sha256:5629dc945800873cb2092df806c854e74c2799f4854247bce37ca7171000a7ec \
+    --hash=sha256:890c6ce9325030f03bd2eae81389ddcbcee53bdd475334ca064595e1e45f92a6 \
+    # via s3fs
 graphviz==0.8.4 \
     --hash=sha256:4958a19cbd8461757a08db308a4a15c3d586660417e1e364f0107d2fe481689f \
     --hash=sha256:7caa53f0b0be42c5f2eaa3f3d71dcc863b15bacceb5d531c2ad7519e1980ff82 \
@@ -205,6 +209,10 @@ requests==2.25.0 \
     --hash=sha256:7f1a0b932f4a60a1a65caa4263921bb7d9ee911957e0ae4a23a6dd08185ad5f8 \
     --hash=sha256:e786fa28d8c9154e6a4de5d46a1d921b8749f8b74e28bde23768e5e16eece998 \
     # via bonobo
+s3fs==0.4.2 \
+    --hash=sha256:2ca5de8dc18ad7ad350c0bd01aef0406aa5d0fff78a561f0f710f9d9858abdd0 \
+    --hash=sha256:91c1dfb45e5217bd441a7a560946fe865ced6225ff7eb0fb459fe6e601a95ed3 \
+    # via -r requirements.in
 s3transfer==0.3.3 \
     --hash=sha256:2482b4259524933a022d59da830f51bd746db62f047d6eb213f2f8855dcb8a13 \
     --hash=sha256:921a37e2aefc64145e7b73d50c71bb4f26f46e4c9f414dc648c6245ff92cf7db \
