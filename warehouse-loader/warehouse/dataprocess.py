@@ -235,6 +235,53 @@ def patient_data_dicom_update(patients, images) -> pd.DataFrame:
     return patients
 
 
+def calculate_prefix_sums(prefixes):
+    INVENTORY_BUCKET = f"{BUCKET_NAME}-inventory"
+    s3_client = boto3.client("s3")
+    # Get the latest list of inventory files
+    objs = s3_client.list_objects_v2(
+        Bucket=INVENTORY_BUCKET,
+        Prefix=f"{BUCKET_NAME}/daily-full-inventory/hive",
+    )["Contents"]
+    latest_symlink = sorted([obj["Key"] for obj in objs])[-1]
+    header_list = ["bucket", "key", "size", "date"]
+    response = s3_client.get_object(
+        Bucket=INVENTORY_BUCKET, Key=latest_symlink
+    )
+    prefix_sums = {key: 0 for key in prefixes}
+    for inventory_file in response["Body"].read().decode("utf-8").split("\n"):
+        inventory_file_name = inventory_file.replace(
+            f"s3://{INVENTORY_BUCKET}/", ""
+        )
+        # print(f"Downloading inventory file: {inventory_file_name}")
+        data = pd.read_csv(
+            inventory_file,
+            low_memory=False,
+            names=["bucket", "key", "size", "date"],
+        )
+        for prefix in prefixes:
+            prefix_sums[prefix] += data[data["key"].str.startswith(prefix)][
+                "size"
+            ].sum()
+    return prefix_sums
+
+
+def get_storage_stats():
+    prefixes = [
+        "training/ct/",
+        "training/xray/",
+        "training/mri/",
+        "training/",
+        "validation/ct/",
+        "validation/xray/",
+        "validation/mri/",
+        "validation/",
+    ]
+
+    prefix_sums = calculate_prefix_sums(prefixes)
+    yield "stats", prefix_sums
+
+
 def upload_file(file_name, bucket, object_name=None):
     """Upload a file to an S3 bucket
 
@@ -315,6 +362,21 @@ class DataExtractor(Configurable):
             upload_file(file_name, processed_bucket, output_path)
         collection["path"] += [output_path]
 
+        # Save storate stats
+        storage_stats = (
+            pd.DataFrame.from_dict(values["stats"])
+            .reset_index()
+            .rename(columns={"index": "prefix", 0: "storage"})
+        )
+        file_name = "storage.csv"
+        output_path = file_name
+        storage_stats.to_csv(output_path, **csv_settings)
+        collection["archive"] += ["storage"]
+        if not LOCAL_ONLY:
+            output_path = f"{batch_date}/{file_name}"
+            upload_file(file_name, processed_bucket, output_path)
+        collection["path"] += [output_path]
+
         # Save a list of latest files
         file_name = "latest.csv"
         output_path = file_name
@@ -353,6 +415,10 @@ def get_graph(**options):
         list_image_metadata_files,
         load_image_metadata_files,
         _output="extractor",
+    )
+
+    graph.add_chain(
+        get_storage_stats, _output="extractor",
     )
 
     return graph
