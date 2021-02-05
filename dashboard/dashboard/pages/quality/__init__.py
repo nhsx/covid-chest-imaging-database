@@ -220,11 +220,13 @@ def create_completeness_chart(data, centre, fields, sort_by):
     completeness["Not-Null"].fillna(0)
     completeness["Nulls"].fillna(100)
 
-    fig = px.bar(completeness, 
-                x=completeness.index, 
-                y=["Not-Null", "Nulls"], 
-                color_discrete_map={"Nulls": "#d62728", "Not-Null": "#1f77b4"})
-    
+    fig = px.bar(
+        completeness,
+        x=completeness.index,
+        y=["Not-Null", "Nulls"],
+        color_discrete_map={"Nulls": "#d62728", "Not-Null": "#1f77b4"},
+    )
+
     fig.update_layout(
         barmode="stack",
         xaxis_tickangle=-45,
@@ -271,7 +273,9 @@ def create_completeness_table(data, centre, fields, sort_by):
     completeness["Completeness"].fillna(0)
 
     if sort_by == "Completeness":
-        completeness = completeness.sort_values(by="Completeness", ascending=False)
+        completeness = completeness.sort_values(
+            by="Completeness", ascending=False
+        )
     elif sort_by == "Field":
         completeness = completeness.sort_values(by="Field")
 
