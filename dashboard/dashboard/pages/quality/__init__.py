@@ -50,7 +50,7 @@ def serve_layout(data: Dataset) -> html.Div:
     sort_by_select = dcc.Dropdown(
         options=[
             {"label": "Completeness", "value": "Completeness"},
-            {"label": "Field", "value": "Field"},
+            {"label": "Field Name", "value": "Field"},
         ],
         value="Completeness",
         clearable=False,
