@@ -47,6 +47,16 @@ def serve_layout(data: Dataset) -> html.Div:
         id="variables-filter",
     )
 
+    sort_by_select = dcc.Dropdown(
+        options=[
+            {"label": "Completeness", "value": "Completeness"},
+            {"label": "Field Name", "value": "Field"},
+        ],
+        value="Completeness",
+        clearable=False,
+        id="sortby-select",
+    )
+
     selector = html.Div(
         [
             dbc.Row(
@@ -63,7 +73,7 @@ def serve_layout(data: Dataset) -> html.Div:
                                 centres_select,
                             ]
                         ),
-                        md=8,
+                        md=6,
                         sm=12,
                     ),
                     dbc.Col(
@@ -78,7 +88,22 @@ def serve_layout(data: Dataset) -> html.Div:
                                 variables_select,
                             ]
                         ),
-                        md=4,
+                        md=3,
+                        sm=12,
+                    ),
+                    dbc.Col(
+                        html.Div(
+                            [
+                                html.Label(
+                                    [
+                                        "Sort by.",
+                                    ],
+                                    htmlFor="sortby-select",
+                                ),
+                                sort_by_select,
+                            ]
+                        ),
+                        md=3,
                         sm=12,
                     ),
                 ]
@@ -143,22 +168,24 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
         Output("completeness-chart", "children"),
         Input("hospital-filter", "value"),
         Input("variables-filter", "value"),
+        Input("sortby-select", "value"),
     )
-    def set_completeness_chart(centre, fields):
-        return create_completeness_chart(data, centre, fields)
+    def set_completeness_chart(centre, fields, sort_by):
+        return create_completeness_chart(data, centre, fields, sort_by)
 
     @app.callback(
         Output("completeness-table", "children"),
         Input("hospital-filter", "value"),
         Input("variables-filter", "value"),
+        Input("sortby-select", "value"),
     )
-    def set_completeness_table(centre, fields):
-        return create_completeness_table(data, centre, fields)
+    def set_completeness_table(centre, fields, sort_by):
+        return create_completeness_table(data, centre, fields, sort_by)
 
     return app
 
 
-def create_completeness_chart(data, centre, fields):
+def create_completeness_chart(data, centre, fields, sort_by):
     patient = data.data["patient"]
     covid_positives = patient.loc[patient.filename_covid_status]
 
@@ -185,11 +212,21 @@ def create_completeness_chart(data, centre, fields):
                 covid_positives.isnull().sum() * 100 / len(covid_positives)
             ),
         }
-    ).sort_values(by="Nulls")
+    )
+    if sort_by == "Completeness":
+        completeness = completeness.sort_values(by="Nulls")
+    elif sort_by == "Field":
+        completeness = completeness.sort_index()
     completeness["Not-Null"].fillna(0)
     completeness["Nulls"].fillna(100)
 
-    fig = px.bar(completeness, x=completeness.index, y=["Nulls", "Not-Null"])
+    fig = px.bar(
+        completeness,
+        x=completeness.index,
+        y=["Not-Null", "Nulls"],
+        color_discrete_map={"Nulls": "#d62728", "Not-Null": "#1f77b4"},
+    )
+
     fig.update_layout(
         barmode="stack",
         xaxis_tickangle=-45,
@@ -205,7 +242,7 @@ def create_completeness_chart(data, centre, fields):
     return graph
 
 
-def create_completeness_table(data, centre, fields):
+def create_completeness_table(data, centre, fields, sort_by):
     patient = data.data["patient"]
     covid_positives = patient.loc[patient.filename_covid_status]
 
@@ -234,6 +271,14 @@ def create_completeness_table(data, centre, fields):
         .rename(columns={"index": "Field"})
     )
     completeness["Completeness"].fillna(0)
+
+    if sort_by == "Completeness":
+        completeness = completeness.sort_values(
+            by="Completeness", ascending=False
+        )
+    elif sort_by == "Field":
+        completeness = completeness.sort_values(by="Field")
+
     completeness["Completeness"] = completeness["Completeness"].apply(
         lambda x: f"{x:.0f}%"
     )
