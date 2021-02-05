@@ -39,6 +39,12 @@ echo "Checking out ${COMMIT}"
 git checkout -b run "${COMMIT}" || error_exit "Failed to check out relevant commitish: ${COMMIT}"
 cd "${CODE_FOLDER}" || error_exit "Failed to enter code folder ${CODE_FOLDER}"
 echo "Installing code & dependencies..."
+if [ -f "requirements.txt" ]; then
+  echo "Found requirements.txt, processing..."
+  python3 -m pip install --user -q -r requirements.txt || error_exit "Failed to install Python dependencies from requirements.txt."
+else
+  echo "No requirements.txt to install..."
+fi
 python3 -m pip install --user -q . || error_exit "Failed to install Python dependencies."
 
 script="${1}"; shift

@@ -1,0 +1,11 @@
+aws-cdk.core
+
+aws-cdk.aws-apigatewayv2
+aws-cdk.aws-apigatewayv2-integrations
+aws_cdk.aws_certificatemanager
+aws_cdk.aws-cloudfront
+aws_cdk.aws-cloudfront-origins
+aws-cdk.aws-lambda
+
+
+-e .

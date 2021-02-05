@@ -1,0 +1,70 @@
+name: Deploy Dashboard
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'dashboard/**'
+      - 'infrastructure-dashboard/**'
+      - '.github/workflows/dashboard-deploy.yml'
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-20.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-west-2
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: nccid-dashboard
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        # Build a docker container and
+        # push it to ECR so that it can
+        # be deployed to ECS.
+        docker build --cache-from $ECR_REGISTRY/$ECR_REPOSITORY -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG dashboard/
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+    - name: cdk diff
+      uses: youyo/aws-cdk-github-actions@v1
+      with:
+        cdk_version: '1.85.0'
+        cdk_subcommand: 'diff'
+        actions_comment: true
+        working_dir: 'infrastructure-dashboard/dashboard'
+        debug_log: true
+
+    - name: cdk deploy
+      id: cdk-deploy
+      uses: youyo/aws-cdk-github-actions@v1
+      with:
+        cdk_version: '1.85.0'
+        cdk_subcommand: 'deploy'
+        actions_comment: true
+        working_dir: 'infrastructure-dashboard/dashboard'
+        cdk_args: "--require-approval never --parameters imageTag=${{ github.sha }} --parameters certArn=${{ secrets.AWS_DASHBOARD_CERTIFICATE_ARN }} --parameters domainName=${{ secrets.DASHBOARD_DOMAIN }} --parameters processedBucket=${{ secrets.AWS_PROCESSED_BUCKET }} --parameters cookieSecret=${{ secrets.DASHBOARD_COOKIE_SECRET }}"
+        debug_log: true
+
+    # The above command is successful even if the deploy fails, so catch the non-zero exit
+    # as suggested in https://github.com/youyo/aws-cdk-github-actions/issues/2#issuecomment-562963182
+    - name: deploy check
+      run:
+        if [ ${{ steps.cdk-deploy.outputs.status_code }} -gt 0 ]; then echo "Check the previous step for errors!"; exit ${{ steps.cdk-deploy.outputs.status_code }} ; fi
