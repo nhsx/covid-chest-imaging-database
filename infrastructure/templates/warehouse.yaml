@@ -315,33 +315,6 @@ Resources:
       ManagedPolicyArns:
         - !Ref ProcessedDataAccessPolicy
 
-  StatsDataAccessPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    Properties:
-      ManagedPolicyName: !Join ["", ["stats-data-", !Ref "BucketNameParameter"]]
-      Description: Allow reading the inventory and processed warehouse data
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action:
-              - "s3:ListBucket"
-              - "s3:GetBucketLocation"
-            Resource:
-              - !GetAtt [WarehouseProcessedBucket, Arn]
-              - !GetAtt [WarehouseInventoryBucket, Arn]
-          - Effect: Allow
-            Action:
-              - "s3:GetObject"
-            Resource:
-              - !Join ["", [!GetAtt [WarehouseProcessedBucket, Arn], "/*"]]
-              - !Join ["", [!GetAtt [WarehouseInventoryBucket, Arn], "/*"]]
-  StatsDataAccessGroup:
-    Type: AWS::IAM::Group
-    Properties:
-      ManagedPolicyArns:
-        - !Ref StatsDataAccessPolicy
-
   ReadOnlyAccessWholeBucketPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
