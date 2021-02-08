@@ -14,43 +14,18 @@ if WAREHOUSE_BUCKET is None:
 
 # Fixed names for the bucket, as the warehouse is wired up
 PROCESSED_BUCKET = f"{WAREHOUSE_BUCKET}-processed"
-INVENTORY_BUCKET = f"{WAREHOUSE_BUCKET}-inventory"
 
 
 def load_training_data(archive, df):
+    """Load archives and filter data to the training set only"""
     path = df.at[archive, "path"]
     data = pd.read_csv(f"s3://{PROCESSED_BUCKET}/{path}", low_memory=False)
-    return data[data["group"] == "training"]
-
-
-def load_inventory(prefixes):
-    s3_client = boto3.client("s3")
-    # Get the latest list of inventory files
-    objs = s3_client.list_objects_v2(
-        Bucket=INVENTORY_BUCKET,
-        Prefix=f"{WAREHOUSE_BUCKET}/daily-full-inventory/hive",
-    )["Contents"]
-    latest_symlink = sorted([obj["Key"] for obj in objs])[-1]
-    header_list = ["bucket", "key", "size", "date"]
-    response = s3_client.get_object(
-        Bucket=INVENTORY_BUCKET, Key=latest_symlink
+    data_filtered = (
+        data[data["group"] == "training"]
+        if archive != "storage"
+        else data[data["prefix"].str.contains("training")]
     )
-    prefix_sums = {key: 0 for key in prefixes}
-    for inventory_file in response["Body"].read().decode("utf-8").split("\n"):
-        inventory_file_name = inventory_file.replace(
-            f"s3://{INVENTORY_BUCKET}/", ""
-        )
-        print(f"Downloading inventory file: {inventory_file_name}")
-        data = pd.read_csv(
-            inventory_file,
-            low_memory=False,
-            names=["bucket", "key", "size", "date"],
-        )
-        for prefix in prefixes:
-            prefix_sums[prefix] += data[data["key"].str.startswith(prefix)][
-                "size"
-            ].sum()
-    return prefix_sums
+    return data_filtered
 
 
 df = pd.read_csv(f"s3://{PROCESSED_BUCKET}/latest.csv")
@@ -61,6 +36,7 @@ patient_clean = load_training_data("patient_clean", df)
 ct = load_training_data("ct", df)
 mri = load_training_data("mri", df)
 xray = load_training_data("xray", df)
+storage = load_training_data("storage", df).set_index("prefix")
 
 # Patients metrics
 patients_with_images = (
@@ -142,16 +118,12 @@ with open("stats_images.csv", "w") as csvfile:
     )
     statswriter.writerows(output)
 
-# Data storage metrics
-prefix_sums = load_inventory(
-    ["training/ct/", "training/xray/", "training/mri/", "training/"]
-)
 
-total_storage = prefix_sums["training/"] / (1024 ** 3)
+total_storage = storage.loc["training/"][0] / (10 ** 9)
 data_storage = {
-    "CT image storage": prefix_sums["training/ct/"] / (1024 ** 3),
-    "MRI image storage": prefix_sums["training/mri/"] / (1024 ** 3),
-    "X-ray image storage": prefix_sums["training/xray/"] / (1024 ** 3),
+    "CT image storage": storage.loc["training/ct/"][0] / (10 ** 9),
+    "MRI image storage": storage.loc["training/mri/"][0] / (10 ** 9),
+    "X-ray image storage": storage.loc["training/xray/"][0] / (10 ** 9),
 }
 remainder_storage = total_storage - sum(
     [data_storage[modality] for modality in data_storage]
