@@ -25,6 +25,7 @@ def numformat(number: int) -> str:
     """
     return f"{number:,.0f}"
 
+
 def storage_format(number: int) -> str:
     """Format a number representing a bytes of storage according to our convention
     Uses convention that 1 GB = 1000^3 bytes
@@ -39,7 +40,7 @@ def storage_format(number: int) -> str:
     str
         The formatted storage string
     """
-    GBs = float(number) / float(1000**3)
+    GBs = float(number) / float(1000 ** 3)
     if GBs > 100:
         GBs = round(GBs)
         GBs_str = f"{GBs} GB"

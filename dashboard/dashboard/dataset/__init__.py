@@ -6,7 +6,13 @@ class Dataset:
     """The dataset that powers the dashboard."""
 
     def __init__(self, data_latest_path):
-        self.data = {"ct": None, "mri": None, "xray": None, "patient": None, "storage": None}
+        self.data = {
+            "ct": None,
+            "mri": None,
+            "xray": None,
+            "patient": None,
+            "storage": None,
+        }
         self.data_latest_path = data_latest_path
         self.load_data()
 

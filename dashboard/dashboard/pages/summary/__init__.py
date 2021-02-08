@@ -225,20 +225,36 @@ def serve_layout(data: Dataset) -> html.Div:
 
     storage = data.data["storage"]
 
-    ct_training_storage = storage[storage["prefix"]=="training/ct/"]["storage"].values[0]
-    ct_validation_storage = storage[storage["prefix"]=="validation/ct/"]["storage"].values[0]
+    ct_training_storage = storage[storage["prefix"] == "training/ct/"][
+        "storage"
+    ].values[0]
+    ct_validation_storage = storage[storage["prefix"] == "validation/ct/"][
+        "storage"
+    ].values[0]
     ct_total_storage = ct_training_storage + ct_validation_storage
 
-    mri_training_storage = storage[storage["prefix"]=="training/mri/"]["storage"].values[0]
-    mri_validation_storage = storage[storage["prefix"]=="validation/mri/"]["storage"].values[0]
+    mri_training_storage = storage[storage["prefix"] == "training/mri/"][
+        "storage"
+    ].values[0]
+    mri_validation_storage = storage[storage["prefix"] == "validation/mri/"][
+        "storage"
+    ].values[0]
     mri_total_storage = mri_training_storage + mri_validation_storage
 
-    xray_training_storage = storage[storage["prefix"]=="training/xray/"]["storage"].values[0]
-    xray_validation_storage = storage[storage["prefix"]=="validation/xray/"]["storage"].values[0]
+    xray_training_storage = storage[storage["prefix"] == "training/xray/"][
+        "storage"
+    ].values[0]
+    xray_validation_storage = storage[storage["prefix"] == "validation/xray/"][
+        "storage"
+    ].values[0]
     xray_total_storage = xray_training_storage + xray_validation_storage
-    
-    total_training_storage = storage[storage["prefix"]=="training/"]["storage"].values[0]
-    total_validation_storage = storage[storage["prefix"]=="validation/"]["storage"].values[0]
+
+    total_training_storage = storage[storage["prefix"] == "training/"][
+        "storage"
+    ].values[0]
+    total_validation_storage = storage[storage["prefix"] == "validation/"][
+        "storage"
+    ].values[0]
     total_storage = total_training_storage + total_validation_storage
 
     table_img_storage_header = [
@@ -256,9 +272,21 @@ def serve_layout(data: Dataset) -> html.Div:
     ]
 
     img_storage_dict = {
-        "CT image studies": [ct_total_storage, ct_training_storage, ct_validation_storage],
-        "MRI image studies": [mri_total_storage, mri_training_storage, mri_validation_storage],
-        "X-ray image studies": [xray_total_storage, xray_training_storage, xray_validation_storage],
+        "CT image studies": [
+            ct_total_storage,
+            ct_training_storage,
+            ct_validation_storage,
+        ],
+        "MRI image studies": [
+            mri_total_storage,
+            mri_training_storage,
+            mri_validation_storage,
+        ],
+        "X-ray image studies": [
+            xray_total_storage,
+            xray_training_storage,
+            xray_validation_storage,
+        ],
     }
 
     # Extract order of rows from image count table (above) so it will be consistent in this image storage table
@@ -287,7 +315,7 @@ def serve_layout(data: Dataset) -> html.Div:
             ]
         )
         for mod in ordered_modalities
-        ]
+    ]
 
     table_img_storage_body = [html.Tbody(image_storage_rows)]
 
@@ -296,7 +324,6 @@ def serve_layout(data: Dataset) -> html.Div:
         bordered=True,
         responsive=True,
     )
-
 
     trusts = len(set(patient["SubmittingCentre"]))
     training_trusts = len(
