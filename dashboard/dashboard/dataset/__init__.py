@@ -6,7 +6,7 @@ class Dataset:
     """The dataset that powers the dashboard."""
 
     def __init__(self, data_latest_path):
-        self.data = {"ct": None, "mri": None, "xray": None, "patient": None}
+        self.data = {"ct": None, "mri": None, "xray": None, "patient": None, "storage": None}
         self.data_latest_path = data_latest_path
         self.load_data()
 
@@ -18,6 +18,7 @@ class Dataset:
         self.data["mri"] = self._load_training_data("mri", df)
         self.data["xray"] = self._load_training_data("xray", df)
         self.data["patient"] = self._load_training_data("patient_clean", df)
+        self.data["storage"] = self._load_training_data("storage", df)
         self.last_update_time = time.gmtime()
 
     def _load_training_data(self, archive, df):
