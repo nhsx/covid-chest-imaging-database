@@ -255,10 +255,10 @@ def create_age_breakdown(data, group):
 def create_ethnicity_breakdown(data, group):
     patient = data.data["patient"]
 
+    # The following ensures that histogram categories are plotted in total frequency order
     ethnic_groups = list(
         patient["ethnicity"].value_counts(ascending=True).keys()
     )
-
     ethnic_group_index = dict(zip(ethnic_groups, range(len(ethnic_groups))))
     patient["ethnicity_frequency_rank"] = patient["ethnicity"].map(
         ethnic_group_index
