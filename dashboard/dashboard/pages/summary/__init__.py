@@ -7,7 +7,7 @@ import pandas as pd
 
 from dataset import Dataset
 from pages import tools
-from pages.tools import numformat, show_last_update
+from pages.tools import numformat, storage_format, show_last_update
 
 RECENT_CUTOFF_DAYS = 30
 
@@ -270,9 +270,9 @@ def serve_layout(data: Dataset) -> html.Div:
         html.Tr(
             [
                 html.Td("Across all modalities"),
-                html.Td(total_storage),
-                html.Td(total_training_storage),
-                html.Td(total_validation_storage),
+                html.Td(storage_format(total_storage)),
+                html.Td(storage_format(total_training_storage)),
+                html.Td(storage_format(total_validation_storage)),
             ]
         ),
     ]
@@ -281,9 +281,9 @@ def serve_layout(data: Dataset) -> html.Div:
         html.Tr(
             [
                 html.Td(mod),
-                html.Td(img_storage_dict[mod][0]),
-                html.Td(img_storage_dict[mod][1]),
-                html.Td(img_storage_dict[mod][2]),
+                html.Td(storage_format(img_storage_dict[mod][0])),
+                html.Td(storage_format(img_storage_dict[mod][1])),
+                html.Td(storage_format(img_storage_dict[mod][2])),
             ]
         )
         for mod in ordered_modalities
