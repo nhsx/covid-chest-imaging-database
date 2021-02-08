@@ -188,7 +188,7 @@ def serve_layout(data: Dataset) -> html.Div:
         html.Thead(
             html.Tr(
                 [
-                    html.Th("Images"),
+                    html.Th("Image Counts"),
                     html.Th("Total"),
                     html.Th("Training"),
                     html.Th("Validation"),
@@ -222,6 +222,81 @@ def serve_layout(data: Dataset) -> html.Div:
         bordered=True,
         responsive=True,
     )
+
+    storage = data.data["storage"]
+
+    ct_training_storage = storage[storage["prefix"]=="training/ct/"]["storage"].values[0]
+    ct_validation_storage = storage[storage["prefix"]=="validation/ct/"]["storage"].values[0]
+    ct_total_storage = ct_training_storage + ct_validation_storage
+
+    mri_training_storage = storage[storage["prefix"]=="training/mri/"]["storage"].values[0]
+    mri_validation_storage = storage[storage["prefix"]=="validation/mri/"]["storage"].values[0]
+    mri_total_storage = mri_training_storage + mri_validation_storage
+
+    xray_training_storage = storage[storage["prefix"]=="training/xray/"]["storage"].values[0]
+    xray_validation_storage = storage[storage["prefix"]=="validation/xray/"]["storage"].values[0]
+    xray_total_storage = xray_training_storage + xray_validation_storage
+    
+    total_training_storage = storage[storage["prefix"]=="training/"]["storage"].values[0]
+    total_validation_storage = storage[storage["prefix"]=="validation/"]["storage"].values[0]
+    total_storage = total_training_storage + total_validation_storage
+
+    table_img_storage_header = [
+        html.Thead(
+            html.Tr(
+                [
+                    html.Th("Image Storage"),
+                    html.Th("Total"),
+                    html.Th("Training"),
+                    html.Th("Validation"),
+                ]
+            ),
+            className="thead-dark",
+        )
+    ]
+
+    img_storage_dict = {
+        "CT image studies": [ct_total_storage, ct_training_storage, ct_validation_storage],
+        "MRI image studies": [mri_total_storage, mri_training_storage, mri_validation_storage],
+        "X-ray image studies": [xray_total_storage, xray_training_storage, xray_validation_storage],
+    }
+
+    # Extract order of rows from image count table (above) so it will be consistent in this image storage table
+    ordered_modalities = []
+    for item in sorted_img_counts:
+        ordered_modalities.append(item[0])
+
+    image_storage_rows = [
+        html.Tr(
+            [
+                html.Td("Across all modalities"),
+                html.Td(total_storage),
+                html.Td(total_training_storage),
+                html.Td(total_validation_storage),
+            ]
+        ),
+    ]
+
+    image_storage_rows += [
+        html.Tr(
+            [
+                html.Td(mod),
+                html.Td(img_storage_dict[mod][0]),
+                html.Td(img_storage_dict[mod][1]),
+                html.Td(img_storage_dict[mod][2]),
+            ]
+        )
+        for mod in ordered_modalities
+        ]
+
+    table_img_storage_body = [html.Tbody(image_storage_rows)]
+
+    table_img_storage = dbc.Table(
+        table_img_storage_header + table_img_storage_body,
+        bordered=True,
+        responsive=True,
+    )
+
 
     trusts = len(set(patient["SubmittingCentre"]))
     training_trusts = len(
@@ -274,6 +349,7 @@ def serve_layout(data: Dataset) -> html.Div:
                 color="info",
             ),
             table_img_counts,
+            table_img_storage,
             table_trust_count,
             show_last_update(data),
         ]
