@@ -70,7 +70,7 @@ def serve_layout(data: Dataset) -> html.Div:
     )
     recent_patients = recent_training_patients + recent_validation_patients
 
-    table_header = [
+    table_patient_count_header = [
         html.Thead(
             html.Tr(
                 [
@@ -117,9 +117,9 @@ def serve_layout(data: Dataset) -> html.Div:
             html.Td(numformat(recent_validation_patients)),
         ]
     )
-    table_body = [html.Tbody([row1, row2, row3, row4])]
-    table = dbc.Table(
-        table_header + table_body,
+    table_patient_count_body = [html.Tbody([row1, row2, row3, row4])]
+    table_patient_count = dbc.Table(
+        table_patient_count_header + table_patient_count_body,
         bordered=True,
         responsive=True,
     )
@@ -184,7 +184,7 @@ def serve_layout(data: Dataset) -> html.Div:
         )
     )
 
-    table2_header = [
+    table_img_counts_header = [
         html.Thead(
             html.Tr(
                 [
@@ -216,9 +216,9 @@ def serve_layout(data: Dataset) -> html.Div:
         html.Tr([html.Td(img[0])] + [html.Td(val) for val in img[1]])
         for img in sorted_img_counts
     ]
-    table2_body = [html.Tbody(image_rows)]
-    table2 = dbc.Table(
-        table2_header + table2_body,
+    table_img_counts_body = [html.Tbody(image_rows)]
+    table_img_counts = dbc.Table(
+        table_img_counts_header + table_img_counts_body,
         bordered=True,
         responsive=True,
     )
@@ -231,7 +231,7 @@ def serve_layout(data: Dataset) -> html.Div:
         set(patient[patient["group"] == "validation"]["SubmittingCentre"])
     )
 
-    table3_header = [
+    table_trust_count_header = [
         html.Thead(
             html.Tr(
                 [
@@ -242,7 +242,7 @@ def serve_layout(data: Dataset) -> html.Div:
             className="thead-dark",
         )
     ]
-    table3_body = [
+    table_trust_count_body = [
         html.Tbody(
             [
                 html.Tr(
@@ -254,8 +254,8 @@ def serve_layout(data: Dataset) -> html.Div:
             ]
         )
     ]
-    table3 = dbc.Table(
-        table3_header + table3_body,
+    table_trust_count = dbc.Table(
+        table_trust_count_header + table_trust_count_body,
         bordered=True,
         responsive=True,
     )
@@ -268,13 +268,13 @@ def serve_layout(data: Dataset) -> html.Div:
                     Overview of the high level metrics of the NCCID dataset.
                 """
             ),
-            table,
+            table_patient_count,
             dbc.Alert(
                 "Note that patients above count all that have clinical data, whether or not they have images in the dataset yet.",
                 color="info",
             ),
-            table2,
-            table3,
+            table_img_counts,
+            table_trust_count,
             show_last_update(data),
         ]
     )
