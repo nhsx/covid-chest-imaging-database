@@ -257,6 +257,18 @@ def serve_layout(data: Dataset) -> html.Div:
     ].values[0]
     total_storage = total_training_storage + total_validation_storage
 
+    metadata_training_storage = total_training_storage - (
+        ct_training_storage + mri_training_storage + xray_training_storage
+    )
+    metadata_validation_storage = total_validation_storage - (
+        ct_validation_storage
+        + mri_validation_storage
+        + xray_validation_storage
+    )
+    metadata_total_storage = (
+        metadata_training_storage + metadata_validation_storage
+    )
+
     table_img_storage_header = [
         html.Thead(
             html.Tr(
@@ -272,32 +284,40 @@ def serve_layout(data: Dataset) -> html.Div:
     ]
 
     img_storage_dict = {
-        "CT image studies": [
+        "CT image storage": [
             ct_total_storage,
             ct_training_storage,
             ct_validation_storage,
         ],
-        "MRI image studies": [
+        "MRI image storage": [
             mri_total_storage,
             mri_training_storage,
             mri_validation_storage,
         ],
-        "X-ray image studies": [
+        "X-ray image storage": [
             xray_total_storage,
             xray_training_storage,
             xray_validation_storage,
         ],
+        "Image metadata and clinical data storage": [
+            metadata_total_storage,
+            metadata_training_storage,
+            metadata_validation_storage,
+        ],
     }
 
-    # Extract order of rows from image count table (above) so it will be consistent in this image storage table
-    ordered_modalities = []
-    for item in sorted_img_counts:
-        ordered_modalities.append(item[0])
+    # Order rows by descending value of total storage column
+    modalities = img_storage_dict.keys()
+    ordered_modalities = sorted(
+        modalities, key=lambda x: img_storage_dict[x][0], reverse=True
+    )
 
     image_storage_rows = [
         html.Tr(
             [
-                html.Td("Across all modalities"),
+                html.Td(
+                    "Total image, image metadata, and clinical data storage"
+                ),
                 html.Td(storage_format(total_storage)),
                 html.Td(storage_format(total_training_storage)),
                 html.Td(storage_format(total_validation_storage)),
