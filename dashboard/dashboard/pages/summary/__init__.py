@@ -7,7 +7,7 @@ import pandas as pd
 
 from dataset import Dataset
 from pages import tools
-from pages.tools import numformat, show_last_update
+from pages.tools import numformat, storage_format, show_last_update
 
 RECENT_CUTOFF_DAYS = 30
 
@@ -70,7 +70,7 @@ def serve_layout(data: Dataset) -> html.Div:
     )
     recent_patients = recent_training_patients + recent_validation_patients
 
-    table_header = [
+    table_patient_count_header = [
         html.Thead(
             html.Tr(
                 [
@@ -117,9 +117,9 @@ def serve_layout(data: Dataset) -> html.Div:
             html.Td(numformat(recent_validation_patients)),
         ]
     )
-    table_body = [html.Tbody([row1, row2, row3, row4])]
-    table = dbc.Table(
-        table_header + table_body,
+    table_patient_count_body = [html.Tbody([row1, row2, row3, row4])]
+    table_patient_count = dbc.Table(
+        table_patient_count_header + table_patient_count_body,
         bordered=True,
         responsive=True,
     )
@@ -184,11 +184,11 @@ def serve_layout(data: Dataset) -> html.Div:
         )
     )
 
-    table2_header = [
+    table_img_counts_header = [
         html.Thead(
             html.Tr(
                 [
-                    html.Th("Images"),
+                    html.Th("Image Counts"),
                     html.Th("Total"),
                     html.Th("Training"),
                     html.Th("Validation"),
@@ -216,9 +216,131 @@ def serve_layout(data: Dataset) -> html.Div:
         html.Tr([html.Td(img[0])] + [html.Td(val) for val in img[1]])
         for img in sorted_img_counts
     ]
-    table2_body = [html.Tbody(image_rows)]
-    table2 = dbc.Table(
-        table2_header + table2_body,
+    table_img_counts_body = [html.Tbody(image_rows)]
+    table_img_counts = dbc.Table(
+        table_img_counts_header + table_img_counts_body,
+        bordered=True,
+        responsive=True,
+    )
+
+    storage = data.data["storage"]
+
+    ct_training_storage = storage[storage["prefix"] == "training/ct/"][
+        "storage"
+    ].values[0]
+    ct_validation_storage = storage[storage["prefix"] == "validation/ct/"][
+        "storage"
+    ].values[0]
+    ct_total_storage = ct_training_storage + ct_validation_storage
+
+    mri_training_storage = storage[storage["prefix"] == "training/mri/"][
+        "storage"
+    ].values[0]
+    mri_validation_storage = storage[storage["prefix"] == "validation/mri/"][
+        "storage"
+    ].values[0]
+    mri_total_storage = mri_training_storage + mri_validation_storage
+
+    xray_training_storage = storage[storage["prefix"] == "training/xray/"][
+        "storage"
+    ].values[0]
+    xray_validation_storage = storage[storage["prefix"] == "validation/xray/"][
+        "storage"
+    ].values[0]
+    xray_total_storage = xray_training_storage + xray_validation_storage
+
+    total_training_storage = storage[storage["prefix"] == "training/"][
+        "storage"
+    ].values[0]
+    total_validation_storage = storage[storage["prefix"] == "validation/"][
+        "storage"
+    ].values[0]
+    total_storage = total_training_storage + total_validation_storage
+
+    metadata_training_storage = total_training_storage - (
+        ct_training_storage + mri_training_storage + xray_training_storage
+    )
+    metadata_validation_storage = total_validation_storage - (
+        ct_validation_storage
+        + mri_validation_storage
+        + xray_validation_storage
+    )
+    metadata_total_storage = (
+        metadata_training_storage + metadata_validation_storage
+    )
+
+    table_img_storage_header = [
+        html.Thead(
+            html.Tr(
+                [
+                    html.Th("Image Storage"),
+                    html.Th("Total"),
+                    html.Th("Training"),
+                    html.Th("Validation"),
+                ]
+            ),
+            className="thead-dark",
+        )
+    ]
+
+    img_storage_dict = {
+        "CT image storage": [
+            ct_total_storage,
+            ct_training_storage,
+            ct_validation_storage,
+        ],
+        "MRI image storage": [
+            mri_total_storage,
+            mri_training_storage,
+            mri_validation_storage,
+        ],
+        "X-ray image storage": [
+            xray_total_storage,
+            xray_training_storage,
+            xray_validation_storage,
+        ],
+        "Image metadata and clinical data storage": [
+            metadata_total_storage,
+            metadata_training_storage,
+            metadata_validation_storage,
+        ],
+    }
+
+    # Order rows by descending value of total storage column
+    modalities = img_storage_dict.keys()
+    ordered_modalities = sorted(
+        modalities, key=lambda x: img_storage_dict[x][0], reverse=True
+    )
+
+    image_storage_rows = [
+        html.Tr(
+            [
+                html.Td(
+                    "Total image, image metadata, and clinical data storage"
+                ),
+                html.Td(storage_format(total_storage)),
+                html.Td(storage_format(total_training_storage)),
+                html.Td(storage_format(total_validation_storage)),
+            ]
+        ),
+    ]
+
+    image_storage_rows += [
+        html.Tr(
+            [
+                html.Td(mod),
+                html.Td(storage_format(img_storage_dict[mod][0])),
+                html.Td(storage_format(img_storage_dict[mod][1])),
+                html.Td(storage_format(img_storage_dict[mod][2])),
+            ]
+        )
+        for mod in ordered_modalities
+    ]
+
+    table_img_storage_body = [html.Tbody(image_storage_rows)]
+
+    table_img_storage = dbc.Table(
+        table_img_storage_header + table_img_storage_body,
         bordered=True,
         responsive=True,
     )
@@ -231,7 +353,7 @@ def serve_layout(data: Dataset) -> html.Div:
         set(patient[patient["group"] == "validation"]["SubmittingCentre"])
     )
 
-    table3_header = [
+    table_trust_count_header = [
         html.Thead(
             html.Tr(
                 [
@@ -242,7 +364,7 @@ def serve_layout(data: Dataset) -> html.Div:
             className="thead-dark",
         )
     ]
-    table3_body = [
+    table_trust_count_body = [
         html.Tbody(
             [
                 html.Tr(
@@ -254,8 +376,8 @@ def serve_layout(data: Dataset) -> html.Div:
             ]
         )
     ]
-    table3 = dbc.Table(
-        table3_header + table3_body,
+    table_trust_count = dbc.Table(
+        table_trust_count_header + table_trust_count_body,
         bordered=True,
         responsive=True,
     )
@@ -268,13 +390,14 @@ def serve_layout(data: Dataset) -> html.Div:
                     Overview of the high level metrics of the NCCID dataset.
                 """
             ),
-            table,
+            table_patient_count,
             dbc.Alert(
                 "Note that patients above count all that have clinical data, whether or not they have images in the dataset yet.",
                 color="info",
             ),
-            table2,
-            table3,
+            table_img_counts,
+            table_img_storage,
+            table_trust_count,
             show_last_update(data),
         ]
     )

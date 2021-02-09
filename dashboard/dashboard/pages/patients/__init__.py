@@ -27,29 +27,29 @@ def serve_layout(data: Dataset) -> html.Div:
         The HTML componets of the page layout, wrapped in  div
     """
 
-    dataset_select = dcc.Dropdown(
+    age_dataset_select = dcc.Dropdown(
         options=[
             {"label": "All data", "value": "all"},
-            {"label": "Training set", "value": "training"},
-            {"label": "Validation set", "value": "validation"},
+            {"label": "Training/Validation", "value": "train_val"},
+            {"label": "Positive/Negative", "value": "pos_neg"},
         ],
         value="all",
         clearable=False,
-        id="dataset-select",
+        id="age-dataset-select",
     )
 
-    covid_status_select = dcc.Dropdown(
+    ethnicity_dataset_select = dcc.Dropdown(
         options=[
-            {"label": "All patients", "value": "all"},
-            {"label": "Positive patients", "value": "positive"},
-            {"label": "Negative patients", "value": "negative"},
+            {"label": "All data", "value": "all"},
+            {"label": "Training/Validation", "value": "train_val"},
+            {"label": "Positive/Negative", "value": "pos_neg"},
         ],
         value="all",
         clearable=False,
-        id="covid-status-select",
+        id="ethnicity-dataset-select",
     )
 
-    selector = html.Div(
+    age_selector = html.Div(
         [
             dbc.Row(
                 [
@@ -58,26 +58,35 @@ def serve_layout(data: Dataset) -> html.Div:
                             [
                                 html.Label(
                                     [
-                                        "Select dataset",
+                                        "Select chart to view",
                                     ],
-                                    htmlFor="dataset-select",
+                                    htmlFor="age-dataset-select",
                                 ),
-                                dataset_select,
+                                age_dataset_select,
                             ]
                         ),
                         md=6,
                         sm=12,
                     ),
+                ]
+            )
+        ]
+    )
+
+    ethnicity_selector = html.Div(
+        [
+            dbc.Row(
+                [
                     dbc.Col(
                         html.Div(
                             [
                                 html.Label(
                                     [
-                                        "Select COVID-19 status (Ethnicity plot only)",
+                                        "Select chart to view",
                                     ],
-                                    htmlFor="covid-status-select",
+                                    htmlFor="ethnicity-dataset-select",
                                 ),
-                                covid_status_select,
+                                ethnicity_dataset_select,
                             ]
                         ),
                         md=6,
@@ -95,17 +104,16 @@ def serve_layout(data: Dataset) -> html.Div:
             html.H3("Gender"),
             create_gender_breakdown(data),
             html.Hr(),
-            html.H3("Age and Ethnicity"),
-            html.P(
-                "Select dataset or COVID-19 status to filter the plots below."
-            ),
-            selector,
+            html.H3("Age"),
+            age_selector,
             dcc.Loading(
                 id="loading-age-data",
                 type="dot",
                 color="black",
                 children=html.Div(id="age-breakdown-plot"),
             ),
+            html.H3("Ethnicity"),
+            ethnicity_selector,
             dcc.Loading(
                 id="loading-ethnicity-data",
                 type="dot",
@@ -140,64 +148,103 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
 
     @app.callback(
         Output("age-breakdown-plot", "children"),
-        Input("dataset-select", "value"),
+        Input("age-dataset-select", "value"),
     )
     def set_age_breakdown(group):
         return create_age_breakdown(data, group)
 
     @app.callback(
         Output("ethnicity-breakdown-plot", "children"),
-        Input("dataset-select", "value"),
-        Input("covid-status-select", "value"),
+        Input("ethnicity-dataset-select", "value"),
     )
-    def set_ethnicity_breakdown(group, covid_status):
-        return create_ethnicity_breakdown(data, group, covid_status)
+    def set_ethnicity_breakdown(group):
+        return create_ethnicity_breakdown(data, group)
 
     return app
 
 
 def create_age_breakdown(data, group):
-    patient = data.data["patient"]
-    # Filter for group
-    if group != "all":
-        patient = patient[patient["group"] == group]
-        title_group = f"{group.title()} set"
-    else:
-        title_group = "All data"
-
-    patient_postive = patient[patient["filename_covid_status"]]
-    patient_negative = patient[~patient["filename_covid_status"]]
-
     def biground(x, base=5):
         return base * round(x / base)
+
+    patient = data.data["patient"]
 
     xbins = dict(  # bins used for histogram
         start=0, end=biground(patient["age_update"].max()), size=5
     )
-    fig = go.Figure(
-        layout={
-            "title": f"Age distribution by Covid status, {title_group}",
-            "xaxis_title": "Age",
-            "yaxis_title": "% of Patients",
-            "legend_title": "Covid status",
-        },
-    )
-    fig.add_trace(
-        go.Histogram(
-            x=patient_postive["age_update"],
-            name="Positive",
-            histnorm="percent",
-            xbins=xbins,
+
+    if group == "all":
+
+        fig = go.Figure(
+            layout={
+                "title": "Age distribution across whole dataset",
+                "xaxis_title": "Age",
+                "yaxis_title": "% of Patients",
+            },
         )
-    )
-    fig.add_trace(
-        go.Histogram(
-            x=patient_negative["age_update"],
-            name="Negative",
-            histnorm="percent",
-            xbins=xbins,
+        fig.add_trace(
+            go.Histogram(
+                x=patient["age_update"],
+                histnorm="percent",
+                xbins=xbins,
+            )
         )
-    )
+
+    elif group == "train_val":
+        patient_training = patient[patient["group"] == "training"]
+        patient_validation = patient[patient["group"] == "validation"]
+        fig = go.Figure(
+            layout={
+                "title": "Age distribution in training and validation sets",
+                "xaxis_title": "Age",
+                "yaxis_title": "% of Patients",
+                "legend_title": "Group",
+            },
+        )
+        fig.add_trace(
+            go.Histogram(
+                x=patient_training["age_update"],
+                name="Training",
+                histnorm="percent",
+                xbins=xbins,
+            )
+        )
+        fig.add_trace(
+            go.Histogram(
+                x=patient_validation["age_update"],
+                name="Validation",
+                histnorm="percent",
+                xbins=xbins,
+            )
+        )
+    elif group == "pos_neg":
+        patient_postive = patient[patient["filename_covid_status"]]
+        patient_negative = patient[~patient["filename_covid_status"]]
+        fig = go.Figure(
+            layout={
+                "title": "Age distribution in covid positive and negative patients",
+                "xaxis_title": "Age",
+                "yaxis_title": "% of Patients",
+                "legend_title": "Group",
+            },
+        )
+        fig.add_trace(
+            go.Histogram(
+                x=patient_postive["age_update"],
+                name="Positive",
+                histnorm="percent",
+                xbins=xbins,
+            )
+        )
+        fig.add_trace(
+            go.Histogram(
+                x=patient_negative["age_update"],
+                name="Negative",
+                histnorm="percent",
+                xbins=xbins,
+            )
+        )
+
     fig.update_layout(barmode="overlay")
     fig.update_traces(opacity=0.75)
 
@@ -205,37 +252,86 @@ def create_age_breakdown(data, group):
     return graph
 
 
-def create_ethnicity_breakdown(data, group, covid_status):
+def create_ethnicity_breakdown(data, group):
     patient = data.data["patient"]
-    # Filter for group
-    if group != "all":
-        patient = patient[patient["group"] == group]
-        title_group = f"{group.title()} set"
-    else:
-        title_group = "All data"
 
-    # Filter for status
-    if covid_status == "positive":
-        patient = patient[patient["filename_covid_status"]]
-        title_status = "Positive patients"
-    elif covid_status == "negative":
-        patient = patient[~patient["filename_covid_status"]]
-        title_status = "Negative patients"
-    else:
-        title_status = "All patients"
-
-    # This will sort ethnic groups by descending order
+    # The following ensures that histogram categories are plotted in total frequency order
     ethnic_groups = list(
         patient["ethnicity"].value_counts(ascending=True).keys()
     )
-
-    fig = px.histogram(
-        patient,
-        x="ethnicity",
-        title=f"Ethnicity Distribution of Patients, {title_group}, {title_status}",
-        labels={"ethnicity": "Ethnicity"},
-        category_orders={"ethnicity": ethnic_groups},
+    ethnic_group_index = dict(zip(ethnic_groups, range(len(ethnic_groups))))
+    patient["ethnicity_frequency_rank"] = patient["ethnicity"].map(
+        ethnic_group_index
     )
+    patient = patient.sort_values(
+        ["ethnicity_frequency_rank"], ascending=False
+    )
+
+    if group == "all":
+        fig = go.Figure(
+            layout={
+                "title": "Ethnicity distribution across whole dataset",
+                "xaxis_title": "Ethnicity",
+                "yaxis_title": "% of Patients",
+            },
+        )
+        fig.add_trace(
+            go.Histogram(
+                x=patient["ethnicity"],
+                histnorm="percent",
+            )
+        )
+    elif group == "train_val":
+        patient_training = patient[patient["group"] == "training"]
+        patient_validation = patient[patient["group"] == "validation"]
+        fig = go.Figure(
+            layout={
+                "title": "Ethnicity distribution in training and validation sets",
+                "xaxis_title": "Ethnicity",
+                "yaxis_title": "% of Patients",
+                "legend_title": "Group",
+            },
+        )
+        fig.add_trace(
+            go.Histogram(
+                x=patient_training["ethnicity"],
+                name="Training",
+                histnorm="percent",
+            )
+        )
+        fig.add_trace(
+            go.Histogram(
+                x=patient_validation["ethnicity"],
+                name="Validation",
+                histnorm="percent",
+            )
+        )
+    elif group == "pos_neg":
+        patient_postive = patient[patient["filename_covid_status"]]
+        patient_negative = patient[~patient["filename_covid_status"]]
+        fig = go.Figure(
+            layout={
+                "title": "Ethnicity distribution in covid positive and negative patients",
+                "xaxis_title": "Ethnicity",
+                "yaxis_title": "% of Patients",
+                "legend_title": "Covid status",
+            },
+        )
+        fig.add_trace(
+            go.Histogram(
+                x=patient_postive["ethnicity"],
+                name="Positive",
+                histnorm="percent",
+            )
+        )
+        fig.add_trace(
+            go.Histogram(
+                x=patient_negative["ethnicity"],
+                name="Negative",
+                histnorm="percent",
+            )
+        )
+
     graph = dcc.Graph(id="ethnicity-histogram", figure=fig)
     return graph
 
