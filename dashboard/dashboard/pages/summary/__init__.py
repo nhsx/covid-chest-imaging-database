@@ -388,7 +388,7 @@ def serve_layout(data: Dataset) -> html.Div:
             html.Div(
                 html.H3(
                     children="""
-                    An overview of the NCCID dataset. Shows high level metrics.
+                    An overview of the NCCID dataset showing high level metrics
                 """
                 )
             ),
