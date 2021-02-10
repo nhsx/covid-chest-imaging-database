@@ -230,7 +230,7 @@ def create_completeness_chart(data, centre, fields, sort_by):
     fig.update_layout(
         barmode="stack",
         xaxis_tickangle=-45,
-        title=f"Completeness of Fields (Covid Positive only):{centre}, {fields} fields",
+        title=f"Completeness of Fields (Covid Positive only): {centre}, {fields} fields",
         xaxis_title="Fields",
         yaxis_title="% of Nulls",
         legend_title="",

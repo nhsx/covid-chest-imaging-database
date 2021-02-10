@@ -386,9 +386,11 @@ def serve_layout(data: Dataset) -> html.Div:
         children=[
             html.H1(children="Summary"),
             html.Div(
-                children="""
-                    Overview of the high level metrics of the NCCID dataset.
+                html.H3(
+                    children="""
+                    An overview of the NCCID dataset. Shows high level metrics.
                 """
+                )
             ),
             table_patient_count,
             dbc.Alert(
