@@ -27,73 +27,97 @@ def serve_layout(data: Dataset) -> html.Div:
         The HTML componets of the page layout, wrapped in  div
     """
 
-    age_dataset_select = dcc.Dropdown(
-        options=[
-            {"label": "All data", "value": "all"},
-            {"label": "Training/Validation", "value": "train_val"},
-            {"label": "Positive/Negative", "value": "pos_neg"},
-        ],
-        value="all",
-        clearable=False,
-        id="age-dataset-select",
+    button_age_all_data = dbc.Button(
+        "All Data",
+        id="button_age_all_data",
+        color="primary",
+        outline=True,
+    )
+    button_age_train_val = dbc.Button(
+        "Training / Validation",
+        id="button_age_train_val",
+        color="primary",
+        outline=True,
+    )
+    button_age_pos_neg = dbc.Button(
+        "Positive / Negative",
+        id="button_age_pos_neg",
+        color="primary",
+        outline=True,
     )
 
-    ethnicity_dataset_select = dcc.Dropdown(
-        options=[
-            {"label": "All data", "value": "all"},
-            {"label": "Training/Validation", "value": "train_val"},
-            {"label": "Positive/Negative", "value": "pos_neg"},
-        ],
-        value="all",
-        clearable=False,
-        id="ethnicity-dataset-select",
+    age_buttons = dbc.ButtonGroup(
+        [
+            button_age_all_data,
+            button_age_train_val,
+            button_age_pos_neg,
+        ]
+    )
+
+    button_ethnicity_all_data = dbc.Button(
+        "All Data",
+        id="button_ethnicity_all_data",
+        color="primary",
+        outline=True,
+    )
+    button_ethnicity_train_val = dbc.Button(
+        "Training / Validation",
+        id="button_ethnicity_train_val",
+        color="primary",
+        outline=True,
+    )
+    button_ethnicity_pos_neg = dbc.Button(
+        "Positive / Negative",
+        id="button_ethnicity_pos_neg",
+        color="primary",
+        outline=True,
+    )
+
+    ethnicity_buttons = dbc.ButtonGroup(
+        [
+            button_ethnicity_all_data,
+            button_ethnicity_train_val,
+            button_ethnicity_pos_neg,
+        ]
     )
 
     age_selector = html.Div(
         [
+            html.Div(
+                children="""
+                    Select chart to view:
+                """
+            ),
             dbc.Row(
                 [
                     dbc.Col(
                         html.Div(
-                            [
-                                html.Label(
-                                    [
-                                        "Select chart to view",
-                                    ],
-                                    htmlFor="age-dataset-select",
-                                ),
-                                age_dataset_select,
-                            ]
+                            [age_buttons],
                         ),
                         md=6,
                         sm=12,
                     ),
                 ]
-            )
+            ),
         ]
     )
 
     ethnicity_selector = html.Div(
         [
+            html.Div(
+                children="""
+                    Select chart to view:
+                """
+            ),
             dbc.Row(
                 [
                     dbc.Col(
-                        html.Div(
-                            [
-                                html.Label(
-                                    [
-                                        "Select chart to view",
-                                    ],
-                                    htmlFor="ethnicity-dataset-select",
-                                ),
-                                ethnicity_dataset_select,
-                            ]
-                        ),
+                        html.Div([ethnicity_buttons]),
                         md=6,
                         sm=12,
                     ),
                 ]
-            )
+            ),
         ]
     )
 
@@ -148,17 +172,71 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
 
     @app.callback(
         Output("age-breakdown-plot", "children"),
-        Input("age-dataset-select", "value"),
+        Output("button_age_all_data", "outline"),
+        Output("button_age_train_val", "outline"),
+        Output("button_age_pos_neg", "outline"),
+        Input("button_age_all_data", "n_clicks"),
+        Input("button_age_train_val", "n_clicks"),
+        Input("button_age_pos_neg", "n_clicks"),
     )
-    def set_age_breakdown(group):
-        return create_age_breakdown(data, group)
+    def set_age_breakdown_buttons(
+        n_clicks_all_data, n_clicks_train_val, n_clicks_pos_neg
+    ):
+        changed_id = [p["prop_id"] for p in dash.callback_context.triggered][0]
+        all_data_outline = train_val_outline = pos_neg_outline = True
+        if changed_id == "button_age_all_data.n_clicks":
+            group = "all"
+            all_data_outline = False
+        elif changed_id == "button_age_train_val.n_clicks":
+            group = "train_val"
+            train_val_outline = False
+        elif changed_id == "button_age_pos_neg.n_clicks":
+            group = "pos_neg"
+            pos_neg_outline = False
+        else:
+            group = "all"
+            all_data_outline = False
+
+        return (
+            create_age_breakdown(data, group),
+            all_data_outline,
+            train_val_outline,
+            pos_neg_outline,
+        )
 
     @app.callback(
         Output("ethnicity-breakdown-plot", "children"),
-        Input("ethnicity-dataset-select", "value"),
+        Output("button_ethnicity_all_data", "outline"),
+        Output("button_ethnicity_train_val", "outline"),
+        Output("button_ethnicity_pos_neg", "outline"),
+        Input("button_ethnicity_all_data", "n_clicks"),
+        Input("button_ethnicity_train_val", "n_clicks"),
+        Input("button_ethnicity_pos_neg", "n_clicks"),
     )
-    def set_ethnicity_breakdown(group):
-        return create_ethnicity_breakdown(data, group)
+    def set_age_breakdown_buttons(
+        n_clicks_all_data, n_clicks_train_val, n_clicks_pos_neg
+    ):
+        changed_id = [p["prop_id"] for p in dash.callback_context.triggered][0]
+        all_data_outline = train_val_outline = pos_neg_outline = True
+        if changed_id == "button_ethnicity_all_data.n_clicks":
+            group = "all"
+            all_data_outline = False
+        elif changed_id == "button_ethnicity_train_val.n_clicks":
+            group = "train_val"
+            train_val_outline = False
+        elif changed_id == "button_ethnicity_pos_neg.n_clicks":
+            group = "pos_neg"
+            pos_neg_outline = False
+        else:
+            group = "all"
+            all_data_outline = False
+
+        return (
+            create_ethnicity_breakdown(data, group),
+            all_data_outline,
+            train_val_outline,
+            pos_neg_outline,
+        )
 
     return app
 
@@ -263,9 +341,7 @@ def create_ethnicity_breakdown(data, group):
     patient["ethnicity_frequency_rank"] = patient["ethnicity"].map(
         ethnic_group_index
     )
-    patient = patient.sort_values(
-        ["ethnicity_frequency_rank"], ascending=False
-    )
+    patient = patient.sort_values(["ethnicity_frequency_rank"], ascending=True)
 
     if group == "all":
         fig = go.Figure(
