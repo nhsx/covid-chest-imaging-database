@@ -7,7 +7,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
-from timeloop import Timeloop
+from flask_apscheduler import APScheduler
 
 from dataset import Dataset
 from pages import register_pages
@@ -37,10 +37,16 @@ for view_func in server.view_functions:
             server.view_functions[view_func]
         )
 
-tl = Timeloop()
+
+# Scheduled tasks
+scheduler = APScheduler()
+scheduler.init_app(server)
+scheduler.start()
 
 
-@tl.job(interval=timedelta(hours=4))
+@scheduler.task(
+    "interval", id="reload_data_job", hours=4, misfire_grace_time=900
+)
 def reload_data():
     server.logger.info("Periodic data reload starting.")
     data.load_data()
@@ -51,5 +57,4 @@ if __name__ == "__main__":
 
     from werkzeug.serving import run_simple
 
-    tl.start(block=False)
     run_simple("localhost", 8888, server, use_reloader=True)
