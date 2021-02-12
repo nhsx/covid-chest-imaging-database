@@ -3,9 +3,9 @@ dash==1.18.1
 dash-bootstrap-components==0.11.1
 gunicorn==20.0.4
 werkzeug>=1.0.0
-timeloop==1.0.2
 pandas==1.1.5
 boto3==1.16.51
 flask-oidc==1.4.0
 s3fs==0.4.2
 python-dotenv==0.15.0
+flask-apscheduler==1.11.0

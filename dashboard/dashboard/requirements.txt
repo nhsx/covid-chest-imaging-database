@@ -4,6 +4,10 @@
 #
 #    pip-compile --allow-unsafe --generate-hashes requirements.in
 #
+apscheduler==3.7.0 \
+    --hash=sha256:1cab7f2521e107d07127b042155b632b7a1cd5e02c34be5a28ff62f77c900c6a \
+    --hash=sha256:c06cc796d5bb9eb3c4f77727f6223476eb67749e7eea074d1587550702a7fbe3
+    # via flask-apscheduler
 boto3==1.16.51 \
     --hash=sha256:11dc492682cf2a4f8ff397b0a109837340ef93e77ca2e65715ce24ecf043717c \
     --hash=sha256:ca97e1d591fe4214bac09cf347a8425061d9eecc456c147692749e383a0f3dfe
@@ -74,6 +78,9 @@ dash==1.18.1 \
 dash_renderer==1.8.3 \
     --hash=sha256:f7ab2b922f4f0850bae0e9793cec99f8a1a241e5f7f5786e367ddd9e41d2b170
     # via dash
+flask-apscheduler==1.11.0 \
+    --hash=sha256:7911d66e449f412d92a1a6c524217f44f4c40a5c92148c60d5189c6c402f87d0
+    # via -r requirements.in
 flask-compress==1.8.0 \
     --hash=sha256:c132590e7c948877a96d675c13cbfa64edec0faafa2381678dea6f36aa49a552 \
     --hash=sha256:fda1b8a834176c485c7018a4b9326599311afbaaa08a715771c1fd9021f871fa
@@ -87,6 +94,7 @@ flask==1.1.2 \
     # via
     #   -r requirements.in
     #   dash
+    #   flask-apscheduler
     #   flask-compress
     #   flask-oidc
 fsspec==0.8.5 \
@@ -241,6 +249,7 @@ python-dateutil==2.8.1 \
     --hash=sha256:75bb3f31ea686f1197762692a9ee6a7550b59fc6ca3a1f4b5d7e32fb98e2da2a
     # via
     #   botocore
+    #   flask-apscheduler
     #   pandas
 python-dotenv==0.15.0 \
     --hash=sha256:0c8d1b80d1a1e91717ea7d526178e3882732420b03f08afea0406db6402e220e \
@@ -249,7 +258,10 @@ python-dotenv==0.15.0 \
 pytz==2020.5 \
     --hash=sha256:16962c5fb8db4a8f63a26646d8886e9d769b6c511543557bc84e9569fb9a9cb4 \
     --hash=sha256:180befebb1927b16f6b57101720075a984c019ac16b1b7575673bea42c6c3da5
-    # via pandas
+    # via
+    #   apscheduler
+    #   pandas
+    #   tzlocal
 retrying==1.3.3 \
     --hash=sha256:08c039560a6da2fe4f2c426d0766e284d3b736e355f8dd24b37367b0bb41973b
     # via plotly
@@ -269,15 +281,16 @@ six==1.15.0 \
     --hash=sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259 \
     --hash=sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced
     # via
+    #   apscheduler
     #   flask-oidc
     #   oauth2client
     #   plotly
     #   python-dateutil
     #   retrying
-timeloop==1.0.2 \
-    --hash=sha256:4e716c67fe6bcadcee7ddb91e2520792426818a70f27e630cfbbbd9becc48a13 \
-    --hash=sha256:70cb69eeef39968ea0e6dd68a3a3a51257d5f4aa27b177ab1b19ca86ff525946
-    # via -r requirements.in
+tzlocal==2.1 \
+    --hash=sha256:643c97c5294aedc737780a49d9df30889321cbe1204eac2c2ec6134035a92e44 \
+    --hash=sha256:e2cb6c6b5b604af38597403e9852872d7f534962ae2954c7f35efcb1ccacf4a4
+    # via apscheduler
 urllib3==1.26.2 \
     --hash=sha256:19188f96923873c92ccb987120ec4acaa12f0461fa9ce5d3d0772bc965a39e08 \
     --hash=sha256:d8ff90d979214d7b4f8ce956e80f4028fc6860e4431f731ea4a8c08f23f99473
@@ -293,4 +306,6 @@ werkzeug==1.0.1 \
 setuptools==51.1.1 \
     --hash=sha256:0b43d1e0e0ac1467185581c2ceaf86b5c1a1bc408f8f6407687b0856302d1850 \
     --hash=sha256:6d119767443a0f770bab9738b86ce9c0a699a7759ff4f61af583ee73d2e528a0
-    # via gunicorn
+    # via
+    #   apscheduler
+    #   gunicorn
