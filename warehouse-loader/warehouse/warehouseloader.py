@@ -231,78 +231,79 @@ def load_config(config):
             raise
 
 
-@use("keycache")
-@use("patientcache")
-@use("inventory")
-def load_existing_files(keycache, patientcache, inventory):
-    """ Loading existing files from the training and
-    validation sets into the keycache.
+# @use("keycache")
+# @use("patientcache")
+# @use("inventory")
+# def load_existing_files(keycache, patientcache, inventory):
+#     """ Loading existing files from the training and
+#     validation sets into the keycache.
 
-    :param keycache: the key cache service (provided by bonobo)
-    :type keycache: Keycache
-    """
-    # Set up our listing function.
-    if inventory.enabled:
-        listing = inventory.filter_keys
-    else:
-        # When using the original listing without inventory, we need to
-        # transform the objects returned by the filter
-        def listing(Prefix):
-            return map(
-                lambda obj: obj.key, bucket.objects.filter(Prefix=Prefix)
-            )
+#     :param keycache: the key cache service (provided by bonobo)
+#     :type keycache: Keycache
+#     """
+#     # Set up our listing function.
+#     if inventory.enabled:
+#         listing = inventory.filter_keys
+#     else:
+#         # When using the original listing without inventory, we need to
+#         # transform the objects returned by the filter
+#         def listing(Prefix):
+#             return map(
+#                 lambda obj: obj.key, bucket.objects.filter(Prefix=Prefix)
+#             )
 
-    patient_file_name = re.compile(
-        r"^.+/data/(?P<patient_id>.*)/(?:data|status)_\d{4}-\d{2}-\d{2}.json$"
-    )
-    for group, prefix in [
-        ("validation", constants.VALIDATION_PREFIX),
-        ("training", constants.TRAINING_PREFIX),
-    ]:
-        for key in listing(Prefix=prefix):
-            m = patient_file_name.match(key)
-            if m:
-                # It is a patient file
-                patient_id = m.group("patient_id")
-                patientcache.add(patient_id, group)
-            else:
-                # It is an image file
-                try:
-                    keycache.add(key)
-                except services.DuplicateKeyError:
-                    logger.exception(f"{key} is duplicate in cache.")
-                    continue
-    return bonobo.constants.NOT_MODIFIED
+#     patient_file_name = re.compile(
+#         r"^.+/data/(?P<patient_id>.*)/(?:data|status)_\d{4}-\d{2}-\d{2}.json$"
+#     )
+#     for group, prefix in [
+#         ("validation", constants.VALIDATION_PREFIX),
+#         ("training", constants.TRAINING_PREFIX),
+#     ]:
+#         for key in listing(Prefix=prefix):
+#             m = patient_file_name.match(key)
+#             if m:
+#                 # It is a patient file
+#                 patient_id = m.group("patient_id")
+#                 patientcache.add(patient_id, group)
+#             else:
+#                 # It is an image file
+#                 try:
+#                     keycache.add(key)
+#                 except services.DuplicateKeyError:
+#                     logger.exception(f"{key} is duplicate in cache.")
+#                     continue
+#     return bonobo.constants.NOT_MODIFIED
+
+
+# @use("config")
+# @use("inventory")
+# @use("rawsubfolderlist")
+# def extract_raw_folders(config, inventory, rawsubfolderlist):
+#     """ Extractor: get all date folders within the `raw/` data drop
+
+#     :return: subfolders within the `raw/` prefix (yield)
+#     :rtype: string
+#     """
+#     for site_raw_prefix in config.get_raw_prefixes():
+#         if not site_raw_prefix.endswith("/"):
+#             site_raw_prefix += "/"
+
+#         if inventory.enabled:
+#             prefixes = inventory.list_folders(site_raw_prefix)
+#         else:
+#             result = s3_client.list_objects(
+#                 Bucket=BUCKET_NAME, Prefix=site_raw_prefix, Delimiter="/"
+#             )
+#             prefixes = [p.get("Prefix") for p in result.get("CommonPrefixes")]
+#         # list folders in date order
+#         for folder in sorted(prefixes, reverse=False):
+#             for subfolder in rawsubfolderlist.get():
+#                 yield folder + subfolder
 
 
 @use("config")
-@use("inventory")
-@use("rawsubfolderlist")
-def extract_raw_folders(config, inventory, rawsubfolderlist):
-    """ Extractor: get all date folders within the `raw/` data drop
-
-    :return: subfolders within the `raw/` prefix (yield)
-    :rtype: string
-    """
-    for site_raw_prefix in config.get_raw_prefixes():
-        if not site_raw_prefix.endswith("/"):
-            site_raw_prefix += "/"
-
-        if inventory.enabled:
-            prefixes = inventory.list_folders(site_raw_prefix)
-        else:
-            result = s3_client.list_objects(
-                Bucket=BUCKET_NAME, Prefix=site_raw_prefix, Delimiter="/"
-            )
-            prefixes = [p.get("Prefix") for p in result.get("CommonPrefixes")]
-        # list folders in date order
-        for folder in sorted(prefixes, reverse=False):
-            for subfolder in rawsubfolderlist.get():
-                yield folder + subfolder
-
-
-@use("inventory")
-def extract_raw_files_from_folder(folder, inventory):
+@use("filelist")
+def extract_raw_files_from_folder(config, filelist):
     """ Extract files from a given date folder in the data dump
 
     :param folder: the folder to process
@@ -310,15 +311,20 @@ def extract_raw_files_from_folder(folder, inventory):
     :return: each object (yield)
     :rtype: boto3.resource('s3').ObjectSummary
     """
-    listing = inventory.filter if inventory.enabled else bucket.objects.filter
-    for obj in listing(Prefix=folder):
-        yield "process", obj, None
+    # listing = inventory.filter if inventory.enabled else bucket.objects.filter
+    # # for obj in listing(Prefix=folder):
+    # yield "process", obj, None
+    raw_prefixes = {prefix.rstrip("/") for prefix in config.get_raw_prefixes()}
+    for subfolder in ["data", "images"]:
+        for key in filelist.get_raw_file_list(
+            raw_prefixes=raw_prefixes, subfolders={subfolder}
+        ):
+            yield "process", key, None
 
 
-@use("keycache")
 @use("config")
-@use("patientcache")
-def process_image(*args, keycache, config, patientcache):
+@use("caches")
+def process_image(*args, config, caches):
     """ Processing images from the raw dump
 
     Takes a single image, downloads it into temporary storage
@@ -343,10 +349,12 @@ def process_image(*args, keycache, config, patientcache):
         return bonobo.constants.NOT_MODIFIED
 
     # check if work is already done
-    image_in_cache = keycache.exists(obj.key)
-    image_uuid = Path(obj.key).stem
-    metadata_in_cache = keycache.exists(f"{image_uuid}.json")
-    if metadata_in_cache and image_in_cache:
+    image_path = Path(obj.key)
+    image_uuid = image_path.stem
+    image_filename = image_path.name
+    image_in_cache = caches.processed_file_exists(image_filename)
+    metadata_in_cache = caches.processed_file_exists(f"{image_uuid}.json")
+    if image_in_cache and metadata_in_cache:
         # files exist, nothing to do here
         return
 
@@ -363,7 +371,7 @@ def process_image(*args, keycache, config, patientcache):
     patient_id = image_data.PatientID
     study_id = image_data.StudyInstanceUID
     series_id = image_data.SeriesInstanceUID
-    group = patientcache.get_group(patient_id)
+    group = caches.get_patient_group(patient_id)
     if group is not None:
         training_set = group == "training"
     else:
@@ -451,8 +459,8 @@ def upload_text_data(*args):
 
 
 @use("config")
-@use("patientcache")
-def process_patient_data(*args, config, patientcache):
+@use("caches")
+def process_patient_data(*args, config, caches):
     """Processing patient data from the raw dump
 
     Get the patient ID from the filename, do a training/validation
@@ -479,7 +487,7 @@ def process_patient_data(*args, config, patientcache):
     patient_id = m.group("patient_id")
     outcome = m.group("outcome")
 
-    group = patientcache.get_group(patient_id)
+    group = caches.get_patient_group(patient_id)
     if group is not None:
         training_set = group == "training"
     else:
@@ -504,7 +512,7 @@ def process_patient_data(*args, config, patientcache):
         else:
             # deciding between "training" and "validation" groups.
             training_set = config_group == "training"
-        patientcache.add(
+        caches.add_patient_to_group(
             patient_id, "training" if training_set else "validation"
         )
 
@@ -556,10 +564,7 @@ def get_graph(**options):
     graph = bonobo.Graph()
 
     graph.add_chain(
-        load_config,
-        load_existing_files,
-        extract_raw_folders,
-        extract_raw_files_from_folder,
+        load_config, extract_raw_files_from_folder,
     )
 
     graph.add_chain(data_copy, _input=None, _name="copy")
@@ -597,18 +602,31 @@ def get_services(**options):
     keycache = services.KeyCache()
     patientcache = services.PatientCache()
     rawsubfolderlist = services.SubFolderList()
+    caches = services.Caches(main_bucket=BUCKET_NAME)
+    filelist = services.FileList(main_bucket=BUCKET_NAME)
 
-    if bool(os.getenv("SKIP_INVENTORY", default=False)):
-        inventory = services.Inventory()
-    else:
-        inventory = services.Inventory(main_bucket=BUCKET_NAME)
+    # print(caches.processed_file_exists('hello'))
+    # print(caches.processed_file_exists('1.2.826.0.1.3680043.9.3218.1.1.159938.1734.1586442350812.17447.0.dcm'))
+    # print(caches.processed_file_exists('1.2.826.0.1.3680043.9.3218.1.1.159938.1734.1586442350812.17447.0.json'))
+    # print(caches.get_patient_group('Covid111'))
+    # print(caches.add_patient_to_group('Covid111', 'validation'))
+    # print(caches.get_patient_group('Covid111'))
+
+    # for key in filelist.get_raw_file_list(raw_prefixes={'raw-faculty-upload'}, subfolders={'data'}):
+    #     print(key)
+
+    # if bool(os.getenv("SKIP_INVENTORY", default=False)):
+    #     inventory = services.Inventory()
+    # else:
+    #     inventory = services.Inventory(main_bucket=BUCKET_NAME)
 
     return {
         "config": config,
-        "keycache": keycache,
-        "patientcache": patientcache,
-        "rawsubfolderlist": rawsubfolderlist,
-        "inventory": inventory,
+        # "keycache": keycache,
+        # "patientcache": patientcache,
+        # "rawsubfolderlist": rawsubfolderlist,
+        "caches": caches,
+        "filelist": filelist,
     }
 
 
