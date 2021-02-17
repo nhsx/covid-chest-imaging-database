@@ -9,6 +9,7 @@ import re
 import struct
 from io import BytesIO
 from pathlib import Path, posixpath
+import time
 
 import bonobo
 import boto3
@@ -343,6 +344,7 @@ def process_image(*args, config, caches):
     :rtype: (string, boto3.resource('s3').ObjectSummary, string)
     """
     # check file type
+    start = time.time()
     task, obj, _ = args
     if task != "process" or Path(obj.key).suffix.lower() != ".dcm":
         # not an image, don't do anything with it
@@ -356,6 +358,7 @@ def process_image(*args, config, caches):
     metadata_in_cache = caches.processed_file_exists(f"{image_uuid}.json")
     if image_in_cache and metadata_in_cache:
         # files exist, nothing to do here
+        print(f"Elapsed time: {time.time() - start}")
         return
 
     # download the image
@@ -563,27 +566,27 @@ def get_graph(**options):
     """
     graph = bonobo.Graph()
 
-    graph.add_chain(
-        load_config, extract_raw_files_from_folder,
-    )
+    # graph.add_chain(
+    #     load_config, extract_raw_files_from_folder,
+    # )
 
-    graph.add_chain(data_copy, _input=None, _name="copy")
+    # graph.add_chain(data_copy, _input=None, _name="copy")
 
-    graph.add_chain(
-        # bonobo.Limit(30),
-        process_patient_data,
-        _input=extract_raw_files_from_folder,
-        _output="copy",
-    )
+    # graph.add_chain(
+    #     # bonobo.Limit(30),
+    #     process_patient_data,
+    #     _input=extract_raw_files_from_folder,
+    #     _output="copy",
+    # )
 
-    graph.add_chain(
-        # bonobo.Limit(30),
-        process_image,
-        _input=process_patient_data,
-        _output="copy",
-    )
+    # graph.add_chain(
+    #     # bonobo.Limit(30),
+    #     process_image,
+    #     _input=process_patient_data,
+    #     _output="copy",
+    # )
 
-    graph.add_chain(process_dicom_data, upload_text_data, _input=process_image)
+    # graph.add_chain(process_dicom_data, upload_text_data, _input=process_image)
 
     return graph
 
@@ -602,9 +605,20 @@ def get_services(**options):
     keycache = services.KeyCache()
     patientcache = services.PatientCache()
     rawsubfolderlist = services.SubFolderList()
-    caches = services.Caches(main_bucket=BUCKET_NAME)
-    filelist = services.FileList(main_bucket=BUCKET_NAME)
+    # caches = services.Caches(main_bucket=BUCKET_NAME)
+    # filelist = services.FileList(main_bucket=BUCKET_NAME)
+    processinglist = services.ProcessingList(main_bucket=BUCKET_NAME)
 
+    # x = list(processinglist.get_raw_file_list(raw_prefixes={'raw-faculty-upload'}))
+    x = list(
+        processinglist.get_raw_file_list(raw_prefixes={"raw-rsch-upload"})
+    )
+    # print(len(x))
+    # for key in x:
+    #     print(key)
+    print(len(x))
+
+    print("List done")
     # print(caches.processed_file_exists('hello'))
     # print(caches.processed_file_exists('1.2.826.0.1.3680043.9.3218.1.1.159938.1734.1586442350812.17447.0.dcm'))
     # print(caches.processed_file_exists('1.2.826.0.1.3680043.9.3218.1.1.159938.1734.1586442350812.17447.0.json'))
@@ -625,8 +639,8 @@ def get_services(**options):
         # "keycache": keycache,
         # "patientcache": patientcache,
         # "rawsubfolderlist": rawsubfolderlist,
-        "caches": caches,
-        "filelist": filelist,
+        # "caches": caches,
+        # "filelist": filelist,
     }
 
 

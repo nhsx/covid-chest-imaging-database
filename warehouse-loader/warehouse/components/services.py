@@ -244,6 +244,70 @@ class FileList:
                     yield s3.ObjectSummary(self.bucket, key)
 
 
+class ProcessingList:
+    def __init__(self, main_bucket):
+        self.bucket = main_bucket
+        self.pattern = re.compile(
+            r"^(?P<raw_prefix>raw-.*)/(\d{4}-\d{2}-\d{2})/(?P<subfolder>data|images)/.*$"
+        )
+        self.processed_pattern = re.compile(
+            r"^(training|validation)/(xray|ct|mri).*$"
+        )
+
+    def get_raw_file_list(self, raw_prefixes={}, subfolders={"images"}):
+        r = 1
+        for fragment_reader in get_inventory(self.bucket):
+            print(f"Raw fragment {r}")
+            startr = time.time()
+            raw_list = {}
+            for row in fragment_reader:
+                key = row[1]
+                key_match = self.pattern.match(key)
+                if (
+                    key_match
+                    and key_match.group("raw_prefix") in raw_prefixes
+                    and key_match.group("subfolder") in subfolders
+                ):
+                    filename = key.split("/")[-1]
+                    raw_list[filename] = key
+
+            unprocessed = set(raw_list.keys())
+            unprocessed_json = {
+                key.replace(".dcm", ".json") for key in unprocessed
+            }
+            print(f"Processing: {time.time() - startr:.3f}s")
+            print(len(unprocessed))
+            if len(unprocessed) == 0:
+                r += 1
+                continue
+
+            f = 1
+            for fragment_reader2 in get_inventory(self.bucket):
+                print(f"Processed fragment {f}")
+                startf = time.time()
+                filenames = set()
+                for row in fragment_reader2:
+                    # Processed file cache
+                    item = self.processed_pattern.match(row[1])
+                    if item:
+                        filenames |= {row[1].split("/")[-1]}
+                unprocessed = unprocessed - filenames
+                unprocessed_json = unprocessed_json - filenames
+                print(f"Processing: {time.time() - startf:.3f}s")
+                print(f"Processed files in batch {f}: {len(filenames)}")
+                f += 1
+                if len(unprocessed) == 0 and len(unprocessed_json) == 0:
+                    break
+
+            print(len(unprocessed), len(unprocessed_json))
+            unprocessed |= {
+                key.replace(".json", ".dcm") for key in unprocessed_json
+            }
+            for unproc in unprocessed:
+                yield (raw_list[unproc])
+            r += 1
+
+
 # class Inventory:
 #     def __init__(self, main_bucket):
 #         self.bucket = main_bucket
