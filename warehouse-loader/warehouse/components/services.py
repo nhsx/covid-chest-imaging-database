@@ -9,6 +9,7 @@ import gzip
 import csv
 import re
 import os
+import pandas as pd
 
 import time
 from warehouse.components.constants import TRAINING_PERCENTAGE
@@ -146,6 +147,46 @@ def get_inventory(main_bucket):
         sys.exit(1)
 
 
+def get_inventory2(main_bucket):
+    try:
+        inventory_bucket = main_bucket + "-inventory"
+        s3_client = boto3.client("s3")
+        # Get the latest list of inventory files
+        objs = s3_client.list_objects_v2(
+            Bucket=inventory_bucket,
+            Prefix=f"{main_bucket}/daily-full-inventory/hive",
+        )["Contents"]
+        latest_symlink = sorted([obj["Key"] for obj in objs])[-1]
+        header_list = ["bucket", "key", "size", "date"]
+        response = s3_client.get_object(
+            Bucket=inventory_bucket, Key=latest_symlink
+        )
+        for line in response["Body"].read().decode("utf-8").split("\n"):
+            yield pd.read_csv(
+                line,
+                compression="gzip",
+                error_bad_lines=False,
+                names=header_list,
+                usecols=["key"],
+            )
+
+            # inventory_file = line.replace(f"s3://{inventory_bucket}/", "")
+            # logger.debug(f"Downloading inventory file: {inventory_file}")
+            # with tempfile.TemporaryFile(mode="w+b") as f:
+            #     s3_client.download_fileobj(inventory_bucket, inventory_file, f)
+            #     f.seek(0)
+            #     yield pd.read_csv(
+            #         f,
+            #         compression="gzip",
+            #         error_bad_lines=False,
+            #         names=header_list,
+            #         usecols=["key"],
+            #     )
+    except Exception as e:  # noqa: E722
+        logger.error(f"Can't use inventory due to run time error: {e}")
+        sys.exit(1)
+
+
 class Caches:
     def __init__(self, main_bucket, dbfile="filecache.db"):
         self.bucket = main_bucket
@@ -247,14 +288,20 @@ class FileList:
 class ProcessingList:
     def __init__(self, main_bucket):
         self.bucket = main_bucket
+        # self.pattern = re.compile(
+        #     r"^(?P<raw_prefix>raw-.*)/(\d{4}-\d{2}-\d{2})/(?P<subfolder>data|images)/.*$"
+        # )
         self.pattern = re.compile(
-            r"^(?P<raw_prefix>raw-.*)/(\d{4}-\d{2}-\d{2})/(?P<subfolder>data|images)/.*$"
+            r"^(?P<raw_prefix>raw-.*)/(\d{4}-\d{2}-\d{2})/images/(?P<filename>[^/]*)$"
         )
+        # self.processed_pattern = re.compile(
+        #     r"^(training|validation)/(xray|ct|mri).*$"
+        # )
         self.processed_pattern = re.compile(
-            r"^(training|validation)/(xray|ct|mri).*$"
+            r"^(training|validation)/(xray|ct|mri).*/(?P<filename>[^/]*)$"
         )
 
-    def get_raw_file_list(self, raw_prefixes={}, subfolders={"images"}):
+    def get_raw_file_list(self, raw_prefixes={}):
         r = 1
         for fragment_reader in get_inventory(self.bucket):
             print(f"Raw fragment {r}")
@@ -263,13 +310,8 @@ class ProcessingList:
             for row in fragment_reader:
                 key = row[1]
                 key_match = self.pattern.match(key)
-                if (
-                    key_match
-                    and key_match.group("raw_prefix") in raw_prefixes
-                    and key_match.group("subfolder") in subfolders
-                ):
-                    filename = key.split("/")[-1]
-                    raw_list[filename] = key
+                if key_match and key_match.group("raw_prefix") in raw_prefixes:
+                    raw_list[key_match.group("filename")] = key
 
             unprocessed = set(raw_list.keys())
             unprocessed_json = {
@@ -290,7 +332,7 @@ class ProcessingList:
                     # Processed file cache
                     item = self.processed_pattern.match(row[1])
                     if item:
-                        filenames |= {row[1].split("/")[-1]}
+                        filenames |= {item.group("filename")}
                 unprocessed = unprocessed - filenames
                 unprocessed_json = unprocessed_json - filenames
                 print(f"Processing: {time.time() - startf:.3f}s")
@@ -306,6 +348,78 @@ class ProcessingList:
             for unproc in unprocessed:
                 yield (raw_list[unproc])
             r += 1
+
+
+class ProcessingList2:
+    def __init__(self, main_bucket):
+        self.bucket = main_bucket
+        # self.pattern = re.compile(
+        #     r"^(?P<raw_prefix>raw-.*)/(\d{4}-\d{2}-\d{2})/(?P<subfolder>data|images)/.*$"
+        # )
+        # self.pattern = re.compile(
+        #     r"^(?P<raw_prefix>raw-.*)/(\d{4}-\d{2}-\d{2})/images/(?P<filename>[^/]*)$"
+        # )
+        # self.processed_pattern = re.compile(
+        #     r"^(training|validation)/(xray|ct|mri).*$"
+        # )
+
+    def get_raw_file_list(self, raw_prefixes={}, subfolders={"images"}):
+        self.pattern = re.compile(
+            rf"^(?P<raw_prefix>"
+            + "|".join(raw_prefixes)
+            + r")/(\d{4}-\d{2}-\d{2})/images/(?P<filename>[^/]*)$"
+        )
+        self.processed_pattern = re.compile(
+            r"^(training|validation)/(xray|ct|mri).*$"
+        )
+        r = 1
+        for df_fragment in get_inventory2(self.bucket):
+            print(f"Raw fragment {r}")
+            startr = time.time()
+            df_fragment = df_fragment[
+                df_fragment["key"].str.match(self.pattern)
+            ]
+            df_fragment["filename"] = df_fragment["key"].apply(
+                lambda x: x.split("/")[-1]
+            )
+
+            unprocessed = set(df_fragment["filename"])
+            unprocessed_json = {
+                key.replace(".dcm", ".json") for key in unprocessed
+            }
+            print(f"Processing: {time.time() - startr:.3f}s")
+            print(len(unprocessed))
+            if len(unprocessed) == 0:
+                r += 1
+                continue
+
+            f = 1
+            for df_fragment2 in get_inventory2(self.bucket):
+                print(f"Processed fragment {f}")
+                startf = time.time()
+                df_fragment2 = df_fragment2[
+                    df_fragment2["key"].str.match(self.processed_pattern)
+                ]
+                filenames = set(
+                    df_fragment2["key"].apply(lambda x: x.split("/")[-1])
+                )
+                unprocessed = unprocessed - filenames
+                unprocessed_json = unprocessed_json - filenames
+                print(f"Processing: {time.time() - startf:.3f}s")
+                print(f"Processed files in batch {f}: {len(filenames)}")
+                f += 1
+                if len(unprocessed) == 0 and len(unprocessed_json) == 0:
+                    break
+
+            print(len(unprocessed), len(unprocessed_json))
+            unprocessed |= {
+                key.replace(".json", ".dcm") for key in unprocessed_json
+            }
+            df_results = df_fragment[df_fragment["filename"].isin(unprocessed)]
+            for _, key in df_results["key"].iteritems():
+                yield key
+            r += 1
+            # break
 
 
 # class Inventory:

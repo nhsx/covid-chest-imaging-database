@@ -607,9 +607,21 @@ def get_services(**options):
     rawsubfolderlist = services.SubFolderList()
     # caches = services.Caches(main_bucket=BUCKET_NAME)
     # filelist = services.FileList(main_bucket=BUCKET_NAME)
-    processinglist = services.ProcessingList(main_bucket=BUCKET_NAME)
 
-    # x = list(processinglist.get_raw_file_list(raw_prefixes={'raw-faculty-upload'}))
+    ### Using CSV reading
+    # processinglist = services.ProcessingList(main_bucket=BUCKET_NAME)
+
+    # x = list(
+    #     processinglist.get_raw_file_list(raw_prefixes={"raw-rsch-upload"})
+    # )
+    # # print(len(x))
+    # # for key in x:
+    # #     print(key)
+    # print(len(x))
+
+    ## Using Datafram
+    processinglist = services.ProcessingList2(main_bucket=BUCKET_NAME)
+
     x = list(
         processinglist.get_raw_file_list(raw_prefixes={"raw-rsch-upload"})
     )
