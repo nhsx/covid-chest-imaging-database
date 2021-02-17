@@ -608,19 +608,11 @@ def get_services(**options):
     # caches = services.Caches(main_bucket=BUCKET_NAME)
     # filelist = services.FileList(main_bucket=BUCKET_NAME)
 
-    ### Using CSV reading
-    # processinglist = services.ProcessingList(main_bucket=BUCKET_NAME)
-
-    # x = list(
-    #     processinglist.get_raw_file_list(raw_prefixes={"raw-rsch-upload"})
-    # )
-    # # print(len(x))
-    # # for key in x:
-    # #     print(key)
-    # print(len(x))
-
-    ## Using Datafram
-    processinglist = services.ProcessingList2(main_bucket=BUCKET_NAME)
+    inv_downloader = services.InventoryDownloader(main_bucket=BUCKET_NAME)
+    ## Using CSV reading
+    processinglist = services.ProcessingList(
+        main_bucket=BUCKET_NAME, downloader=inv_downloader
+    )
 
     x = list(
         processinglist.get_raw_file_list(raw_prefixes={"raw-rsch-upload"})
@@ -629,6 +621,17 @@ def get_services(**options):
     # for key in x:
     #     print(key)
     print(len(x))
+
+    # ## Using Datafram
+    # processinglist = services.ProcessingList2(main_bucket=BUCKET_NAME)
+
+    # x = list(
+    #     processinglist.get_raw_file_list(raw_prefixes={"raw-rsch-upload"})
+    # )
+    # # print(len(x))
+    # # for key in x:
+    # #     print(key)
+    # print(len(x))
 
     print("List done")
     # print(caches.processed_file_exists('hello'))

@@ -119,32 +119,56 @@ class SubFolderList:
         return self.folder_list
 
 
-def get_inventory(main_bucket):
-    try:
-        inventory_bucket = main_bucket + "-inventory"
-        s3_client = boto3.client("s3")
-        # Get the latest list of inventory files
-        objs = s3_client.list_objects_v2(
-            Bucket=inventory_bucket,
-            Prefix=f"{main_bucket}/daily-full-inventory/hive",
-        )["Contents"]
-        latest_symlink = sorted([obj["Key"] for obj in objs])[-1]
-        header_list = ["bucket", "key", "size", "date"]
-        response = s3_client.get_object(
-            Bucket=inventory_bucket, Key=latest_symlink
-        )
-        for line in response["Body"].read().decode("utf-8").split("\n"):
-            inventory_file = line.replace(f"s3://{inventory_bucket}/", "")
-            logger.debug(f"Downloading inventory file: {inventory_file}")
-            with tempfile.TemporaryFile(mode="w+b") as f:
-                s3_client.download_fileobj(inventory_bucket, inventory_file, f)
-                f.seek(0)
-                with gzip.open(f, mode="rt") as cf:
-                    reader = csv.reader(cf)
-                    yield reader
-    except Exception as e:  # noqa: E722
-        logger.error(f"Can't use inventory due to run time error: {e}")
-        sys.exit(1)
+class InventoryDownloader:
+    def __init__(self, main_bucket):
+        self.main_bucket = main_bucket
+        self.inventory_bucket = self.main_bucket + "-inventory"
+        self._get_inventory_list()
+
+    def _get_inventory_list(self):
+        try:
+            inventory_bucket = self.main_bucket + "-inventory"
+            s3_client = boto3.client("s3")
+            # Get the latest list of inventory files
+            objs = s3_client.list_objects_v2(
+                Bucket=inventory_bucket,
+                Prefix=f"{self.main_bucket}/daily-full-inventory/hive",
+            )["Contents"]
+            latest_symlink = sorted([obj["Key"] for obj in objs])[-1]
+            header_list = ["bucket", "key", "size", "date"]
+            response = s3_client.get_object(
+                Bucket=inventory_bucket, Key=latest_symlink
+            )
+            self.inventory_list = [
+                line.replace(f"s3://{inventory_bucket}/", "")
+                for line in response["Body"].read().decode("utf-8").split("\n")
+            ]
+            print(self.inventory_list)
+        except Exception as e:  # noqa: E722
+            logger.error(f"Can't use inventory due to run time error: {e}")
+            sys.exit(1)
+
+    def get_inventory(self, excludeline={}):
+        try:
+            s3_client = boto3.client("s3")
+            for index, inventory_file in enumerate(self.inventory_list):
+                if index in excludeline:
+                    logger.debug(
+                        f"Skipping inventory file as requested: {inventory_file}"
+                    )
+                    continue
+                logger.debug(f"Downloading inventory file: {inventory_file}")
+                with tempfile.TemporaryFile(mode="w+b") as f:
+                    s3_client.download_fileobj(
+                        self.inventory_bucket, inventory_file, f
+                    )
+                    f.seek(0)
+                    with gzip.open(f, mode="rt") as cf:
+                        reader = csv.reader(cf)
+                        yield reader
+        except Exception as e:  # noqa: E722
+            logger.error(f"Can't use inventory due to run time error: {e}")
+            sys.exit(1)
 
 
 def get_inventory2(main_bucket):
@@ -270,7 +294,7 @@ class FileList:
         )
 
     def get_raw_file_list(
-        self, raw_prefixes={}, subfolders={"data", "images"}
+        self, raw_prefixes=set(), subfolders={"data", "images"}
     ):
         s3 = boto3.resource("s3")
         for fragment_reader in get_inventory(self.bucket):
@@ -286,8 +310,10 @@ class FileList:
 
 
 class ProcessingList:
-    def __init__(self, main_bucket):
+    def __init__(self, main_bucket, downloader):
         self.bucket = main_bucket
+        # set up this downloader outselves?
+        self.downloader = downloader
         # self.pattern = re.compile(
         #     r"^(?P<raw_prefix>raw-.*)/(\d{4}-\d{2}-\d{2})/(?P<subfolder>data|images)/.*$"
         # )
@@ -301,9 +327,24 @@ class ProcessingList:
             r"^(training|validation)/(xray|ct|mri).*/(?P<filename>[^/]*)$"
         )
 
-    def get_raw_file_list(self, raw_prefixes={}):
+    def get_raw_data_list(self, raw_prefixes=set()):
+        pass
+
+    def get_raw_images_list(self, raw_prefixes=set()):
+        pass
+
+    def get_processed_data_list(self):
+        # find all and sort/group by pseudonym?
+        pass
+
+    def get_processed_images_list(self):
+        # Only a single image per study, keep track of studies
+        pass
+
+    def get_raw_file_list(self, raw_prefixes=set()):
         r = 1
-        for fragment_reader in get_inventory(self.bucket):
+        excludelist = set()
+        for fragment_reader in self.downloader.get_inventory():
             print(f"Raw fragment {r}")
             startr = time.time()
             raw_list = {}
@@ -323,8 +364,9 @@ class ProcessingList:
                 r += 1
                 continue
 
-            f = 1
-            for fragment_reader2 in get_inventory(self.bucket):
+            for f, fragment_reader2 in enumerate(
+                self.downloader.get_inventory(excludelist)
+            ):
                 print(f"Processed fragment {f}")
                 startf = time.time()
                 filenames = set()
@@ -332,12 +374,13 @@ class ProcessingList:
                     # Processed file cache
                     item = self.processed_pattern.match(row[1])
                     if item:
-                        filenames |= {item.group("filename")}
+                        filenames.add(item.group("filename"))
+                if len(filenames) == 0:
+                    excludelist.add(f)
                 unprocessed = unprocessed - filenames
                 unprocessed_json = unprocessed_json - filenames
                 print(f"Processing: {time.time() - startf:.3f}s")
                 print(f"Processed files in batch {f}: {len(filenames)}")
-                f += 1
                 if len(unprocessed) == 0 and len(unprocessed_json) == 0:
                     break
 
