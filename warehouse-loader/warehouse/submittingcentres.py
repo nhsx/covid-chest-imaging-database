@@ -14,7 +14,7 @@ import warehouse.warehouseloader as wl  # noqa: E402
 from warehouse.components.services import (
     Inventory,
     PipelineConfig,
-    SubFolderList,
+    SubFolderList
 )
 
 mondrian.setup(excepthook=True)
