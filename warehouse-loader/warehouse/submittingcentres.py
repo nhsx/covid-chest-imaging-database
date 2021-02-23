@@ -3,22 +3,45 @@ the uploaded raw dataset.
 """
 
 import logging
+import os
+import re
 from pathlib import Path
 
 import bonobo
 import mondrian
-from bonobo.config import Configurable, ContextProcessor, use_raw_input
+from bonobo.config import Configurable, ContextProcessor, use, use_raw_input
 from bonobo.util.objects import ValueHolder
 
 import warehouse.warehouseloader as wl  # noqa: E402
-from warehouse.components.services import (
-    Inventory,
-    PipelineConfig,
-    SubFolderList
-)
+from warehouse.components.services import FileList, InventoryDownloader, PipelineConfig
 
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
+
+BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default="chest-data-warehouse")
+
+
+@use("config")
+@use("filelist")
+def extract_raw_data_files(config, filelist):
+    """ Extract files from a given date folder in the data dump
+
+    :param folder: the folder to process
+    :type key: string
+    :return: each object (yield)
+    :rtype: boto3.resource('s3').ObjectSummary
+    """
+    raw_prefixes = {prefix.rstrip("/") for prefix in config.get_raw_prefixes()}
+    pattern = re.compile(
+        r"^raw-.*/\d{4}-\d{2}-\d{2}/data/(?P<pseudonym>[^/]*)_(data|status).json$"
+    )
+    donelist = set()
+    # List the clinical data files for processing
+    for obj in filelist.get_raw_data_list(raw_prefixes=raw_prefixes):
+        key_match = pattern.match(obj.key)
+        if key_match and key_match.group("pseudonym") not in donelist:
+            donelist.add(key_match.group("pseudonym"))
+            yield "process", obj, None
 
 
 class SubmittingCentreExtractor(Configurable):
@@ -52,10 +75,7 @@ def get_graph(**options):
     graph = bonobo.Graph()
 
     graph.add_chain(
-        wl.load_config,
-        wl.extract_raw_folders,
-        wl.extract_raw_files_from_folder,
-        SubmittingCentreExtractor(),
+        wl.load_config, extract_raw_data_files, SubmittingCentreExtractor(),
     )
 
     return graph
@@ -72,14 +92,12 @@ def get_services(**options):
     :return: dict
     """
     config = PipelineConfig()
-    rawsubfolderlist = SubFolderList(folder_list=["data/"])
-    # Do not use inventory in this task as it is already quite fast
-    inventory = Inventory()
+    inv_downloader = InventoryDownloader(main_bucket=BUCKET_NAME)
+    filelist = FileList(inv_downloader)
 
     return {
         "config": config,
-        "rawsubfolderlist": rawsubfolderlist,
-        "inventory": inventory,
+        "filelist": filelist,
     }
 
 
