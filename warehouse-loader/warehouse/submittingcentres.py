@@ -13,7 +13,11 @@ from bonobo.config import Configurable, ContextProcessor, use, use_raw_input
 from bonobo.util.objects import ValueHolder
 
 import warehouse.warehouseloader as wl  # noqa: E402
-from warehouse.components.services import FileList, InventoryDownloader, PipelineConfig
+from warehouse.components.services import (
+    FileList,
+    InventoryDownloader,
+    PipelineConfig,
+)
 
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
