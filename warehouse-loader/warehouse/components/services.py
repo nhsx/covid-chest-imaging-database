@@ -4,7 +4,6 @@ import logging
 import re
 import sys
 import tempfile
-import time
 
 import boto3
 import mondrian
@@ -165,16 +164,13 @@ class FileList:
         )
         s3 = boto3.resource("s3")
         fragment_excludelist = set()
-        for r, fragment_reader in self.downloader.get_inventory():
-            raw_list = {}
-            total = 0
+        for _, fragment_reader in self.downloader.get_inventory():
+            raw_list = dict()
             for row in fragment_reader:
                 key = row[1]
-                startr = time.time()
                 key_match = raw_pattern.match(key)
                 if key_match and key_match.group("raw_prefix") in raw_prefixes:
                     raw_list[key_match.group("filename")] = key
-                total += time.time() - startr
 
             unprocessed = set(raw_list.keys())
             unprocessed_json = {
