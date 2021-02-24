@@ -239,7 +239,7 @@ class FileList:
 
     def get_pending_raw_images_list(self, raw_prefixes=set()):
         raw_pattern = re.compile(
-            r"^(?P<raw_prefix>raw-.*)/(\d{4}-\d{2}-\d{2})/images/(?P<filename>[^/]*)$"
+            r"^(?P<raw_prefix>raw-.*)/\d{4}-\d{2}-\d{2}/images/(?P<filename>[^/]*)$"
         )
         processed_pattern = re.compile(
             r"^(training|validation)/(xray|ct|mri).*/(?P<filename>[^/]*)$"
