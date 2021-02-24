@@ -9,17 +9,16 @@ import pydicom
 import pytest
 from moto import mock_s3
 
-import warehouse
 from warehouse.components.constants import TRAINING_PREFIX, VALIDATION_PREFIX
-from warehouse.components.services import (
-    DuplicateKeyError,
-    Inventory,
-    KeyCache,
-    PatientCache,
-)
+# from warehouse.components.services import (
+#     DuplicateKeyError,
+#     Inventory,
+#     KeyCache,
+#     PatientCache,
+# )
 from warehouse.warehouseloader import (
     PartialDicom,
-    load_existing_files,
+    # load_existing_files,
     patient_in_training_set,
     process_dicom_data,
 )
@@ -60,9 +59,9 @@ def test_training_set_equivalence(
 ):
     """String transformations should not change validation outcome
     """
-    assert warehouse.warehouseloader.patient_in_training_set(
+    assert patient_in_training_set(
         patient_id, training_percentage
-    ) == warehouse.warehouseloader.patient_in_training_set(
+    ) == patient_in_training_set(
         alternate_patient_id, training_percentage
     )
 
@@ -123,85 +122,85 @@ def test_partial_dicom_download(initial_range_kb):
     assert k1 ^ k2 == set()
 
 
-def test_keycache():
-    """Test behaviour of the KeyCache
-    """
-    kc = KeyCache()
+# def test_keycache():
+#     """Test behaviour of the KeyCache
+#     """
+#     kc = KeyCache()
 
-    kc.add("test1")
-    with pytest.raises(DuplicateKeyError):
-        kc.add("test1")
-    with pytest.raises(DuplicateKeyError):
-        kc.add("prefix/test1")
+#     kc.add("test1")
+#     with pytest.raises(DuplicateKeyError):
+#         kc.add("test1")
+#     with pytest.raises(DuplicateKeyError):
+#         kc.add("prefix/test1")
 
-    assert kc.exists(key="test1")
-    assert kc.exists(key="prefix/test1")
-    assert not kc.exists(key="prefix/test1", fullpath=True)
-    assert not kc.exists(key="test")
+#     assert kc.exists(key="test1")
+#     assert kc.exists(key="prefix/test1")
+#     assert not kc.exists(key="prefix/test1", fullpath=True)
+#     assert not kc.exists(key="test")
 
 
-@mock_s3
-def test_load_existing_files():
-    """Test loading existing files with an Inventory, to ensure
-    we have the same results as directly listing the bucket.
-    """
+# @mock_s3
+# def test_load_existing_files():
+#     """Test loading existing files with an Inventory, to ensure
+#     we have the same results as directly listing the bucket.
+#     """
 
-    test_file_names = [
-        f"{TRAINING_PREFIX}data/Covid1/data_2020-09-01.json",
-        f"{TRAINING_PREFIX}ct/Covid1/{pydicom.uid.generate_uid()}.dcm",
-        f"{TRAINING_PREFIX}mri/Covid1/{pydicom.uid.generate_uid()}.dcm",
-        f"{VALIDATION_PREFIX}data/Covid2/status_2020-09-01.json",
-        f"{VALIDATION_PREFIX}ct/Covid2/{pydicom.uid.generate_uid()}.dcm",
-        f"{VALIDATION_PREFIX}mri/Covid2/{pydicom.uid.generate_uid()}.dcm",
-    ]
+#     test_file_names = [
+#         f"{TRAINING_PREFIX}data/Covid1/data_2020-09-01.json",
+#         f"{TRAINING_PREFIX}ct/Covid1/{pydicom.uid.generate_uid()}.dcm",
+#         f"{TRAINING_PREFIX}mri/Covid1/{pydicom.uid.generate_uid()}.dcm",
+#         f"{VALIDATION_PREFIX}data/Covid2/status_2020-09-01.json",
+#         f"{VALIDATION_PREFIX}ct/Covid2/{pydicom.uid.generate_uid()}.dcm",
+#         f"{VALIDATION_PREFIX}mri/Covid2/{pydicom.uid.generate_uid()}.dcm",
+#     ]
 
-    conn = boto3.resource("s3", region_name="us-east-1")
+#     conn = boto3.resource("s3", region_name="us-east-1")
 
-    main_bucket_name = "testbucket-12345"
-    conn.create_bucket(Bucket=main_bucket_name)
+#     main_bucket_name = "testbucket-12345"
+#     conn.create_bucket(Bucket=main_bucket_name)
 
-    for test_file_name in test_file_names:
-        conn.meta.client.upload_fileobj(
-            BytesIO(), main_bucket_name, test_file_name
-        )
+#     for test_file_name in test_file_names:
+#         conn.meta.client.upload_fileobj(
+#             BytesIO(), main_bucket_name, test_file_name
+#         )
 
-    inventory_bucket_name = f"{main_bucket_name}-inventory"
-    conn.create_bucket(Bucket=inventory_bucket_name)
+#     inventory_bucket_name = f"{main_bucket_name}-inventory"
+#     conn.create_bucket(Bucket=inventory_bucket_name)
 
-    mem_file = BytesIO()
-    with gzip.GzipFile(fileobj=mem_file, mode="wb") as gz:
-        buff = StringIO()
-        writer = csv.writer(buff, delimiter=",")
-        for test_file_name in test_file_names:
-            writer.writerow([main_bucket_name, test_file_name, 0])
-        gz.write(buff.getvalue().encode())
-    mem_file.seek(0)
-    conn.meta.client.upload_fileobj(
-        mem_file, inventory_bucket_name, "inventory.csv.gz"
-    )
-    conn.meta.client.upload_fileobj(
-        BytesIO(f"s3://{inventory_bucket_name}/inventory.csv.gz".encode()),
-        inventory_bucket_name,
-        f"{main_bucket_name}/daily-full-inventory/hive/symlink.txt",
-    )
+#     mem_file = BytesIO()
+#     with gzip.GzipFile(fileobj=mem_file, mode="wb") as gz:
+#         buff = StringIO()
+#         writer = csv.writer(buff, delimiter=",")
+#         for test_file_name in test_file_names:
+#             writer.writerow([main_bucket_name, test_file_name, 0])
+#         gz.write(buff.getvalue().encode())
+#     mem_file.seek(0)
+#     conn.meta.client.upload_fileobj(
+#         mem_file, inventory_bucket_name, "inventory.csv.gz"
+#     )
+#     conn.meta.client.upload_fileobj(
+#         BytesIO(f"s3://{inventory_bucket_name}/inventory.csv.gz".encode()),
+#         inventory_bucket_name,
+#         f"{main_bucket_name}/daily-full-inventory/hive/symlink.txt",
+#     )
 
-    keycache = KeyCache()
-    patientcache = PatientCache()
-    inventory = Inventory(main_bucket=main_bucket_name)
+#     keycache = KeyCache()
+#     patientcache = PatientCache()
+#     inventory = Inventory(main_bucket=main_bucket_name)
 
-    load_existing_files(keycache, patientcache, inventory)
+#     load_existing_files(keycache, patientcache, inventory)
 
-    patient_file_name = re.compile(
-        r"^(?P<group>.*)/data/(?P<patient_id>.*)/(?:data|status)_\d{4}-\d{2}-\d{2}.json$"
-    )
+#     patient_file_name = re.compile(
+#         r"^(?P<group>.*)/data/(?P<patient_id>.*)/(?:data|status)_\d{4}-\d{2}-\d{2}.json$"
+#     )
 
-    for test_file_name in test_file_names:
-        m = patient_file_name.match(test_file_name)
-        if m:
-            # It is a patient file
-            assert patientcache.get_group(m.group("patient_id")) == m.group(
-                "group"
-            )
-        else:
-            # It is an image file
-            assert keycache.exists(test_file_name, fullpath=True)
+#     for test_file_name in test_file_names:
+#         m = patient_file_name.match(test_file_name)
+#         if m:
+#             # It is a patient file
+#             assert patientcache.get_group(m.group("patient_id")) == m.group(
+#                 "group"
+#             )
+#         else:
+#             # It is an image file
+#             assert keycache.exists(test_file_name, fullpath=True)
