@@ -37,12 +37,42 @@ class PipelineConfig:
         logger.debug(f"Training percentage: {self.get_training_percentage()}%")
 
     def get_raw_prefixes(self):
+        """Return a set of raw prefixes that the configuration
+        is set to process.
+        """
         return set(self.config.get("raw_prefixes", []))
 
     def get_training_percentage(self):
-        return self.config.get("training_percentage", TRAINING_PERCENTAGE)
+        """Return set training precentage, either default or configured
+
+        Returns
+        -------
+        int:
+            the proportion of random assignment to the training set (0-100)
+        """
+        training_percent = self.config.get(
+            "training_percentage", TRAINING_PERCENTAGE
+        )
+        if training_percent > 100:
+            training_percent = 100
+        if training_percent < 0:
+            training_percent = 0
+        return training_percent
 
     def get_site_group(self, submitting_centre):
+        """Get
+
+        Parameters
+        ----------
+        submitting_centre : str
+            The submitting centre's name to look up
+
+        Returns
+        -------
+        group : str
+            The group (training, validation, split) that the
+            given centre is configured for
+        """
         return self.sites.get(submitting_centre)
 
 
@@ -73,7 +103,20 @@ class InventoryDownloader:
             logger.error(f"Can't use inventory due to run time error: {e}")
             sys.exit(1)
 
-    def get_inventory(self, excludeline={}):
+    def get_inventory(self, excludeline=set()):
+        """Iterate through all the inventory files, and passing back a reader
+        to use the data from them.
+
+        Parameters
+        ----------
+        exclideline : set
+            Listing all the fragments of the inventory to exclude from reading
+
+        Yields
+        ------
+        tuple[int, _csv.reader]
+            Index of the given inventory fragment and a CSV reader initialized
+        """
         try:
             s3_client = boto3.client("s3")
             for index, inventory_file in enumerate(self.inventory_list):
@@ -96,11 +139,28 @@ class InventoryDownloader:
             sys.exit(1)
 
     def get_bucket(self):
+        """The S3 bucket that this downloader is configured to use.
+
+        Returns
+        -------
+        str
+            S3 bucket name
+        """
         return self.main_bucket
 
 
 class PatientCache:
+    """A cache to store group assignments of patient IDs
+    """
+
     def __init__(self, downloader):
+        """A cache to store group assignments of patient IDs
+
+        Parameters
+        ----------
+        downloader: InventoryDownloader
+            An initialized downloader instance
+        """
         self.downloader = downloader
         self.store = dict()
         self._load_cache()
@@ -120,6 +180,15 @@ class PatientCache:
                     )
 
     def add(self, patient_id, group):
+        """Add an item to an existing patient cache
+
+        Paramters
+        ---------
+        patient_id : str
+            The patient ID or pseudonym to store
+        group : str
+            Expected group is "training" or "validation", only stores whether the patient is in the "training group or not.
+        """
         if patient_id not in self.store:
             self.store[patient_id] = group == "training"
         elif self.store[patient_id] != group == "training":
@@ -128,6 +197,19 @@ class PatientCache:
             )
 
     def get_group(self, patient_id):
+        """Check if a given patient is in "training" or "validation" group,
+        or even known to the cache or not.
+
+        Parameters
+        ----------
+        patient_id : str
+            The patient ID / pseudonym in question
+
+        Returns
+        -------
+        group : str or None
+            The values "training" or "validation" if grouping is known, or None if patient is not in cache.
+        """
         group = None
         try:
             group = "training" if self.store[patient_id] else "validation"
