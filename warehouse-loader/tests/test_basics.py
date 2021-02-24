@@ -10,6 +10,7 @@ import pytest
 from moto import mock_s3
 
 from warehouse.components.constants import TRAINING_PREFIX, VALIDATION_PREFIX
+
 # from warehouse.components.services import (
 #     DuplicateKeyError,
 #     Inventory,
@@ -61,9 +62,7 @@ def test_training_set_equivalence(
     """
     assert patient_in_training_set(
         patient_id, training_percentage
-    ) == patient_in_training_set(
-        alternate_patient_id, training_percentage
-    )
+    ) == patient_in_training_set(alternate_patient_id, training_percentage)
 
 
 def test_process_dicom_data():
