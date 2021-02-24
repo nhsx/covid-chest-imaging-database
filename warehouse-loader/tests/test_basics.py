@@ -1,15 +1,16 @@
-import csv
-import gzip
+# import csv
+# import gzip
 import pathlib
-import re
-from io import BytesIO, StringIO
+
+# import re
+from io import BytesIO  # , StringIO
 
 import boto3
 import pydicom
 import pytest
 from moto import mock_s3
 
-from warehouse.components.constants import TRAINING_PREFIX, VALIDATION_PREFIX
+# from warehouse.components.constants import TRAINING_PREFIX, VALIDATION_PREFIX
 
 # from warehouse.components.services import (
 #     DuplicateKeyError,
