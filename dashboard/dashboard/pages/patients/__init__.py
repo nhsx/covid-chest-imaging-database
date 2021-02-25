@@ -308,20 +308,21 @@ def create_age_breakdown(data, group):
         )
         fig.add_trace(
             go.Histogram(
-                x=patient_postive["age_update"],
-                name="Positive",
-                histnorm="percent",
-                xbins=xbins,
-            )
-        )
-        fig.add_trace(
-            go.Histogram(
                 x=patient_negative["age_update"],
                 name="Negative",
                 histnorm="percent",
                 xbins=xbins,
             )
         )
+        fig.add_trace(
+            go.Histogram(
+                x=patient_postive["age_update"],
+                name="Positive",
+                histnorm="percent",
+                xbins=xbins,
+            )
+        )
+        
 
     fig.update_layout(barmode="overlay")
     fig.update_traces(opacity=0.75)
@@ -395,18 +396,19 @@ def create_ethnicity_breakdown(data, group):
         )
         fig.add_trace(
             go.Histogram(
-                x=patient_postive["ethnicity"],
-                name="Positive",
-                histnorm="percent",
-            )
-        )
-        fig.add_trace(
-            go.Histogram(
                 x=patient_negative["ethnicity"],
                 name="Negative",
                 histnorm="percent",
             )
         )
+        fig.add_trace(
+            go.Histogram(
+                x=patient_postive["ethnicity"],
+                name="Positive",
+                histnorm="percent",
+            )
+        )
+        
 
     graph = dcc.Graph(id="ethnicity-histogram", figure=fig)
     return graph
