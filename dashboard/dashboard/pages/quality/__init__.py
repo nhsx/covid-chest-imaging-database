@@ -126,6 +126,11 @@ def serve_layout(data: Dataset) -> html.Div:
                 + "The plots shown are relevent only for COVID-psotive patients "
                 + "as the majority of this data has not been requested for negative patients."
             ),
+            dbc.Alert(
+                "Note: when plotting for all fields some labels aren't visible,"
+                + " please hover over bars to see missing field names",
+                color="info"
+            ),
             selector,
             dcc.Loading(
                 id="completeness-chart-loader",
