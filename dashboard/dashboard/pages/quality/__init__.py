@@ -114,7 +114,7 @@ def serve_layout(data: Dataset) -> html.Div:
     page = html.Div(
         children=[
             html.H1(children="Data Quality"),
-            html.H2("Completeness of Fields"),
+            html.H2("Completeness of Fields (for COVID-positive patients)"),
             html.P(
                 "This chart shows the completeness of the clinical data fields after applying a "
                 + "cleaning pipeline, which removes erroneous entries such "
@@ -122,7 +122,9 @@ def serve_layout(data: Dataset) -> html.Div:
                 + "string entries, and fills missing demographics using "
                 + "DICOM header information. For each field of the clinical "
                 + "data, the percentage of entries with non-null values is "
-                + "shown against the percentage of null values."
+                + "shown against the percentage of null values. "
+                + "The plots shown are relevent only for COVID-psotive patients "
+                + "as the majority of this data has not been requested for negative patients."
             ),
             selector,
             dcc.Loading(
@@ -230,7 +232,7 @@ def create_completeness_chart(data, centre, fields, sort_by):
     fig.update_layout(
         barmode="stack",
         xaxis_tickangle=-45,
-        title=f"Completeness of Fields (Covid Positive only): {centre}, {fields} fields",
+        title=f"Completeness of Fields: {centre}, {fields} fields",
         xaxis_title="Fields",
         yaxis_title="% of Nulls",
         legend_title="",
