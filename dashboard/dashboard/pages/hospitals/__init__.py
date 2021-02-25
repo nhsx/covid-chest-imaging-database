@@ -84,7 +84,7 @@ def serve_layout(data: Dataset) -> html.Div:
                             [
                                 html.Label(
                                     [
-                                        "Select table ordering column.",
+                                        "Select field to sort rows by.",
                                     ],
                                     htmlFor="table-order",
                                 ),
