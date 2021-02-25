@@ -392,9 +392,21 @@ def serve_layout(data: Dataset) -> html.Div:
                 """
                 )
             ),
+            html.Div(
+                html.P(
+                    children="""
+                    The National COVID-19 Chest Imaging Database (NCCID) comprises chest X-ray,
+                    CT and MR images and other relevant information of patients with suspected COVID-19. 
+                    The database has been created to enable the development and validation of automated 
+                    analysis technologies that may prove effective in supporting COVID-19 care pathways, 
+                    and to accelerate research projects to better understand the disease.
+                """
+                )
+            ),
             table_patient_count,
             dbc.Alert(
-                "Note that the patient counts above include all patients with clinical data, whether or not their imaging data has been provided yet.",
+                "Note that the patient counts above include all patients with clinical data,"
+                " whether or not their imaging data has been provided yet.",
                 color="info",
             ),
             table_img_counts,
