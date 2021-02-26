@@ -1,5 +1,6 @@
 import csv
 import gzip
+import math
 import pathlib
 import uuid
 from io import BytesIO, StringIO
@@ -133,31 +134,48 @@ def test_partial_dicom_download(initial_range_kb):
 #     assert not kc.exists(key="test")
 
 
-@mock_s3
-def create_inventory(file_name_list, main_bucket_name):
+def create_inventory(file_name_list, main_bucket_name, batches=1):
     """Helper creating a (mock) inventory from a given file list
     and upload them to the relevant S3 bucket.
+
+    Parameters
+    ----------
+    file_name_list : list
+        Iterable with the filenames to put into the inventory
+    main_bucket_name : str
+        The main warehouse bucket, against which the inventory is created
+    batches : int, default=1
+        The (approximate) number of batches to break up the inventory (this many uploaded files)
     """
+    batch_size = math.ceil(len(file_name_list) / batches)
+
     conn = boto3.resource("s3", region_name="us-east-1")
     inventory_bucket_name = f"{main_bucket_name}-inventory"
     conn.create_bucket(Bucket=inventory_bucket_name)
 
-    mem_file = BytesIO()
-    with gzip.GzipFile(fileobj=mem_file, mode="wb") as gz:
-        buff = StringIO()
-        writer = csv.writer(buff, delimiter=",")
-        for test_file_name in file_name_list:
-            writer.writerow([main_bucket_name, test_file_name, 0])
-        gz.write(buff.getvalue().encode())
-    mem_file.seek(0)
-    inventory_fragment_filename = f"{uuid.uuid4()}.csv.gz"
+    chunks = [
+        file_name_list[x : x + batch_size]
+        for x in range(0, len(file_name_list), batch_size)
+    ]
+    chunk_names = []
+    for chunk in chunks:
+        mem_file = BytesIO()
+        with gzip.GzipFile(fileobj=mem_file, mode="wb") as gz:
+            buff = StringIO()
+            writer = csv.writer(buff, delimiter=",")
+            for test_file_name in chunk:
+                writer.writerow([main_bucket_name, test_file_name, 0])
+            gz.write(buff.getvalue().encode())
+        mem_file.seek(0)
+        inventory_fragment_filename = f"{uuid.uuid4()}.csv.gz"
+        conn.meta.client.upload_fileobj(
+            mem_file, inventory_bucket_name, inventory_fragment_filename
+        )
+        chunk_names += [
+            f"s3://{inventory_bucket_name}/{inventory_fragment_filename}"
+        ]
     conn.meta.client.upload_fileobj(
-        mem_file, inventory_bucket_name, inventory_fragment_filename
-    )
-    conn.meta.client.upload_fileobj(
-        BytesIO(
-            f"s3://{inventory_bucket_name}/{inventory_fragment_filename}".encode()
-        ),
+        BytesIO("\n".join(chunk_names).encode()),
         inventory_bucket_name,
         f"{main_bucket_name}/daily-full-inventory/hive/symlink.txt",
     )
