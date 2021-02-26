@@ -1,26 +1,23 @@
-# import csv
-# import gzip
+import csv
+import gzip
 import pathlib
+import uuid
 
-# import re
-from io import BytesIO  # , StringIO
+from io import BytesIO, StringIO
 
 import boto3
 import pydicom
 import pytest
 from moto import mock_s3
 
-# from warehouse.components.constants import TRAINING_PREFIX, VALIDATION_PREFIX
-
-# from warehouse.components.services import (
-#     DuplicateKeyError,
-#     Inventory,
-#     KeyCache,
-#     PatientCache,
-# )
+from warehouse.components.constants import TRAINING_PREFIX, VALIDATION_PREFIX
+from warehouse.components.services import (
+    CacheContradiction,
+    InventoryDownloader,
+    PatientCache,
+)
 from warehouse.warehouseloader import (
     PartialDicom,
-    # load_existing_files,
     patient_in_training_set,
     process_dicom_data,
 )
@@ -137,6 +134,82 @@ def test_partial_dicom_download(initial_range_kb):
 #     assert kc.exists(key="prefix/test1")
 #     assert not kc.exists(key="prefix/test1", fullpath=True)
 #     assert not kc.exists(key="test")
+
+
+@mock_s3
+def create_inventory(file_name_list, main_bucket_name):
+    """Helper creating a (mock) inventory from a given file list
+    and upload them to the relevant S3 bucket.
+    """
+    conn = boto3.resource("s3", region_name="us-east-1")
+    inventory_bucket_name = f"{main_bucket_name}-inventory"
+    conn.create_bucket(Bucket=inventory_bucket_name)
+
+    mem_file = BytesIO()
+    with gzip.GzipFile(fileobj=mem_file, mode="wb") as gz:
+        buff = StringIO()
+        writer = csv.writer(buff, delimiter=",")
+        for test_file_name in file_name_list:
+            writer.writerow([main_bucket_name, test_file_name, 0])
+        gz.write(buff.getvalue().encode())
+    mem_file.seek(0)
+    inventory_fragment_filename = f"{uuid.uuid4()}.csv.gz"
+    conn.meta.client.upload_fileobj(
+        mem_file, inventory_bucket_name, inventory_fragment_filename
+    )
+    conn.meta.client.upload_fileobj(
+        BytesIO(
+            f"s3://{inventory_bucket_name}/{inventory_fragment_filename}".encode()
+        ),
+        inventory_bucket_name,
+        f"{main_bucket_name}/daily-full-inventory/hive/symlink.txt",
+    )
+
+
+@mock_s3
+def test_patientcache():
+    """Test behaviour of the PatientCache for preloading cache
+    and looking for hits and misses accordingly.
+    """
+    test_file_names = [
+        f"{TRAINING_PREFIX}data/Covid1/data_2020-09-01.json",
+        f"{VALIDATION_PREFIX}data/Covid2/status_2020-09-01.json",
+    ]
+    main_bucket_name = "testbucket-12345"
+
+    create_inventory(test_file_names, main_bucket_name)
+
+    inv_downloader = InventoryDownloader(main_bucket=main_bucket_name)
+    patientcache = PatientCache(inv_downloader)
+
+    # Assert existing ids
+    assert patientcache.get_group("Covid1") == "training"
+    assert patientcache.get_group("Covid2") == "validation"
+    assert patientcache.get_group("Covid3") is None  # Not in cache
+
+    # Assert adding new ids
+    new_ids = [("Covid10", "training"), ("Covid11", "validation")]
+    for patient_id, group in new_ids:
+        assert patientcache.get_group(patient_id) is None
+        patientcache.add(patient_id, group)
+        assert patientcache.get_group(patient_id) == group
+
+    # Testing cache contradictions
+    patient_id = "Covid20"
+    patientcache.add(patient_id, "training")
+    patientcache.add(
+        patient_id, "training"
+    )  # adding again to the same group is fine
+    with pytest.raises(CacheContradiction, match=rf".* {patient_id}.*"):
+        patientcache.add(patient_id, "validation")
+
+    patient_id = "Covid21"
+    patientcache.add(patient_id, "validation")
+    patientcache.add(
+        patient_id, "validation"
+    )  # adding again to the same group is fine
+    with pytest.raises(CacheContradiction, match=rf".* {patient_id}.*"):
+        patientcache.add(patient_id, "training")
 
 
 # @mock_s3

@@ -149,6 +149,10 @@ class InventoryDownloader:
         return self.main_bucket
 
 
+class CacheContradiction(Exception):
+    pass
+
+
 class PatientCache:
     """A cache to store group assignments of patient IDs
     """
@@ -175,8 +179,7 @@ class PatientCache:
                 key_match = pattern.match(key)
                 if key_match:
                     self.add(
-                        key_match.group("pseudonym"),
-                        key_match.group("group") == "training",
+                        key_match.group("pseudonym"), key_match.group("group"),
                     )
 
     def add(self, patient_id, group):
@@ -191,9 +194,9 @@ class PatientCache:
         """
         if patient_id not in self.store:
             self.store[patient_id] = group == "training"
-        elif self.store[patient_id] != group == "training":
-            logger.warning(
-                f"Found patient with ambiguous groups: {patient_id}; "
+        elif self.store[patient_id] != (group == "training"):
+            raise CacheContradiction(
+                f"Found patient with ambiguous groups: {patient_id}"
             )
 
     def get_group(self, patient_id):
