@@ -295,3 +295,36 @@ def test_pending_raw_images_list():
     )
 
     assert nhs_pending_list == sorted(test_file_names[0:3])
+
+
+@mock_s3
+def test_processed_data_list():
+
+    test_file_names = [
+        f"{TRAINING_PREFIX}data/Covid1/data_2021-02-28.json",
+        f"{VALIDATION_PREFIX}data/Covid2/status_2020-09-01.json",
+        f"{TRAINING_PREFIX}ct/Covid1/{pydicom.uid.generate_uid()}.dcm",
+        f"{TRAINING_PREFIX}mri/Covid1/{pydicom.uid.generate_uid()}.dcm",
+        f"{VALIDATION_PREFIX}ct/Covid2/{pydicom.uid.generate_uid()}.dcm",
+        f"{VALIDATION_PREFIX}mri/Covid2/{pydicom.uid.generate_uid()}.dcm",
+        f"raw-nhs-upload/2021-01-31/images/{pydicom.uid.generate_uid()}.dcm",
+        f"raw-nhs-upload/2021-02-28/images/{pydicom.uid.generate_uid()}.dcm",
+        f"raw-nhs-upload/2021-02-28/images/{pydicom.uid.generate_uid()}.dcm",
+        f"raw-nhs-upload/2021-01-31/age-0/images/{pydicom.uid.generate_uid()}.dcm",
+        f"raw-nhs-upload/2021-02-28/age-0/images/{pydicom.uid.generate_uid()}.dcm",
+        "raw-nhs-upload/2021-02-28/data/Covid1_data.json",
+        "raw-nhs-upload/2021-02-28/data/Covid2_status.json",
+        "raw-nhs-upload/2021-02-28/age-0/data/Covid3_status.json",
+    ]
+    main_bucket_name = "testbucket-12345"
+
+    create_inventory(test_file_names, main_bucket_name, batches=2)
+
+    inv_downloader = InventoryDownloader(main_bucket=main_bucket_name)
+    filelist = FileList(inv_downloader)
+
+    pending_list = sorted(
+        [obj.key for obj in filelist.get_processed_data_list()]
+    )
+
+    assert pending_list == sorted(test_file_names[0:2])
