@@ -28,7 +28,7 @@ BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default="chest-data-warehouse")
 @use("config")
 @use("filelist")
 def extract_raw_data_files(config, filelist):
-    """ Extract files from a given date folder in the data dump
+    """Extract files from a given date folder in the data dump
 
     :param folder: the folder to process
     :type key: string
@@ -49,8 +49,7 @@ def extract_raw_data_files(config, filelist):
 
 
 class SubmittingCentreExtractor(Configurable):
-    """ Get unique submitting centre names from the full database.
-    """
+    """Get unique submitting centre names from the full database."""
 
     @ContextProcessor
     def acc(self, context):
@@ -79,7 +78,9 @@ def get_graph(**options):
     graph = bonobo.Graph()
 
     graph.add_chain(
-        wl.load_config, extract_raw_data_files, SubmittingCentreExtractor(),
+        wl.load_config,
+        extract_raw_data_files,
+        SubmittingCentreExtractor(),
     )
 
     return graph
@@ -106,8 +107,7 @@ def get_services(**options):
 
 
 def main():
-    """Execute the pipeline graph
-    """
+    """Execute the pipeline graph"""
     parser = bonobo.get_argument_parser()
     with bonobo.parse_args(parser) as options:
         bonobo.run(get_graph(**options), services=get_services(**options))

@@ -15,8 +15,7 @@ logger = logging.getLogger()
 
 
 class PipelineConfig:
-    """ Configuration settings for the whole pipeline
-    """
+    """Configuration settings for the whole pipeline"""
 
     def __init__(self):
         self.config = dict(
@@ -154,8 +153,7 @@ class CacheContradiction(Exception):
 
 
 class PatientCache:
-    """A cache to store group assignments of patient IDs
-    """
+    """A cache to store group assignments of patient IDs"""
 
     def __init__(self, downloader):
         """A cache to store group assignments of patient IDs
@@ -179,7 +177,8 @@ class PatientCache:
                 key_match = pattern.match(key)
                 if key_match:
                     self.add(
-                        key_match.group("pseudonym"), key_match.group("group"),
+                        key_match.group("pseudonym"),
+                        key_match.group("group"),
                     )
 
     def add(self, patient_id, group):

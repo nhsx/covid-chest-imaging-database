@@ -37,7 +37,7 @@ KB = 1024
 # Helpers
 ###
 def object_exists(key):
-    """ Checking whether a given object exists in our work bucket
+    """Checking whether a given object exists in our work bucket
 
     :param key: the object key in question
     :type key: string
@@ -57,7 +57,7 @@ def object_exists(key):
 
 
 def get_date_from_key(key):
-    """ Extract date from an object key from the bucket's directory pattern,
+    """Extract date from an object key from the bucket's directory pattern,
     for a given prefix
 
     :param key: the object key in question
@@ -91,7 +91,7 @@ def get_submitting_centre_from_object(obj):
 def patient_in_training_set(
     patient_id, training_percent=constants.TRAINING_PERCENTAGE
 ):
-    """ Separating patient ID's into training and validation sets, check
+    """Separating patient ID's into training and validation sets, check
     which one this ID should fall into.
 
     It uses a hashing (sha512) to get pseudo-randomisation based on ID,
@@ -184,8 +184,7 @@ class PartialDicom:
         return self._found_image_tag
 
     def download(self):
-        """Download file iteratively, and return the image data
-        """
+        """Download file iteratively, and return the image data"""
         with BytesIO() as tmp:
             while True:
                 tmp.seek(0)
@@ -215,8 +214,7 @@ class PartialDicom:
 ###
 @use("config")
 def load_config(config):
-    """Load configuration from the bucket
-    """
+    """Load configuration from the bucket"""
     try:
         obj = bucket.Object(constants.CONFIG_KEY).get()
         contents = json.loads(obj["Body"].read().decode("utf-8"))
@@ -234,7 +232,7 @@ def load_config(config):
 @use("config")
 @use("filelist")
 def extract_raw_files_from_folder(config, filelist):
-    """ Extract files from a given date folder in the data dump
+    """Extract files from a given date folder in the data dump
 
     :param folder: the folder to process
     :type key: string
@@ -252,7 +250,7 @@ def extract_raw_files_from_folder(config, filelist):
 
 @use("patientcache")
 def process_image(*args, patientcache):
-    """ Processing images from the raw dump
+    """Processing images from the raw dump
 
     Takes a single image, downloads it into temporary storage
     and extracts its metadata.
@@ -348,7 +346,11 @@ def process_dicom_data(*args):
     :return: metadata key and scrubbed image data, if processed
     :rtype: tuple
     """
-    task, metadata_key, image_data, = args
+    (
+        task,
+        metadata_key,
+        image_data,
+    ) = args
     if task == "metadata":
         scrubbed_image_data = scrub_dicom(image_data)
         yield "upload", metadata_key, json.dumps(scrubbed_image_data)
@@ -364,7 +366,11 @@ def upload_text_data(*args):
     :param outgoing_data: text to file content to upload
     :type outgoing_data: string
     """
-    task, outgoing_key, outgoing_data, = args
+    (
+        task,
+        outgoing_key,
+        outgoing_data,
+    ) = args
     if (
         task == "upload"
         and outgoing_key is not None
@@ -462,7 +468,11 @@ def data_copy(*args):
     :return: standard constant for bonobo "load" steps, so they can be chained
     :rtype: bonobo.constants.NOT_MODIFIED
     """
-    task, obj, new_key, = args
+    (
+        task,
+        obj,
+        new_key,
+    ) = args
     if task == "copy" and obj is not None and new_key is not None:
         if DRY_RUN:
             logger.info(f"Would copy: {obj.key} -> {new_key}")
@@ -484,7 +494,8 @@ def get_graph(**options):
     graph = bonobo.Graph()
 
     graph.add_chain(
-        load_config, extract_raw_files_from_folder,
+        load_config,
+        extract_raw_files_from_folder,
     )
 
     graph.add_chain(data_copy, _input=None, _name="copy")
@@ -531,8 +542,7 @@ def get_services(**options):
 
 
 def main():
-    """Execute the pipeline graph
-    """
+    """Execute the pipeline graph"""
     parser = bonobo.get_argument_parser()
     with bonobo.parse_args(parser) as options:
         bonobo.run(get_graph(**options), services=get_services(**options))

@@ -2,7 +2,6 @@ import csv
 import gzip
 import pathlib
 import uuid
-
 from io import BytesIO, StringIO
 
 import boto3
@@ -35,8 +34,7 @@ from warehouse.warehouseloader import (
     ],
 )
 def test_training_set_basics(patient_id, training_percentage, expected):
-    """Known test/validation split values
-    """
+    """Known test/validation split values"""
     assert patient_in_training_set(patient_id, training_percentage) == expected
 
 
@@ -51,13 +49,13 @@ def test_training_set_basics(patient_id, training_percentage, expected):
     ],
 )
 @pytest.mark.parametrize(
-    "training_percentage", [0, 25, 50, 75, 100],
+    "training_percentage",
+    [0, 25, 50, 75, 100],
 )
 def test_training_set_equivalence(
     patient_id, alternate_patient_id, training_percentage
 ):
-    """String transformations should not change validation outcome
-    """
+    """String transformations should not change validation outcome"""
     assert patient_in_training_set(
         patient_id, training_percentage
     ) == patient_in_training_set(alternate_patient_id, training_percentage)
@@ -88,8 +86,7 @@ def test_process_dicom_data():
 )
 @mock_s3
 def test_partial_dicom_download(initial_range_kb):
-    """Partial download of DICOM files
-    """
+    """Partial download of DICOM files"""
     # test_file_name = "test_data/sample.dcm"
     test_file_name = str(
         pathlib.Path(__file__).parent.absolute() / "test_data" / "sample.dcm"

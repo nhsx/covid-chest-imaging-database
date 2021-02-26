@@ -2,8 +2,7 @@ from setuptools import find_packages, setup
 
 
 def readme():
-    """Load long Readme from file
-    """
+    """Load long Readme from file"""
     with open("README.md") as f:
         return f.read()
 
