@@ -13,6 +13,7 @@ from moto import mock_s3
 from warehouse.components.constants import TRAINING_PREFIX, VALIDATION_PREFIX
 from warehouse.components.services import (
     CacheContradiction,
+    FileList,
     InventoryDownloader,
     PatientCache,
 )
@@ -68,7 +69,6 @@ def test_process_dicom_data():
     )
 
     test_file_json = test_file_name.replace(".dcm", ".json")
-    print(test_file_json)
     image_data = pydicom.dcmread(test_file_name, stop_before_pixels=True)
     task, metadata_key, processed_image_data = next(
         process_dicom_data("metadata", test_file_name, image_data)
@@ -225,6 +225,93 @@ def test_patientcache():
     )  # adding again to the same group is fine
     with pytest.raises(CacheContradiction, match=rf".* {patient_id}.*"):
         patientcache.add(patient_id, "training")
+
+
+@mock_s3
+def test_filelist_raw_data():
+
+    test_file_names = [
+        "raw-nhs-upload/2021-01-31/data/Covid1_data.json",
+        "raw-nhs-upload/2021-01-31/data/Covid2_status.json",
+        "raw-nhs-upload/2021-02-28/data/Covid1_data.json",
+        "raw-nhs-upload/2021-02-28/data/Covid2_status.json",
+        "raw-nhs-upload/2021-02-28/age-0/data/Covid3_status.json",
+        f"raw-nhs-upload/2021-02-28/iamge/{pydicom.uid.generate_uid()}.dcm",
+        f"{TRAINING_PREFIX}data/Covid1/data_2021-01-31.json",
+    ]
+    main_bucket_name = "testbucket-12345"
+
+    create_inventory(test_file_names, main_bucket_name)
+
+    inv_downloader = InventoryDownloader(main_bucket=main_bucket_name)
+    filelist = FileList(inv_downloader)
+
+    empty_raw_list = list(filelist.get_raw_data_list(raw_prefixes=set()))
+    assert len(empty_raw_list) == 0
+
+    acme_raw_list = list(
+        filelist.get_raw_data_list(raw_prefixes={"raw-acme-upload"})
+    )
+    assert len(acme_raw_list) == 0
+
+    nhs_raw_list = sorted(
+        [
+            obj.key
+            for obj in filelist.get_raw_data_list(
+                raw_prefixes={"raw-nhs-upload"}
+            )
+        ]
+    )
+
+    assert nhs_raw_list == sorted(test_file_names[0:4])
+
+
+@mock_s3
+def test_pending_raw_images_list():
+
+    test_file_names = [
+        f"raw-nhs-upload/2021-01-31/images/{pydicom.uid.generate_uid()}.dcm",
+        f"raw-nhs-upload/2021-02-28/images/{pydicom.uid.generate_uid()}.dcm",
+        f"raw-nhs-upload/2021-02-28/images/{pydicom.uid.generate_uid()}.dcm",
+        f"raw-nhs-upload/2021-01-31/age-0/images/{pydicom.uid.generate_uid()}.dcm",
+        f"raw-nhs-upload/2021-02-28/age-0/images/{pydicom.uid.generate_uid()}.dcm",
+        "raw-nhs-upload/2021-02-28/data/Covid1_data.json",
+        "raw-nhs-upload/2021-02-28/data/Covid2_status.json",
+        "raw-nhs-upload/2021-02-28/age-0/data/Covid3_status.json",
+        f"{TRAINING_PREFIX}data/Covid1/data_2021-02-28.json",
+        f"{TRAINING_PREFIX}ct/Covid1/{pydicom.uid.generate_uid()}.dcm",
+        f"{TRAINING_PREFIX}mri/Covid1/{pydicom.uid.generate_uid()}.dcm",
+        f"{VALIDATION_PREFIX}data/Covid2/status_2020-09-01.json",
+        f"{VALIDATION_PREFIX}ct/Covid2/{pydicom.uid.generate_uid()}.dcm",
+        f"{VALIDATION_PREFIX}mri/Covid2/{pydicom.uid.generate_uid()}.dcm",
+    ]
+    main_bucket_name = "testbucket-12345"
+
+    create_inventory(test_file_names, main_bucket_name, batches=2)
+
+    inv_downloader = InventoryDownloader(main_bucket=main_bucket_name)
+    filelist = FileList(inv_downloader)
+
+    empty_pending_list = list(
+        filelist.get_pending_raw_images_list(raw_prefixes=set())
+    )
+    assert len(empty_pending_list) == 0
+
+    acme_pending_list = list(
+        filelist.get_pending_raw_images_list(raw_prefixes={"raw-acme-upload"})
+    )
+    assert len(acme_pending_list) == 0
+
+    nhs_pending_list = sorted(
+        [
+            obj.key
+            for obj in filelist.get_pending_raw_images_list(
+                raw_prefixes={"raw-nhs-upload"}
+            )
+        ]
+    )
+
+    assert nhs_pending_list == sorted(test_file_names[0:3])
 
 
 # @mock_s3
