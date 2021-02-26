@@ -123,7 +123,7 @@ def serve_layout(data: Dataset) -> html.Div:
                 + "DICOM header information. For each field of the clinical "
                 + "data, the percentage of entries with non-null values is "
                 + "shown against the percentage of null values. "
-                + "The plots shown are relevent only for COVID-psotive patients "
+                + "The plots shown are relevent only for COVID-positive patients "
                 + "as the majority of this data has not been requested for negative patients."
             ),
             dbc.Alert(
