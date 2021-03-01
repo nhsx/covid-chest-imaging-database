@@ -144,6 +144,7 @@ def serve_layout(data: Dataset) -> html.Div:
                 color="black",
                 children=html.Div(id="ethnicity-breakdown-plot"),
             ),
+            html.H3("RT-PCR swab dates"),
             show_last_update(data),
         ]
     )
@@ -239,7 +240,6 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
         )
 
     return app
-
 
 def create_age_breakdown(data, group):
     def biground(x, base=5):
