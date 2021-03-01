@@ -159,7 +159,7 @@ COLS_MAP = {
     "Date": set(DATE_COLUMNS),
     "Demographic": set(DEMOGRAPHIC_COLUMNS),
     "Medical History": set(PMH_COLUMNS),
-    "Outcome": set(OUTCOME_COLUMNS),
+    "COVID": set(OUTCOME_COLUMNS),
 }
 
 
