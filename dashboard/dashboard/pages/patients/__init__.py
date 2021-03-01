@@ -393,15 +393,37 @@ def create_patient_timeseries(data, group):
         fig = go.Figure(
             data=lines,
             layout={
-                "title": "Number of patients by swab date across whole dataset",
+                "title": "Number of patients by swab date across training/validation sets",
                 "xaxis_title": "Date",
                 "yaxis_title": "# of Patients",
             }
         )
-    else:
+    elif group == "pos_neg":
+        positive_series = aggregate_timeseries(patient[patient["filename_covid_status"]])
+        negative_series = aggregate_timeseries(patient[~patient["filename_covid_status"]])
+        lines = [
+            go.Scatter(
+                x=negative_series.index,
+                y=negative_series,
+                mode="lines",
+                name="Negative",
+                showlegend=True,
+                line_shape="hv",
+            ),
+            go.Scatter(
+                x=positive_series.index,
+                y=positive_series,
+                mode="lines",
+                name="Positive",
+                showlegend=True,
+                line_shape="hv",
+            ),
+        ]
+
         fig = go.Figure(
+            data = lines,
             layout={
-                "title": "Number of patients by swab date across whole dataset",
+                "title": "Number of patients by swab date across positive/negative patients",
                 "xaxis_title": "Date",
                 "yaxis_title": "# of Patients",
             }
