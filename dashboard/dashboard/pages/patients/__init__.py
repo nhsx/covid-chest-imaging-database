@@ -393,7 +393,7 @@ def create_patient_timeseries(data, group):
         fig = go.Figure(
             data=lines,
             layout={
-                "title": "Number of patients by swab date across training/validation sets",
+                "title": "Number of patients by swab date in training and validation sets",
                 "xaxis_title": "Date",
                 "yaxis_title": "# of Patients",
             }
@@ -423,7 +423,7 @@ def create_patient_timeseries(data, group):
         fig = go.Figure(
             data = lines,
             layout={
-                "title": "Number of patients by swab date across positive/negative patients",
+                "title": "Number of patients by swab date in covid positive and negative patients",
                 "xaxis_title": "Date",
                 "yaxis_title": "# of Patients",
             }
