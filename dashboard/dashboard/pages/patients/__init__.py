@@ -330,6 +330,16 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
     return app
 
 def create_patient_timeseries(data, group):
+    def aggregate_timeseries(df):
+        timeseries = (
+            df.groupby("all_swab_dates").count()["Pseudonym"]
+            .groupby(pd.Grouper(freq="W"))
+            .sum()
+            .fillna(0)
+            .sort_index()
+        )
+        return timeseries
+
     patient = data.data["patient"]
     patient["all_swab_dates"] = pd.to_datetime(
         patient["swab_date"].fillna(
@@ -337,14 +347,7 @@ def create_patient_timeseries(data, group):
             )
         )
     if group == "all":
-        timeseries = patient.groupby("all_swab_dates").count()["Pseudonym"]
-        timeseries = (
-            timeseries
-            .groupby(pd.Grouper(freq="W"))
-            .sum()
-            .fillna(0)
-            .sort_index()
-        )
+        timeseries = aggregate_timeseries(patient)
 
         lines = [
             go.Scatter(
@@ -358,6 +361,35 @@ def create_patient_timeseries(data, group):
             ),
         ]
         
+        fig = go.Figure(
+            data=lines,
+            layout={
+                "title": "Number of patients by swab date across whole dataset",
+                "xaxis_title": "Date",
+                "yaxis_title": "# of Patients",
+            }
+        )
+    elif group == "train_val":
+        training_series = aggregate_timeseries(patient[patient["group"] == "training"])
+        validation_series = aggregate_timeseries(patient[patient["group"] == "validation"])
+        lines = [
+            go.Scatter(
+                x=training_series.index,
+                y=training_series,
+                mode="lines",
+                name="Training",
+                showlegend=True,
+                line_shape="hv",
+            ),
+            go.Scatter(
+                x=validation_series.index,
+                y=validation_series,
+                mode="lines",
+                name="Validation",
+                showlegend=True,
+                line_shape="hv",
+            ),
+        ]
         fig = go.Figure(
             data=lines,
             layout={
