@@ -158,7 +158,7 @@ COLS_MAP = {
     "Admission": set(ADMISSION_COLUMNS),
     "Date": set(DATE_COLUMNS),
     "Demographic": set(DEMOGRAPHIC_COLUMNS),
-    "PMH": set(PMH_COLUMNS),
+    "Medical History": set(PMH_COLUMNS),
     "Outcome": set(OUTCOME_COLUMNS),
 }
 
