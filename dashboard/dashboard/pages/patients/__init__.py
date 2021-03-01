@@ -81,6 +81,34 @@ def serve_layout(data: Dataset) -> html.Div:
         ]
     )
 
+    button_timeseries_all_data = dbc.Button(
+        "All Data",
+        id="button_timeseries_all_data",
+        color="primary",
+        outline=True,
+    )
+
+    button_timeseries_train_val = dbc.Button(
+        "Training / Validation",
+        id="button_timeseries_train_val",
+        color="primary",
+        outline=True,
+    )
+    button_timeseries_pos_neg = dbc.Button(
+        "Positive / Negative",
+        id="button_timeseries_pos_neg",
+        color="primary",
+        outline=True,
+    )
+    
+    timeseries_buttons = dbc.ButtonGroup(
+        [
+            button_timeseries_all_data,
+            # button_timeseries_train_val,
+            # button_timeseries_pos_neg,   
+        ]
+    )
+
     age_selector = html.Div(
         [
             html.Div(
@@ -121,6 +149,25 @@ def serve_layout(data: Dataset) -> html.Div:
         ]
     )
 
+    timeseries_selector = html.Div(
+        [
+            html.Div(
+                children="""
+                    Select chart to view:
+                """
+            ),
+            dbc.Row(
+                [
+                    dbc.Col(
+                        html.Div([timeseries_buttons]),
+                        md=6,
+                        sm=12,
+                    ),
+                ]
+            ),
+        ]
+    )
+
     page = html.Div(
         children=[
             html.H1(children="Patients"),
@@ -145,6 +192,7 @@ def serve_layout(data: Dataset) -> html.Div:
                 children=html.Div(id="ethnicity-breakdown-plot"),
             ),
             html.H3("RT-PCR swab dates"),
+            timeseries_selector,
             create_patient_timeseries(data),
             show_last_update(data),
         ]
@@ -258,7 +306,7 @@ def create_patient_timeseries(data):
         .fillna(0)
         .sort_index()
     )
-    
+
     lines = [
         go.Scatter(
             x=timeseries.index,
