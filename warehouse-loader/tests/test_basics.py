@@ -340,3 +340,34 @@ def test_processed_data_list():
     )
 
     assert processed_data == sorted(target_response)
+
+
+@mock_s3
+def test_inventory_downloader():
+
+    main_bucket_name = "test-bucket-1234"
+
+    test_file_names = [f"{pydicom.uid.generate_uid()}.dcm" for i in range(100)]
+    batches = 10
+    create_inventory(test_file_names, main_bucket_name, batches=batches)
+
+    # Check for runtime error
+    with pytest.raises(SystemExit) as pytest_wrapped_e:
+        inv_downloader = InventoryDownloader(
+            main_bucket=main_bucket_name + "-nonexistent"
+        )
+    assert pytest_wrapped_e.type == SystemExit
+    assert pytest_wrapped_e.value.code == 1
+
+    inv_downloader = InventoryDownloader(main_bucket=main_bucket_name)
+
+    assert inv_downloader.get_bucket() == main_bucket_name
+
+    all_fragments = [f for f, _ in inv_downloader.get_inventory()]
+    assert all_fragments == list(range(batches))
+
+    excludeline = {2, 3, 4}
+    some_fragments = [
+        f for f, _ in inv_downloader.get_inventory(excludeline=excludeline)
+    ]
+    assert set(some_fragments) == (set(range(batches)) - excludeline)
