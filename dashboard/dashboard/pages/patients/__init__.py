@@ -356,7 +356,6 @@ def create_patient_timeseries(data, group):
                 mode="lines",
                 name="NCCID",
                 showlegend=False,
-                # marker=dict(color=colors[group]),
                 line_shape="hv",
             ),
         ]
