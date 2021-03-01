@@ -145,6 +145,7 @@ def serve_layout(data: Dataset) -> html.Div:
                 children=html.Div(id="ethnicity-breakdown-plot"),
             ),
             html.H3("RT-PCR swab dates"),
+            create_patient_timeseries(data),
             show_last_update(data),
         ]
     )
@@ -240,6 +241,48 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
         )
 
     return app
+
+def create_patient_timeseries(data):
+    patient = data.data["patient"]
+    patient["all_swab_dates"] = pd.to_datetime(
+        patient["swab_date"].fillna(
+            patient["date_of_positive_covid_swab"]
+            )
+        )
+
+    timeseries = patient.groupby("all_swab_dates").count()["Pseudonym"]
+    timeseries = (
+        timeseries
+        .groupby(pd.Grouper(freq="W"))
+        .sum()
+        .fillna(0)
+        .sort_index()
+    )
+    
+    lines = [
+        go.Scatter(
+            x=timeseries.index,
+            y=timeseries,
+            mode="lines",
+            name="NCCID",
+            showlegend=True,
+            # marker=dict(color=colors[group]),
+            line_shape="hv",
+        ),
+    ]
+    
+    fig = go.Figure(
+        data=lines,
+        layout={
+            "title": "Number of patients by swab date across whole dataset",
+            "xaxis_title": "Date",
+            "yaxis_title": "# of Patients",
+        }
+    )
+    graph = dcc.Graph(id="timeseries", figure=fig)
+    return graph
+
+
 
 def create_age_breakdown(data, group):
     def biground(x, base=5):
