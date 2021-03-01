@@ -84,7 +84,7 @@ def serve_layout(data: Dataset) -> html.Div:
                             [
                                 html.Label(
                                     [
-                                        "Select table ordering column.",
+                                        "Select field to sort rows by.",
                                     ],
                                     htmlFor="table-order",
                                 ),
@@ -135,12 +135,6 @@ def serve_layout(data: Dataset) -> html.Div:
             html.Hr(),
             html.H2("Data Over Time"),
             # html.Br(),
-            dcc.Loading(
-                id="loading-patients-swabs",
-                type="dot",
-                color="black",
-                children=html.Div(id="patients-swabs"),
-            ),
             html.Label(
                 [
                     "Select Submitting Centre/Site to filter above",
@@ -152,6 +146,13 @@ def serve_layout(data: Dataset) -> html.Div:
                 "Note: click the × mark to clear the selection above and show data for all submitting centres.",
                 id="centres-note",
             ),
+            dcc.Loading(
+                id="loading-patients-swabs",
+                type="dot",
+                color="black",
+                children=html.Div(id="patients-swabs"),
+            ),
+            
             show_last_update(data),
         ]
     )
