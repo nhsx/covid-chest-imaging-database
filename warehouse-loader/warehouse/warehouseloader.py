@@ -39,11 +39,20 @@ KB = 1024
 def object_exists(key):
     """Checking whether a given object exists in our work bucket
 
-    :param key: the object key in question
-    :type key: string
-    :raises botocore.exceptions.ClientError: if there's any transfer error
-    :return: True if object exists in the work bucket
-    :rtype: boolean
+    Parameters
+    ----------
+    key : str
+        The object key in question.
+
+    Returns
+    -------
+    boolean
+        True if object exists in the work bucket.
+
+    Raises
+    ------
+    botocore.exceptions.ClientError
+        If there's any transfer error.
     """
     try:
         bucket.Object(key).load()
@@ -60,10 +69,15 @@ def get_date_from_key(key):
     """Extract date from an object key from the bucket's directory pattern,
     for a given prefix
 
-    :param key: the object key in question
-    :type key: string
-    :return: the extracted date if found
-    :rtype: string or None
+    Parameters
+    ----------
+    key : str
+        the object key in question
+
+    Returns
+    -------
+    str or None
+        The extracted date if found, in YYYY-MM-DD format
     """
     date_match = re.match(r"^.+/(?P<date>\d{4}-\d{2}-\d{2})/.+", key)
     if date_match:
@@ -74,10 +88,15 @@ def get_submitting_centre_from_object(obj):
     """Extract the SubmittingCentre value from an S3 object that is
     a JSON file in the expected format.
 
-    :param obj: the S3 object of the JSON file to process
-    :type obj: boto3.resource('s3').ObjectSummary
-    :return: the value defined for SubmittingCentre in the file
-    :rtype: string or None
+    Parameters
+    ----------
+    obj : boto3.resource('s3').ObjectSummary
+        The S3 object of the JSON file to process.
+
+    Returns
+    -------
+    str or None
+        The value defined for the SubmittingCentre field in the file
     """
     file_content = obj.Object().get()["Body"].read().decode("utf-8")
     try:
@@ -97,12 +116,17 @@ def patient_in_training_set(
     It uses a hashing (sha512) to get pseudo-randomisation based on ID,
     and do the cut-off with a set percentage.
 
-    :param patient_id: the candidate patient ID
-    :type patient_id: string
-    :param training_percent: the percentage of patience to assign to the training set (defaults to the global TRAINING_PERCENTAGE)
-    :type training_percent: int
-    :return: True if the patient ID should fall into the training set
-    :rtype: boolean
+    Parameters
+    ----------
+    patient_id : str
+        The candidate patient ID to check
+    training_percent : int, default=constants.TRAINING_PERCENTAGE
+        The percentage of patience to assign to the training set (defaults to the global TRAINING_PERCENTAGE)
+
+    Returns
+    -------
+    boolean
+        True if the patient ID should fall into the training set
     """
     return (
         int(
@@ -122,10 +146,12 @@ def inplace_nullify(d, key):
 
     Extracted from https://bitbucket.org/scicomcore/dcm2slimjson/src/master/dcm2slimjson/main.py
 
-    :param d: dict to modify
-    :type d: dict
-    :param key: specific key to modify
-    :type key: anything that can be a dict key
+    Parameters
+    ----------
+    d : dict
+        The python dict to modify
+    key
+        The specific key to set to None, any type that can be a dict key is accepted
     """
     if isinstance(d, list):
         [inplace_nullify(_, key) for _ in d]
@@ -145,10 +171,15 @@ def scrub_dicom(fd):
 
     Extracted from https://bitbucket.org/scicomcore/dcm2slimjson/src/master/dcm2slimjson/main.py
 
-    :param fd: image data to scrub
-    :type fd: pydicom.FileDataset
-    :return: the scrubbed image data
-    :rtype: dict
+    Parameters
+    ----------
+    fd : pydicom.FileDataset
+        Image data to scrub
+
+    Returns
+    -------
+    dict
+        Scrubbed image data as dictionary
     """
 
     # Use a large value to bypass binary data handler
@@ -169,6 +200,16 @@ class PartialDicom:
     """
 
     def __init__(self, obj, initial_range_kb=20):
+        """Download partial DICOM files iteratively, to save
+        on traffic.
+
+        Parameters
+        ----------
+        obj : boto3.resource('s3').ObjectSummary
+            DICOM file object to download.
+        initial_range_kb : int, default=20
+            The starting range of the file to download.
+        """
         # Default value of 20Kb initial range is based on
         # tests run on representative data
         self._found_image_tag = False
@@ -184,7 +225,13 @@ class PartialDicom:
         return self._found_image_tag
 
     def download(self):
-        """Download file iteratively, and return the image data"""
+        """Download file iteratively
+
+        Returns
+        -------
+        pydicom.FileDataset
+            The image data.
+        """
         with BytesIO() as tmp:
             while True:
                 tmp.seek(0)
@@ -214,7 +261,13 @@ class PartialDicom:
 ###
 @use("config")
 def load_config(config):
-    """Load configuration from the bucket"""
+    """Load configuration from the bucket
+
+    Parameters
+    ----------
+    config : PipelineConfig
+        The configuration to update with values from the constants.CONFIG_KEY config file
+    """
     try:
         obj = bucket.Object(constants.CONFIG_KEY).get()
         contents = json.loads(obj["Body"].read().decode("utf-8"))
@@ -234,10 +287,17 @@ def load_config(config):
 def extract_raw_files_from_folder(config, filelist):
     """Extract files from a given date folder in the data dump
 
-    :param folder: the folder to process
-    :type key: string
-    :return: each object (yield)
-    :rtype: boto3.resource('s3').ObjectSummary
+    Parameters
+    ----------
+    config : PipelineConfig
+        A configurations store.
+    filelist : FileList
+        A FileList set up for the warehouse
+
+    Yields
+    ------
+    tuple[str, boto3.resource('s3').ObjectSummary, None]
+        Tuple containing the task to do ("process"), the object, and a placeholder
     """
     raw_prefixes = {prefix.rstrip("/") for prefix in config.get_raw_prefixes()}
     # List the clinical data files for processing
@@ -260,12 +320,17 @@ def process_image(*args, patientcache):
     If the image file already exists at the correct location, it's not passed
     on to the next step.
 
-    :param obj: the object in question
-    :type obj: boto3.resource('s3').ObjectSummary
-    :param keycache: the key cache service (provided by bonobo)
-    :type keycache: Keycache
-    :return: a task name, the original object, and a new key where it should be copied within the bucket
-    :rtype: (string, boto3.resource('s3').ObjectSummary, string)
+    Parameters
+    ----------
+    task, obj, _ : tuple[str, boto3.resource('s3').ObjectSummary, None]
+        A task name (only handling "process" tasks), and an object to act on.
+
+    Yields
+    ------
+    tuple[str, boto3.resource('s3').ObjectSummary or str, str or pydicom.FileDataset]
+        Tuple containing the task name("copy" or "metadata"), and other parameters
+        depending on the task. "copy" passes on the original object and new location.
+        "metadata" passes on the target metadata location and the image data to extract from.
     """
     # check file type
     task, obj, _ = args
@@ -337,14 +402,18 @@ def process_image(*args, patientcache):
 def process_dicom_data(*args):
     """Process DICOM images, by scrubbing the image data
 
-    :param task: task informatiomn, needs to be equal to "metadata" to be processed here
-    :type task: string
-    :param metadata_key: location to upload the extracted metadata later
-    :type metadata_key: string
-    :param image_data: DICOM image data
-    :type image_data: pydicom.FileDataset
-    :return: metadata key and scrubbed image data, if processed
-    :rtype: tuple
+    Parameters
+    ----------
+    task, metadata_key, image_data : tuple[str, str, pydicom.FileDataset]
+        A task name (only handling "metadata" tasks), the location where
+        to create the metadata file further down the chain, and the image
+        data to scrub and extract.
+
+    Yields
+    ------
+    tuple[str, str, str]
+        A task name ("upload"), the key of the metadata file to create,
+        and the JSON content to in the file.
     """
     (
         task,
@@ -359,12 +428,16 @@ def process_dicom_data(*args):
 def upload_text_data(*args):
     """Upload the text data to the correct bucket location.
 
-    :param task: selector to run this task or not, needs to be "upload" to process a file
-    :type task: string
-    :param outgoing_key: location to upload the data
-    :type outgoing_key: string
-    :param outgoing_data: text to file content to upload
-    :type outgoing_data: string
+    Parameters
+    ----------
+    task, outgoing_key, outgoing_data : tuple[str, str, str]
+        Task name (only processing "upload" tasks), the key and contents
+        of the text file to handle
+
+    Returns
+    -------
+    bonobo.constants.NOT_MODIFIED
+        Not modified result, to be able to pass the input on to other bonobo tasks if needed
     """
     (
         task,
@@ -393,10 +466,19 @@ def process_patient_data(*args, config, patientcache):
     test split, and create the key for the new location for the
     next processing step to copy things to.
 
-    :param obj: the object in question
-    :type obj: boto3.resource('s3').ObjectSummary
-    :return: a task name, the original object, and a new key where it should be copied within the bucket
-    :rtype: (string, boto3.resource('s3').ObjectSummary, string)
+    Parameters
+    ----------
+    task, obj, _ : tuple[str, boto3.resource('s3').ObjectSummary, None]
+        Task name (only processing "upload" tasks), the object in question to process.
+    config : PipelineConfig
+        A configuration store.
+    patientcache : PatientCache
+        A cache of patient assignments to training/validation groups
+
+    Yields
+    ------
+    tuple[str, boto3.resource('s3').ObjectSummary, str]
+        A task name ("copy"), the original object, and a new key where it should be copied within the bucket
     """
     task, obj, _ = args
     if task != "process" or Path(obj.key).suffix.lower() != ".json":
@@ -459,14 +541,16 @@ def data_copy(*args):
 
     Only if both original object and new key is provided.
 
-    :param task: selector to run this task or not, needs to be "copy" to process a file
-    :type task: string
-    :param obj: the object key in question
-    :type obj: boto3.resource('s3').ObjectSummary
-    :param obj: the new key to copy data to
-    :type obj: string
-    :return: standard constant for bonobo "load" steps, so they can be chained
-    :rtype: bonobo.constants.NOT_MODIFIED
+    Parameters
+    ----------
+    task, obj, new_key : tuple[str, boto3.resource('s3').ObjectSummary, str]
+        Task name (this only runs on "copy" tasks, the object to be copied,
+        and the new key to copy the object to
+
+    Returns
+    -------
+    bonobo.constants.NOT_MODIFIED
+        Not modified result, to be able to pass the input on to other bonobo tasks if needed
     """
     (
         task,
@@ -489,7 +573,15 @@ def get_graph(**options):
     """
     This function builds the graph that needs to be executed.
 
-    :return: bonobo.Graph
+    Parameters
+    ----------
+    **options : dict
+        Keyword arguments.
+
+    Returns
+    -------
+    bonobo.Graph
+        The assembled processing graph.
     """
     graph = bonobo.Graph()
 
@@ -527,7 +619,10 @@ def get_services(**options):
     It will be used on top of the defaults provided by bonobo (fs, http, ...). You can override those defaults, or just
     let the framework define them. You can also define your own services and naming is up to you.
 
-    :return: dict
+    Returns
+    -------
+    dict
+        Mapping of service names to objects.
     """
     config = services.PipelineConfig()
     inv_downloader = services.InventoryDownloader(main_bucket=BUCKET_NAME)

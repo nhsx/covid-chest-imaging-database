@@ -30,10 +30,17 @@ BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default="chest-data-warehouse")
 def extract_raw_data_files(config, filelist):
     """Extract files from a given date folder in the data dump
 
-    :param folder: the folder to process
-    :type key: string
-    :return: each object (yield)
-    :rtype: boto3.resource('s3').ObjectSummary
+    Parameters
+    ----------
+    config : PipelineConfig
+        A configuration store.
+    filelist : FileList
+        To get the relevant file lists from the inventory.
+
+    Yields
+    ------
+    tuple[str, boto3.resource('s3').ObjectSummary, None]
+        A task name ("process"), object to process, and a placeholder value
     """
     raw_prefixes = {prefix.rstrip("/") for prefix in config.get_raw_prefixes()}
     pattern = re.compile(
@@ -59,6 +66,18 @@ class SubmittingCentreExtractor(Configurable):
 
     @use_raw_input
     def __call__(self, centres, *args, **kwargs):
+        """The accumulator fuction run by the pipeline.
+
+        Parameters
+        ----------
+        centres : ValueHolder(set())
+            Accumulator for the centre names
+        task, obj, _ = tuple[str, boto3.resource('s3').ObjectSummary, None]
+            A task name ("process" is what accepted here) and a clinical data file
+            object to extract the submitting centre from.
+        **kwargs : dict
+            Keyword arguments.
+        """
         task, obj, _ = args
         if task == "process" and Path(obj.key).suffix.lower() == ".json":
             centre = wl.get_submitting_centre_from_object(obj)
@@ -73,7 +92,15 @@ def get_graph(**options):
     """
     This function builds the graph that needs to be executed.
 
-    :return: bonobo.Graph
+    Parameters
+    ----------
+    **options : dict
+        Keyword arguments.
+
+    Returns
+    -------
+    bonobo.Graph
+        The assembled processing graph.
     """
     graph = bonobo.Graph()
 
@@ -94,7 +121,10 @@ def get_services(**options):
     It will be used on top of the defaults provided by bonobo (fs, http, ...). You can override those defaults, or just
     let the framework define them. You can also define your own services and naming is up to you.
 
-    :return: dict
+    Returns
+    -------
+    dict
+        Mapping of service names to objects.
     """
     config = PipelineConfig()
     inv_downloader = InventoryDownloader(main_bucket=BUCKET_NAME)

@@ -28,6 +28,13 @@ class PipelineConfig:
         self.sites = dict()
 
     def set_config(self, input_config):
+        """Setting pipeline configuration from supplied data.
+
+        Parameters
+        ----------
+        input_config : dict
+            The configuration to ingest and set internally.
+        """
         self.config = input_config
         # Preprocess site groups
         for group in self.config["sites"].keys():
@@ -38,6 +45,11 @@ class PipelineConfig:
     def get_raw_prefixes(self):
         """Return a set of raw prefixes that the configuration
         is set to process.
+
+        Returns
+        -------
+        set
+            A set of configured "raw-..." prefixes to process by the pipeline
         """
         return set(self.config.get("raw_prefixes", []))
 
@@ -46,7 +58,7 @@ class PipelineConfig:
 
         Returns
         -------
-        int:
+        int
             the proportion of random assignment to the training set (0-100)
         """
         training_percent = self.config.get(
@@ -59,7 +71,8 @@ class PipelineConfig:
         return training_percent
 
     def get_site_group(self, submitting_centre):
-        """Get
+        """Get the group (training/validation) to which a
+        submitting centre is assigned for.
 
         Parameters
         ----------
@@ -156,12 +169,12 @@ class PatientCache:
     """A cache to store group assignments of patient IDs"""
 
     def __init__(self, downloader):
-        """A cache to store group assignments of patient IDs
+        """A cache to store group assignments of patient IDs.
 
         Parameters
         ----------
         downloader: InventoryDownloader
-            An initialized downloader instance
+            An initialized downloader instance.
         """
         self.downloader = downloader
         self.store = dict()
@@ -223,11 +236,23 @@ class PatientCache:
 
 class FileList:
     def __init__(self, downloader):
-        # set up this downloader outselves?
         self.downloader = downloader
         self.bucket = downloader.get_bucket()
 
     def get_raw_data_list(self, raw_prefixes=set()):
+        """Get the list of raw data files from the inventory
+
+        Parameters
+        ----------
+        raw_prefixes : set, default=set()
+            The raw prefixes to consider for processing in the warehouse.
+
+        Yields
+        ------
+        boto3.resource('s3').ObjectSummary
+            The objects found, raw data files
+        """
+
         pattern = re.compile(
             r"^(?P<raw_prefix>raw-.*)/(\d{4}-\d{2}-\d{2})/data/(?P<filename>[^/]*)$"
         )
@@ -240,6 +265,18 @@ class FileList:
                     yield s3.ObjectSummary(self.bucket, key)
 
     def get_pending_raw_images_list(self, raw_prefixes=set()):
+        """Get the list of raw data files from the inventory
+
+        Parameters
+        ----------
+        raw_prefixes : set, default=set()
+            The raw prefixes to consider for processing in the warehouse.
+
+        Yields
+        ------
+        boto3.resource('s3').ObjectSummary
+            The objects found, raw image files that seem not yet to be processed.
+        """
         raw_pattern = re.compile(
             r"^(?P<raw_prefix>raw-.*)/\d{4}-\d{2}-\d{2}/images/(?P<filename>[^/]*)$"
         )
@@ -286,6 +323,13 @@ class FileList:
                 yield s3.ObjectSummary(self.bucket, raw_list[unproc])
 
     def get_processed_data_list(self):
+        """Getting the list of processed data files from the warehouse
+
+        Yields
+        ------
+        boto3.resource('s3').ObjectSummary
+            The objects found, the processed data files to look at.
+        """
         pattern = re.compile(
             r"^(training|validation)/data/.*/(?P<filename>[^/]*)$"
         )
