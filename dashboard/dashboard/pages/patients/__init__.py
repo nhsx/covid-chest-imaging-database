@@ -104,8 +104,8 @@ def serve_layout(data: Dataset) -> html.Div:
     timeseries_buttons = dbc.ButtonGroup(
         [
             button_timeseries_all_data,
-            # button_timeseries_train_val,
-            # button_timeseries_pos_neg,   
+            button_timeseries_train_val,
+            button_timeseries_pos_neg,   
         ]
     )
 
@@ -193,7 +193,12 @@ def serve_layout(data: Dataset) -> html.Div:
             ),
             html.H3("RT-PCR swab dates"),
             timeseries_selector,
-            create_patient_timeseries(data),
+            dcc.Loading(
+                id="loading-timeseries-data",
+                type="dot",
+                color="black",
+                children=html.Div(id="timeseries-plot"),
+            ),
             show_last_update(data),
         ]
     )
@@ -288,45 +293,88 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
             pos_neg_outline,
         )
 
+    @app.callback(
+        Output("timeseries-plot", "children"),
+        Output("button_timeseries_all_data", "outline"),
+        Output("button_timeseries_train_val", "outline"),
+        Output("button_timeseries_pos_neg", "outline"),
+        Input("button_timeseries_all_data", "n_clicks"),
+        Input("button_timeseries_train_val", "n_clicks"),
+        Input("button_timeseries_pos_neg", "n_clicks"),
+    )
+    def set_timeseries_buttons(
+        n_clicks_all_data, n_clicks_train_val, n_clicks_pos_neg
+    ):
+        changed_id = [p["prop_id"] for p in dash.callback_context.triggered][0]
+        all_data_outline = train_val_outline = pos_neg_outline = True
+        if changed_id == "button_timeseries_all_data.n_clicks":
+            group = "all"
+            all_data_outline = False
+        elif changed_id == "button_timeseries_train_val.n_clicks":
+            group = "train_val"
+            train_val_outline = False
+        elif changed_id == "button_timeseries_pos_neg.n_clicks":
+            group = "pos_neg"
+            pos_neg_outline = False
+        else:
+            group = "all"
+            all_data_outline = False
+        
+        return (
+            create_patient_timeseries(data, group),
+            all_data_outline,
+            train_val_outline,
+            pos_neg_outline,
+        )
+
     return app
 
-def create_patient_timeseries(data):
+def create_patient_timeseries(data, group):
     patient = data.data["patient"]
     patient["all_swab_dates"] = pd.to_datetime(
         patient["swab_date"].fillna(
             patient["date_of_positive_covid_swab"]
             )
         )
+    if group == "all":
+        timeseries = patient.groupby("all_swab_dates").count()["Pseudonym"]
+        timeseries = (
+            timeseries
+            .groupby(pd.Grouper(freq="W"))
+            .sum()
+            .fillna(0)
+            .sort_index()
+        )
 
-    timeseries = patient.groupby("all_swab_dates").count()["Pseudonym"]
-    timeseries = (
-        timeseries
-        .groupby(pd.Grouper(freq="W"))
-        .sum()
-        .fillna(0)
-        .sort_index()
-    )
+        lines = [
+            go.Scatter(
+                x=timeseries.index,
+                y=timeseries,
+                mode="lines",
+                name="NCCID",
+                showlegend=False,
+                # marker=dict(color=colors[group]),
+                line_shape="hv",
+            ),
+        ]
+        
+        fig = go.Figure(
+            data=lines,
+            layout={
+                "title": "Number of patients by swab date across whole dataset",
+                "xaxis_title": "Date",
+                "yaxis_title": "# of Patients",
+            }
+        )
+    else:
+        fig = go.Figure(
+            layout={
+                "title": "Number of patients by swab date across whole dataset",
+                "xaxis_title": "Date",
+                "yaxis_title": "# of Patients",
+            }
+        )
 
-    lines = [
-        go.Scatter(
-            x=timeseries.index,
-            y=timeseries,
-            mode="lines",
-            name="NCCID",
-            showlegend=True,
-            # marker=dict(color=colors[group]),
-            line_shape="hv",
-        ),
-    ]
-    
-    fig = go.Figure(
-        data=lines,
-        layout={
-            "title": "Number of patients by swab date across whole dataset",
-            "xaxis_title": "Date",
-            "yaxis_title": "# of Patients",
-        }
-    )
     graph = dcc.Graph(id="timeseries", figure=fig)
     return graph
 
