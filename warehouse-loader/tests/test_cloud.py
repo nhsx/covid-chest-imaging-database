@@ -103,9 +103,10 @@ def test_partial_dicom_download(initial_range_kb):
     conn = boto3.resource("s3", region_name="us-east-1")
     conn.create_bucket(Bucket=bucket_name)
     conn.meta.client.upload_file(test_file_name, bucket_name, "sample.dcm")
-    test_object = conn.Object(bucket_name, "sample.dcm")
+    s3client = S3Client(bucket=bucket_name)
+
     image_data = PartialDicom(
-        test_object, initial_range_kb=initial_range_kb
+        s3client, "sample.dcm", initial_range_kb=initial_range_kb
     ).download()
 
     # Check the local file as if it was fully downloaded
@@ -247,12 +248,7 @@ def test_pending_raw_images_list():
     assert len(acme_pending_list) == 0
 
     nhs_pending_list = sorted(
-        [
-            obj.key
-            for obj in filelist.get_pending_raw_images_list(
-                raw_prefixes={"raw-nhs-upload"}
-            )
-        ]
+        filelist.get_pending_raw_images_list(raw_prefixes={"raw-nhs-upload"})
     )
 
     assert nhs_pending_list == sorted(target_response)
@@ -288,9 +284,7 @@ def test_processed_data_list():
     inv_downloader = InventoryDownloader(main_bucket=main_bucket_name)
     filelist = FileList(inv_downloader)
 
-    processed_data = sorted(
-        [obj.key for obj in filelist.get_processed_data_list()]
-    )
+    processed_data = sorted(filelist.get_processed_data_list())
 
     assert processed_data == sorted(target_response)
 
@@ -373,6 +367,47 @@ def test_object_content():
         key, content_range=f"bytes=0-{byte_count}"
     ).decode("utf-8")
     assert oversized_test_content == content
+
+
+@pytest.mark.parametrize(
+    "key",
+    ["testfile", "path/testfile", "path/subpath/testfile"],
+)
+@mock_s3
+def test_put_object(key):
+    """Test object_content helper"""
+    bucket_name = "testbucket-12345"
+    conn = boto3.resource("s3", region_name="us-east-1")
+    conn.create_bucket(Bucket=bucket_name)
+
+    content = "1234567890" * 10
+    s3client = S3Client(bucket=bucket_name)
+    s3client.put_object(key, content=content)
+    assert s3client.object_content(key).decode("utf-8") == content
+
+
+@pytest.mark.parametrize(
+    "old_key",
+    ["infile.txt", "path/infile.txt", "path/subpath/infile.txt"],
+)
+@pytest.mark.parametrize(
+    "new_key",
+    ["outfile.txt", "path/outfile.txt", "path/subpath/outfile.txt"],
+)
+@mock_s3
+def test_copy_object(old_key, new_key):
+    bucket_name = "testbucket-12345"
+    conn = boto3.resource("s3", region_name="us-east-1")
+    conn.create_bucket(Bucket=bucket_name)
+
+    content = "1234567890" * 10
+    s3client = S3Client(bucket=bucket_name)
+    s3client.put_object(old_key, content=content)
+    assert not s3client.object_exists(new_key)
+    s3client.copy_object(old_key, new_key)
+    assert s3client.object_content(old_key).decode(
+        "utf-8"
+    ) == s3client.object_content(new_key).decode("utf-8")
 
 
 @mock_s3
