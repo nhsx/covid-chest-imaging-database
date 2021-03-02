@@ -548,13 +548,6 @@ def test_submittingcentres_extract_raw_data_files():
     keys_list = sorted([key for _, key, _ in result_list])
     assert keys_list == sorted(target_files)
 
-    # centres = ["Centre1", "Centre2", "Centre1", "Centre3"]
-    # for target_file, centre in zip(target_files, centres):
-    #     file_content = json.dumps({"SubmittingCentre": centre})
-    #     conn.meta.client.put_object(
-    #         Bucket=bucket_name, Key=target_response, Body=file_content
-    #     )
-
 
 @mock_s3
 def test_submittingcentres_e2e(capsys):
@@ -621,3 +614,39 @@ def test_submittingcentres_e2e(capsys):
     with open("/tmp/message.txt", "r") as f:
         output = f.read().splitlines()
     assert output == sorted(list(set(centres)))
+
+
+##
+# Warehouseloader
+##
+
+
+@pytest.mark.parametrize(
+    "task",
+    ["copy", "else"],
+)
+@pytest.mark.parametrize(
+    "old_key",
+    ["infile.txt", "path/subpath/infile.txt"],
+)
+@pytest.mark.parametrize(
+    "new_key",
+    ["outfile.txt", "path/subpath/outfile.txt"],
+)
+@mock_s3
+def test_data_copy(task, old_key, new_key):
+    bucket_name = "testbucket-12345"
+    conn = boto3.resource("s3", region_name="us-east-1")
+    conn.create_bucket(Bucket=bucket_name)
+    s3client = S3Client(bucket=bucket_name)
+
+    content = "1234567890" * 10
+    s3client.put_object(key=old_key, content=content)
+    args = task, old_key, new_key
+    warehouseloader.data_copy(*args, s3client=s3client)
+    if task == "copy":
+        assert s3client.object_content(old_key) == s3client.object_content(
+            new_key
+        )
+    else:
+        assert not s3client.object_exists(new_key)
