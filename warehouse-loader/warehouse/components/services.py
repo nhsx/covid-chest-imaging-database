@@ -88,6 +88,20 @@ class PipelineConfig:
         return self.sites.get(submitting_centre)
 
 
+class S3Client:
+    def __init__(self, bucket):
+        self._bucket = bucket
+        self._client = boto3.client("s3")
+
+    @property
+    def bucket(self):
+        return self._bucket
+
+    @property
+    def client(self):
+        return self._client
+
+
 class InventoryDownloader:
     def __init__(self, main_bucket):
         self.main_bucket = main_bucket

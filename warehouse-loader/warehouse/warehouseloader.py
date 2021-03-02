@@ -17,17 +17,17 @@ import pydicom
 from bonobo.config import use
 from botocore.exceptions import ClientError
 
-from warehouse.components import constants, services
+from warehouse.components import constants, helpers, services
 
 # set up logging
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
 
-s3_resource = boto3.resource("s3")
-s3_client = boto3.client("s3")
+# s3_resource = boto3.resource("s3")
+# s3_client = boto3.client("s3")
 
-BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default="chest-data-warehouse")
-bucket = s3_resource.Bucket(BUCKET_NAME)
+# BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default="chest-data-warehouse")
+# bucket = s3_resource.Bucket(BUCKET_NAME)
 
 DRY_RUN = bool(os.getenv("DRY_RUN", default=False))
 
@@ -36,33 +36,37 @@ KB = 1024
 ###
 # Helpers
 ###
-def object_exists(key):
-    """Checking whether a given object exists in our work bucket
+# def object_exists(client, bucket, key):
+#     """Checking whether a given object exists in our work bucket
 
-    Parameters
-    ----------
-    key : str
-        The object key in question.
+#     Parameters
+#     ----------
+#     client : boto3.client('s3')
+#         An S3 client to do the request,
+#     bucket :
+#         The bucket to check contents in
+#     key : str
+#         The object key in question.
 
-    Returns
-    -------
-    boolean
-        True if object exists in the work bucket.
+#     Returns
+#     -------
+#     boolean
+#         True if object exists in the work bucket.
 
-    Raises
-    ------
-    botocore.exceptions.ClientError
-        If there's any transfer error.
-    """
-    try:
-        bucket.Object(key).load()
-    except ClientError as e:
-        if e.response["Error"]["Code"] == "404":
-            return False
-        else:
-            raise ClientError
-    else:
-        return True
+#     Raises
+#     ------
+#     botocore.exceptions.ClientError
+#         If there's any transfer error.
+#     """
+#     try:
+#         client.head_object(Bucket=bucket, Key=key)
+#     except ClientError as e:
+#         if e.response["Error"]["Code"] == "404":
+#             return False
+#         else:
+#             raise ClientError
+#     else:
+#         return True
 
 
 def get_date_from_key(key):
@@ -624,12 +628,15 @@ def get_services(**options):
     dict
         Mapping of service names to objects.
     """
+
+    s3client = services.S3Client(bucket=BUCKET_NAME)
     config = services.PipelineConfig()
     inv_downloader = services.InventoryDownloader(main_bucket=BUCKET_NAME)
     patientcache = services.PatientCache(inv_downloader)
     filelist = services.FileList(inv_downloader)
 
     return {
+        "s3client": s3client,
         "config": config,
         "patientcache": patientcache,
         "filelist": filelist,
@@ -638,6 +645,12 @@ def get_services(**options):
 
 def main():
     """Execute the pipeline graph"""
+    # logfilename = "wh.log"
+    # logger = logging.getLogger()
+    # ch = logging.FileHandler(logfilename)
+    # formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    # ch.setFormatter(formatter)
+    # logger.addHandler(ch)
     parser = bonobo.get_argument_parser()
     with bonobo.parse_args(parser) as options:
         bonobo.run(get_graph(**options), services=get_services(**options))

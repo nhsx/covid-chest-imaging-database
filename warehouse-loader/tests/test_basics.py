@@ -1,6 +1,7 @@
 import csv
 import gzip
 import math
+import os
 import pathlib
 import uuid
 from io import BytesIO, StringIO
@@ -10,15 +11,18 @@ import pydicom
 import pytest
 from moto import mock_s3
 
+import warehouse.components.helpers as helpers
 from warehouse.components.constants import TRAINING_PREFIX, VALIDATION_PREFIX
 from warehouse.components.services import (
     CacheContradiction,
     FileList,
     InventoryDownloader,
     PatientCache,
+    S3Client,
 )
 from warehouse.warehouseloader import (
     PartialDicom,
+    get_date_from_key,
     patient_in_training_set,
     process_dicom_data,
 )
@@ -371,3 +375,44 @@ def test_inventory_downloader():
         f for f, _ in inv_downloader.get_inventory(excludeline=excludeline)
     ]
     assert set(some_fragments) == (set(range(batches)) - excludeline)
+
+
+@pytest.mark.parametrize(
+    "key",
+    ["testfile", "path/testfile", "path/subpath/testfile"],
+)
+@pytest.mark.parametrize("create", [True, False])
+@mock_s3
+def test_object_exists(key, create):
+    """Testing the object_exists function"""
+
+    bucket_name = "testbucket-12345"
+    conn = boto3.resource("s3", region_name="us-east-1")
+    conn.create_bucket(Bucket=bucket_name)
+    if create:
+        conn.meta.client.upload_fileobj(BytesIO(), bucket_name, key)
+
+    # Set up client
+    s3client = S3Client(bucket=bucket_name)
+    assert s3client.bucket == bucket_name
+    assert (
+        helpers.object_exists(s3client.client, s3client.bucket, key) == create
+    )
+
+
+@pytest.mark.parametrize(
+    "key,expected",
+    [
+        ("", None),
+        ("file", None),
+        ("path/subpath/file", None),
+        ("2021-01-01", None),
+        ("path/2021-01-01", None),
+        ("path/2021-01-01/file", "2021-01-01"),
+        ("path/subpath/2021-01-01/file", "2021-01-01"),
+        ("path/subpath/2021-01-01/subsubpath/file", "2021-01-01"),
+        ("path/2021-12-12/file", "2021-12-12"),
+    ],
+)
+def test_get_date_from_key(key, expected):
+    assert get_date_from_key(key) == expected
