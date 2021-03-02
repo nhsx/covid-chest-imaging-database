@@ -117,6 +117,11 @@ def serve_layout(data: Dataset) -> html.Div:
     page = html.Div(
         children=[
             html.H1(children="Images"),
+            dbc.Alert(
+                "Note: data collection for the NCCID began in May 2020 "
+                + " but includes patients admitted to hospital since Februray 2020.",
+                color="info"
+            ),
             selector,
             dcc.Loading(
                 id="loading-image-timeseries-plot",
@@ -190,7 +195,7 @@ def create_image_series(data, group, covid_status, centre):
         )
         # Extend time series on front and back
         extra = pd.Series(
-            [0, result.max()], index=["2020-05-10", pd.to_datetime("today")]
+            [0, result.max()], index=["2020-02-01", pd.to_datetime("today")]
         )
         extra.index = pd.to_datetime(extra.index)
         result = result.append(extra).sort_index()
