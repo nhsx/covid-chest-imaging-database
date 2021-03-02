@@ -324,7 +324,7 @@ def create_age_breakdown(data, group):
         )
         
 
-    fig.update_layout(barmode="overlay")
+    fig.update_layout(barmode="overlay", bargap=0.1)
     fig.update_traces(
         opacity=0.75, 
         hovertemplate='%{x}: %{y:.2f}<extra></extra>',
