@@ -117,17 +117,17 @@ def serve_layout(data: Dataset) -> html.Div:
     page = html.Div(
         children=[
             html.H1(children="Images"),
-            dbc.Alert(
-                "Note: data collection for the NCCID began in May 2020 "
-                + " but includes patients admitted to hospital since Februray 2020.",
-                color="info"
-            ),
             selector,
             dcc.Loading(
                 id="loading-image-timeseries-plot",
                 type="dot",
                 color="black",
                 children=html.Div(id="image-timeseries-plot"),
+            ),
+            dbc.Alert(
+                "Note: data collection for the NCCID began in May 2020 "
+                + " but includes images taken in hospital since Februray 2020.",
+                color="info"
             ),
             show_last_update(data),
         ]
