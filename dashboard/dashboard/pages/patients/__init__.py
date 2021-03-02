@@ -338,6 +338,12 @@ def create_patient_timeseries(data, group):
             .fillna(0)
             .sort_index()
         )
+        # Extend time series on front and back
+        extra = pd.Series(
+            [0, 0], index=["2020-02-01", pd.to_datetime("today")]
+        )
+        extra.index = pd.to_datetime(extra.index)
+        timeseries = timeseries.append(extra).sort_index()
         return timeseries
 
     patient = data.data["patient"]
