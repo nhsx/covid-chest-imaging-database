@@ -354,6 +354,7 @@ def create_patient_timeseries(data, group):
         return timeseries
 
     patient = data.data["patient"]
+    # Merges positive and negative swab dates to single field
     patient["all_swab_dates"] = pd.to_datetime(
         patient["swab_date"].fillna(
             patient["date_of_positive_covid_swab"]
@@ -382,8 +383,12 @@ def create_patient_timeseries(data, group):
             }
         )
     elif group == "train_val":
-        training_series = aggregate_timeseries(patient[patient["group"] == "training"])
-        validation_series = aggregate_timeseries(patient[patient["group"] == "validation"])
+        training_series = aggregate_timeseries(
+            patient[patient["group"] == "training"]
+        )
+        validation_series = aggregate_timeseries(
+            patient[patient["group"] == "validation"]
+        )
         lines = [
             go.Scatter(
                 x=training_series.index,
@@ -411,8 +416,12 @@ def create_patient_timeseries(data, group):
             }
         )
     elif group == "pos_neg":
-        positive_series = aggregate_timeseries(patient[patient["filename_covid_status"]])
-        negative_series = aggregate_timeseries(patient[~patient["filename_covid_status"]])
+        positive_series = aggregate_timeseries(
+            patient[patient["filename_covid_status"]]
+        )
+        negative_series = aggregate_timeseries(
+            patient[~patient["filename_covid_status"]]
+        )
         lines = [
             go.Scatter(
                 x=negative_series.index,
