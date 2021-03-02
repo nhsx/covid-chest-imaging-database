@@ -140,6 +140,24 @@ class S3Client:
             raise
         return file_content
 
+    def put_object(self, key, content):
+        try:
+            args = {"Bucket": self._bucket, "Key": key, "Body": content}
+            self._client.put_object(**args)
+        except ClientError:
+            raise
+
+    def copy_object(self, old_key, new_key):
+        try:
+            args = {
+                "Bucket": self._bucket,
+                "CopySource": {"Bucket": self._bucket, "Key": old_key},
+                "Key": new_key,
+            }
+            self._client.copy_object(**args)
+        except ClientError:
+            raise
+
 
 class InventoryDownloader:
     def __init__(self, main_bucket):
@@ -302,8 +320,8 @@ class FileList:
 
         Yields
         ------
-        boto3.resource('s3').ObjectSummary
-            The objects found, raw data files
+        str
+            The keys for the raw data files found
         """
 
         pattern = re.compile(
@@ -326,8 +344,8 @@ class FileList:
 
         Yields
         ------
-        boto3.resource('s3').ObjectSummary
-            The objects found, raw image files that seem not yet to be processed.
+        str
+            The keys for raw image files that seem not yet to be processed.
         """
         raw_pattern = re.compile(
             r"^(?P<raw_prefix>raw-.*)/\d{4}-\d{2}-\d{2}/images/(?P<filename>[^/]*)$"
@@ -335,7 +353,6 @@ class FileList:
         processed_pattern = re.compile(
             r"^(training|validation)/(xray|ct|mri).*/(?P<filename>[^/]*)$"
         )
-        s3 = boto3.resource("s3")
         fragment_excludelist = set()
         for _, fragment_reader in self.downloader.get_inventory():
             raw_list = dict()
@@ -372,26 +389,25 @@ class FileList:
                 key.replace(".json", ".dcm") for key in unprocessed_json
             }
             for unproc in unprocessed:
-                yield s3.ObjectSummary(self.bucket, raw_list[unproc])
+                yield raw_list[unproc]
 
     def get_processed_data_list(self):
         """Getting the list of processed data files from the warehouse
 
         Yields
         ------
-        boto3.resource('s3').ObjectSummary
-            The objects found, the processed data files to look at.
+        str
+            The keys to the processed data files to look at.
         """
         pattern = re.compile(
             r"^(training|validation)/data/.*/(?P<filename>[^/]*)$"
         )
-        s3 = boto3.resource("s3")
         for f, fragment_reader in self.downloader.get_inventory():
             for row in fragment_reader:
                 key = row[1]
                 key_match = pattern.match(key)
                 if key_match:
-                    yield s3.ObjectSummary(self.bucket, key)
+                    yield key
 
     def get_processed_images_list(self):
         # Only a single image per study, keep track of studies

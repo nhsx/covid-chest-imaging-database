@@ -22,7 +22,7 @@ from warehouse.components import constants, helpers, services
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
 
-
+BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default="chest-data-warehouse")
 DRY_RUN = bool(os.getenv("DRY_RUN", default=False))
 
 KB = 1024
@@ -30,84 +30,6 @@ KB = 1024
 ###
 # Helpers
 ###
-# def object_exists(client, bucket, key):
-#     """Checking whether a given object exists in our work bucket
-
-#     Parameters
-#     ----------
-#     client : boto3.client('s3')
-#         An S3 client to do the request,
-#     bucket :
-#         The bucket to check contents in
-#     key : str
-#         The object key in question.
-
-#     Returns
-#     -------
-#     boolean
-#         True if object exists in the work bucket.
-
-#     Raises
-#     ------
-#     botocore.exceptions.ClientError
-#         If there's any transfer error.
-#     """
-#     try:
-#         client.head_object(Bucket=bucket, Key=key)
-#     except ClientError as e:
-#         if e.response["Error"]["Code"] == "404":
-#             return False
-#         else:
-#             raise ClientError
-#     else:
-#         return True
-
-
-# def get_date_from_key(key):
-#     """Extract date from an object key from the bucket's directory pattern,
-#     for a given prefix
-
-#     Parameters
-#     ----------
-#     key : str
-#         the object key in question
-
-#     Returns
-#     -------
-#     str or None
-#         The extracted date if found, in YYYY-MM-DD format
-#     """
-#     date_match = re.match(r"^.+/(?P<date>\d{4}-\d{2}-\d{2})/.+", key)
-#     if date_match:
-#         return date_match.group("date")
-
-
-def get_submitting_centre_from_key(s3client, key):
-    """Extract the SubmittingCentre value from an S3 object that is
-    a JSON file in the expected format.
-
-    Parameters
-    ----------
-    obj : boto3.resource('s3').ObjectSummary
-        The S3 object of the JSON file to process.
-
-    Returns
-    -------
-    str or None
-        The value defined for the SubmittingCentre field in the file
-    """
-    try:
-        file_content = s3client.object_content(key).decode("utf-8")
-        json_content = json.loads(file_content)
-    except ClientError:
-        logger.error(f"Couldn't download contents of {key}.")
-        raise
-    except json.decoder.JSONDecodeError:
-        logger.error(f"Couldn't decode contents of {key} as JSON. ")
-        raise
-    return json_content.get("SubmittingCentre")
-
-
 def patient_in_training_set(
     patient_id, training_percent=constants.TRAINING_PERCENTAGE
 ):
@@ -200,7 +122,7 @@ class PartialDicom:
     on traffic.
     """
 
-    def __init__(self, obj, initial_range_kb=20):
+    def __init__(self, s3client, key, initial_range_kb=20):
         """Download partial DICOM files iteratively, to save
         on traffic.
 
@@ -214,7 +136,8 @@ class PartialDicom:
         # Default value of 20Kb initial range is based on
         # tests run on representative data
         self._found_image_tag = False
-        self.obj = obj
+        self.s3client = s3client
+        self.key = key
         self.range_kb = initial_range_kb
 
     def _stop_when(self, tag, VR, length):
@@ -237,8 +160,10 @@ class PartialDicom:
             while True:
                 tmp.seek(0)
                 toprange = (self.range_kb * KB) - 1
-                stream = self.obj.get(Range=f"bytes=0-{toprange}")["Body"]
-                tmp.write(stream.read())
+                content = self.s3client.object_content(
+                    content_range=f"bytes=0-{toprange}", key=self.key
+                )
+                tmp.write(content)
                 tmp.seek(0)
                 try:
                     image_data = pydicom.filereader.read_partial(
@@ -272,8 +197,6 @@ def load_config(s3client, config):
         The configuration to update with values from the constants.CONFIG_KEY config file
     """
     try:
-        # obj = bucket.Object(constants.CONFIG_KEY).get()
-        # contents = json.loads(obj["Body"].read().decode("utf-8"))
         contents = json.loads(
             s3client.object_content(constants.CONFIG_KEY).decode("utf-8")
         )
@@ -317,8 +240,9 @@ def extract_raw_files_from_folder(config, filelist):
         yield "process", key, None
 
 
+@use("s3client")
 @use("patientcache")
-def process_image(*args, patientcache):
+def process_image(*args, s3client, patientcache):
     """Processing images from the raw dump
 
     Takes a single image, downloads it into temporary storage
@@ -342,20 +266,20 @@ def process_image(*args, patientcache):
         "metadata" passes on the target metadata location and the image data to extract from.
     """
     # check file type
-    task, obj, _ = args
-    if task != "process" or Path(obj.key).suffix.lower() != ".dcm":
+    task, key, _ = args
+    image_path = Path(key)
+    if task != "process" or image_path.suffix.lower() != ".dcm":
         # not an image, don't do anything with it
         return bonobo.constants.NOT_MODIFIED
 
-    image_path = Path(obj.key)
     image_uuid = image_path.stem
 
     # download the image
-    image_data = PartialDicom(obj.Object()).download()
+    image_data = PartialDicom(s3client, key).download()
     if image_data is None:
         # we couldn't read the image data correctly
         logger.warning(
-            f"Object '{obj.key}' couldn't be loaded as a DICOM file, skipping!"
+            f"Object '{key}' couldn't be loaded as a DICOM file, skipping!"
         )
         return
 
@@ -368,7 +292,7 @@ def process_image(*args, patientcache):
         training_set = group == "training"
     else:
         logger.error(
-            f"Image without patient data: {obj.key}; "
+            f"Image without patient data: {key}; "
             + f"included patient ID: {patient_id}; "
             + "skipping!"
         )
@@ -382,7 +306,7 @@ def process_image(*args, patientcache):
         image_data["Modality"].value, "unknown"
     )
 
-    date = get_date_from_key(obj.key)
+    date = helpers.get_date_from_key(key)
     if date:
         # the location of the new files
         new_key = posixpath.join(
@@ -391,7 +315,7 @@ def process_image(*args, patientcache):
             patient_id,
             study_id,
             series_id,
-            Path(obj.key).name,
+            image_path.name,
         )
         metadata_key = posixpath.join(
             prefix,
@@ -402,9 +326,9 @@ def process_image(*args, patientcache):
             f"{image_uuid}.json",
         )
         # send off to copy or upload steps
-        if not object_exists(new_key):
-            yield "copy", obj, new_key
-        if not object_exists(metadata_key):
+        if not s3client.object_exists(new_key):
+            yield "copy", key, new_key
+        if not s3client.object_exists(metadata_key):
             yield "metadata", metadata_key, image_data
 
 
@@ -434,7 +358,8 @@ def process_dicom_data(*args):
         yield "upload", metadata_key, json.dumps(scrubbed_image_data)
 
 
-def upload_text_data(*args):
+@use("s3client")
+def upload_text_data(*args, s3client):
     """Upload the text data to the correct bucket location.
 
     Parameters
@@ -461,14 +386,15 @@ def upload_text_data(*args):
         if DRY_RUN:
             logger.info(f"Would upload to key: {outgoing_key}")
         else:
-            bucket.put_object(Body=outgoing_data, Key=outgoing_key)
+            s3client.put_object(key=outgoing_key, content=outgoing_data)
 
         return bonobo.constants.NOT_MODIFIED
 
 
 @use("config")
 @use("patientcache")
-def process_patient_data(*args, config, patientcache):
+@use("s3client")
+def process_patient_data(*args, config, patientcache, s3client):
     """Processing patient data from the raw dump
 
     Get the patient ID from the filename, do a training/validation
@@ -489,13 +415,14 @@ def process_patient_data(*args, config, patientcache):
     tuple[str, boto3.resource('s3').ObjectSummary, str]
         A task name ("copy"), the original object, and a new key where it should be copied within the bucket
     """
-    task, obj, _ = args
-    if task != "process" or Path(obj.key).suffix.lower() != ".json":
+    task, key, _ = args
+    data_path = Path(key)
+    if task != "process" or data_path.suffix.lower() != ".json":
         # Not a data file, don't do anything with it
         yield bonobo.constants.NOT_MODIFIED
 
     m = re.match(
-        r"^(?P<patient_id>.*)_(?P<outcome>data|status)$", Path(obj.key).stem
+        r"^(?P<patient_id>.*)_(?P<outcome>data|status)$", data_path.stem
     )
     if m is None:
         # Can't interpret this file based on name, skip
@@ -509,10 +436,10 @@ def process_patient_data(*args, config, patientcache):
         training_set = group == "training"
     else:
         # patient group is not cached
-        submitting_centre = get_submitting_centre_from_object(obj)
+        submitting_centre = helpers.get_submitting_centre_from_key(key)
         if submitting_centre is None:
             logger.error(
-                f"{obj.key} does not have 'SubmittingCentre' entry, skipping!"
+                f"{key} does not have 'SubmittingCentre' entry, skipping!"
             )
             return
 
@@ -538,14 +465,15 @@ def process_patient_data(*args, config, patientcache):
         if training_set
         else constants.VALIDATION_PREFIX
     )
-    date = get_date_from_key(obj.key)
+    date = helpers.get_date_from_key(key)
     if date is not None:
         new_key = f"{prefix}data/{patient_id}/{outcome}_{date}.json"
-        if not object_exists(new_key):
-            yield "copy", obj, new_key
+        if not s3client.object_exists(new_key):
+            yield "copy", key, new_key
 
 
-def data_copy(*args):
+@use("s3client")
+def data_copy(*args, s3client):
     """Copy objects within the bucket
 
     Only if both original object and new key is provided.
@@ -563,14 +491,14 @@ def data_copy(*args):
     """
     (
         task,
-        obj,
+        old_key,
         new_key,
     ) = args
-    if task == "copy" and obj is not None and new_key is not None:
+    if task == "copy" and old_key is not None and new_key is not None:
         if DRY_RUN:
-            logger.info(f"Would copy: {obj.key} -> {new_key}")
+            logger.info(f"Would copy: {old_key} -> {new_key}")
         else:
-            bucket.copy({"Bucket": obj.bucket_name, "Key": obj.key}, new_key)
+            s3client.copy_object(old_key, new_key)
 
         return bonobo.constants.NOT_MODIFIED
 
