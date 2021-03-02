@@ -35,8 +35,10 @@ def get_submitting_centre_from_key(s3client, key):
 
     Parameters
     ----------
-    obj : boto3.resource('s3').ObjectSummary
-        The S3 object of the JSON file to process.
+    s3client : S3Client
+        The service that handles S3 data access
+    key : str
+        The S3 object key of the JSON file to process.
 
     Returns
     -------

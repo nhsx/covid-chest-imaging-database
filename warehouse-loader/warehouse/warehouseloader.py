@@ -192,7 +192,8 @@ def load_config(s3client, config):
 
     Parameters
     ----------
-    s3config : S3Client
+    s3client : S3Client
+        The service that handles S3 data access
     config : PipelineConfig
         The configuration to update with values from the constants.CONFIG_KEY config file
     """
@@ -255,12 +256,16 @@ def process_image(*args, s3client, patientcache):
 
     Parameters
     ----------
-    task, obj, _ : tuple[str, boto3.resource('s3').ObjectSummary, None]
+    task, key, _ : tuple[str, str, None]
         A task name (only handling "process" tasks), and an object to act on.
+    s3client : S3Client
+        The service that handles S3 data access
+    patientcache:
+        The cache that stores the asignments of patients to groups
 
     Yields
     ------
-    tuple[str, boto3.resource('s3').ObjectSummary or str, str or pydicom.FileDataset]
+    tuple[str, str, str or pydicom.FileDataset]
         Tuple containing the task name("copy" or "metadata"), and other parameters
         depending on the task. "copy" passes on the original object and new location.
         "metadata" passes on the target metadata location and the image data to extract from.
@@ -367,6 +372,8 @@ def upload_text_data(*args, s3client):
     task, outgoing_key, outgoing_data : tuple[str, str, str]
         Task name (only processing "upload" tasks), the key and contents
         of the text file to handle
+    s3client : S3Client
+        The service that handles S3 data access
 
     Returns
     -------
@@ -403,16 +410,18 @@ def process_patient_data(*args, config, patientcache, s3client):
 
     Parameters
     ----------
-    task, obj, _ : tuple[str, boto3.resource('s3').ObjectSummary, None]
+    task, key, _ : tuple[str, str, None]
         Task name (only processing "upload" tasks), the object in question to process.
     config : PipelineConfig
         A configuration store.
     patientcache : PatientCache
         A cache of patient assignments to training/validation groups
+    s3client : S3Client
+        The service that handles S3 data access
 
     Yields
     ------
-    tuple[str, boto3.resource('s3').ObjectSummary, str]
+    tuple[str, str, str]
         A task name ("copy"), the original object, and a new key where it should be copied within the bucket
     """
     task, key, _ = args
@@ -480,9 +489,11 @@ def data_copy(*args, s3client):
 
     Parameters
     ----------
-    task, obj, new_key : tuple[str, boto3.resource('s3').ObjectSummary, str]
+    task, old_key, new_key : tuple[str, str, str]
         Task name (this only runs on "copy" tasks, the object to be copied,
         and the new key to copy the object to
+    s3client : S3Client
+        The service that handles S3 data access
 
     Returns
     -------
