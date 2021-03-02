@@ -228,7 +228,7 @@ def create_completeness_chart(data, centre, fields, sort_by):
     completeness["Nulls"].fillna(100)
 
     fig = px.bar(
-        completeness,
+        completeness.round(decimals=2),
         x=completeness.index,
         y=["Not-Null", "Nulls"],
         color_discrete_map={"Nulls": "#d62728", "Not-Null": "#1f77b4"},
