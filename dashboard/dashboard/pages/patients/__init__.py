@@ -325,7 +325,10 @@ def create_age_breakdown(data, group):
         
 
     fig.update_layout(barmode="overlay")
-    fig.update_traces(opacity=0.75)
+    fig.update_traces(
+        opacity=0.75, 
+        hovertemplate='%{x}: %{y:.2f}<extra></extra>',
+    )
 
     graph = dcc.Graph(id="age-histogram", figure=fig)
     return graph
@@ -409,7 +412,7 @@ def create_ethnicity_breakdown(data, group):
             )
         )
         
-
+    fig.update_traces(hovertemplate='%{x}: %{y:.2f}<extra></extra>',) 
     graph = dcc.Graph(id="ethnicity-histogram", figure=fig)
     return graph
 
