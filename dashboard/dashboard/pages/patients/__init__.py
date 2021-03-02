@@ -192,6 +192,13 @@ def serve_layout(data: Dataset) -> html.Div:
                 children=html.Div(id="ethnicity-breakdown-plot"),
             ),
             html.H3("RT-PCR swab dates"),
+            html.P(
+                "This chart shows the number of NCCID patients that have had  "
+                + "an RT-PCR swab test taken each week. This is useful in "
+                + "understanding how data in the NCCID represents patients  "
+                + "throughout the course of the pandemic, e.g., with relation "
+                + "to new strains of the virus."
+            ),
             timeseries_selector,
             dcc.Loading(
                 id="loading-timeseries-data",
