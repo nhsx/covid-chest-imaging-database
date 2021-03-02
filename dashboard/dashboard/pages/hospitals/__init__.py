@@ -152,7 +152,11 @@ def serve_layout(data: Dataset) -> html.Div:
                 color="black",
                 children=html.Div(id="patients-swabs"),
             ),
-            
+            dbc.Alert(
+                "Note: data collection for the NCCID began in May 2020 "
+                + " but includes patients admitted to hospital since Februray 2020.",
+                color="info"
+            ),
             show_last_update(data),
         ]
     )
@@ -380,7 +384,7 @@ def create_hospital_counts(data, centre):
             [counts[col].max() for col in counts.columns],
         ],
         columns=counts.columns,
-        index=["2020-05-10", pd.to_datetime("today")],
+        index=["2020-02-01", pd.to_datetime("today")],
     )
     extra.index = pd.to_datetime(extra.index)
     counts = counts.append(extra).sort_index()
