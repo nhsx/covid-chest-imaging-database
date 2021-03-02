@@ -9,20 +9,29 @@ from pathlib import Path
 
 import bonobo
 import mondrian
-from bonobo.config import Configurable, ContextProcessor, use, use_raw_input
+from bonobo.config import (
+    Configurable,
+    ContextProcessor,
+    Service,
+    use,
+    use_raw_input,
+)
 from bonobo.util.objects import ValueHolder
 
+import warehouse.components.helpers as helpers
 import warehouse.warehouseloader as wl  # noqa: E402
 from warehouse.components.services import (
     FileList,
     InventoryDownloader,
     PipelineConfig,
+    S3Client,
 )
 
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
 
 BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default="chest-data-warehouse")
+NO_OUTPUT_FILE = bool(os.getenv("NO_OUTPUT_FILE", default=False))
 
 
 @use("config")
@@ -48,21 +57,27 @@ def extract_raw_data_files(config, filelist):
     )
     donelist = set()
     # List the clinical data files for processing
-    for obj in filelist.get_raw_data_list(raw_prefixes=raw_prefixes):
-        key_match = pattern.match(obj.key)
+    for key in filelist.get_raw_data_list(raw_prefixes=raw_prefixes):
+        key_match = pattern.match(key)
         if key_match and key_match.group("pseudonym") not in donelist:
             donelist.add(key_match.group("pseudonym"))
-            yield "process", obj, None
+            yield "process", key, None
 
 
 class SubmittingCentreExtractor(Configurable):
     """Get unique submitting centre names from the full database."""
 
+    s3client = Service("s3client")
+
     @ContextProcessor
-    def acc(self, context):
+    def acc(self, context, **kwargs):
         centres = yield ValueHolder(set())
         for centre in sorted(centres.get()):
             print(centre)
+        if not NO_OUTPUT_FILE:
+            with open("/tmp/message.txt", "w") as f:
+                for centre in sorted(centres.get()):
+                    print(centre, file=f)
 
     @use_raw_input
     def __call__(self, centres, *args, **kwargs):
@@ -78,9 +93,10 @@ class SubmittingCentreExtractor(Configurable):
         **kwargs : dict
             Keyword arguments.
         """
-        task, obj, _ = args
-        if task == "process" and Path(obj.key).suffix.lower() == ".json":
-            centre = wl.get_submitting_centre_from_object(obj)
+        task, key, _ = args
+        s3client = kwargs["s3client"]
+        if task == "process" and Path(key).suffix.lower() == ".json":
+            centre = helpers.get_submitting_centre_from_key(s3client, key)
             if centre is not None:
                 centres.add(centre)
 
@@ -126,13 +142,16 @@ def get_services(**options):
     dict
         Mapping of service names to objects.
     """
+
     config = PipelineConfig()
     inv_downloader = InventoryDownloader(main_bucket=BUCKET_NAME)
     filelist = FileList(inv_downloader)
+    s3client = S3Client(bucket=BUCKET_NAME)
 
     return {
         "config": config,
         "filelist": filelist,
+        "s3client": s3client,
     }
 
 

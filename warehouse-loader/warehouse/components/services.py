@@ -7,6 +7,7 @@ import tempfile
 
 import boto3
 import mondrian
+from botocore.exceptions import ClientError
 
 from warehouse.components.constants import TRAINING_PERCENTAGE
 
@@ -100,6 +101,44 @@ class S3Client:
     @property
     def client(self):
         return self._client
+
+    def object_exists(self, key):
+        """Checking whether a given object exists in our work bucket
+
+        Parameters
+        ----------
+        key : str
+            The object key in question.
+
+        Returns
+        -------
+        boolean
+            True if object exists in the work bucket.
+
+        Raises
+        ------
+        botocore.exceptions.ClientError
+            If there's any transfer error.
+        """
+        try:
+            self._client.head_object(Bucket=self._bucket, Key=key)
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "404":
+                return False
+            else:
+                raise ClientError
+        else:
+            return True
+
+    def object_content(self, key, content_range=None):
+        try:
+            args = {"Bucket": self._bucket, "Key": key}
+            if content_range is not None:
+                args["Range"] = content_range
+            file_content = self._client.get_object(**args)["Body"].read()
+        except ClientError:
+            raise
+        return file_content
 
 
 class InventoryDownloader:
@@ -270,13 +309,12 @@ class FileList:
         pattern = re.compile(
             r"^(?P<raw_prefix>raw-.*)/(\d{4}-\d{2}-\d{2})/data/(?P<filename>[^/]*)$"
         )
-        s3 = boto3.resource("s3")
         for r, fragment_reader in self.downloader.get_inventory():
             for row in fragment_reader:
                 key = row[1]
                 key_match = pattern.match(key)
                 if key_match and key_match.group("raw_prefix") in raw_prefixes:
-                    yield s3.ObjectSummary(self.bucket, key)
+                    yield key
 
     def get_pending_raw_images_list(self, raw_prefixes=set()):
         """Get the list of raw data files from the inventory

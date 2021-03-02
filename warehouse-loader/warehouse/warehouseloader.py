@@ -11,7 +11,6 @@ from io import BytesIO
 from pathlib import Path, posixpath
 
 import bonobo
-import boto3
 import mondrian
 import pydicom
 from bonobo.config import use
@@ -23,11 +22,6 @@ from warehouse.components import constants, helpers, services
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
 
-# s3_resource = boto3.resource("s3")
-# s3_client = boto3.client("s3")
-
-# BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default="chest-data-warehouse")
-# bucket = s3_resource.Bucket(BUCKET_NAME)
 
 DRY_RUN = bool(os.getenv("DRY_RUN", default=False))
 
@@ -69,26 +63,26 @@ KB = 1024
 #         return True
 
 
-def get_date_from_key(key):
-    """Extract date from an object key from the bucket's directory pattern,
-    for a given prefix
+# def get_date_from_key(key):
+#     """Extract date from an object key from the bucket's directory pattern,
+#     for a given prefix
 
-    Parameters
-    ----------
-    key : str
-        the object key in question
+#     Parameters
+#     ----------
+#     key : str
+#         the object key in question
 
-    Returns
-    -------
-    str or None
-        The extracted date if found, in YYYY-MM-DD format
-    """
-    date_match = re.match(r"^.+/(?P<date>\d{4}-\d{2}-\d{2})/.+", key)
-    if date_match:
-        return date_match.group("date")
+#     Returns
+#     -------
+#     str or None
+#         The extracted date if found, in YYYY-MM-DD format
+#     """
+#     date_match = re.match(r"^.+/(?P<date>\d{4}-\d{2}-\d{2})/.+", key)
+#     if date_match:
+#         return date_match.group("date")
 
 
-def get_submitting_centre_from_object(obj):
+def get_submitting_centre_from_key(s3client, key):
     """Extract the SubmittingCentre value from an S3 object that is
     a JSON file in the expected format.
 
@@ -102,11 +96,14 @@ def get_submitting_centre_from_object(obj):
     str or None
         The value defined for the SubmittingCentre field in the file
     """
-    file_content = obj.Object().get()["Body"].read().decode("utf-8")
     try:
+        file_content = s3client.object_content(key).decode("utf-8")
         json_content = json.loads(file_content)
+    except ClientError:
+        logger.error(f"Couldn't download contents of {key}.")
+        raise
     except json.decoder.JSONDecodeError:
-        logger.error("Couldn't decode contents of {obj.key} as JSON.")
+        logger.error(f"Couldn't decode contents of {key} as JSON. ")
         raise
     return json_content.get("SubmittingCentre")
 
@@ -263,19 +260,25 @@ class PartialDicom:
 ###
 # Transformation steps
 ###
+@use("s3client")
 @use("config")
-def load_config(config):
+def load_config(s3client, config):
     """Load configuration from the bucket
 
     Parameters
     ----------
+    s3config : S3Client
     config : PipelineConfig
         The configuration to update with values from the constants.CONFIG_KEY config file
     """
     try:
-        obj = bucket.Object(constants.CONFIG_KEY).get()
-        contents = json.loads(obj["Body"].read().decode("utf-8"))
+        # obj = bucket.Object(constants.CONFIG_KEY).get()
+        # contents = json.loads(obj["Body"].read().decode("utf-8"))
+        contents = json.loads(
+            s3client.object_content(constants.CONFIG_KEY).decode("utf-8")
+        )
         config.set_config(contents)
+        # Yield for the rest of the pipeline to kick in
         yield
     except ClientError as ex:
         if ex.response["Error"]["Code"] == "NoSuchKey":
@@ -284,6 +287,8 @@ def load_config(config):
             )
         else:
             raise
+    except json.decoder.JSONDecodeError:
+        raise
 
 
 @use("config")
