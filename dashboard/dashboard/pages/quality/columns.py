@@ -123,9 +123,6 @@ OUTCOME_COLUMNS = [
 
 
 DATE_COLUMNS = [
-    # "filename_earliest_date",
-    # "filename_latest_date",
-    "swab_date",
     "date_last_known_alive",
     "date_of_1st_cxr",
     "date_of_2nd_cxr",

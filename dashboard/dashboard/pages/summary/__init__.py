@@ -409,8 +409,11 @@ def serve_layout(data: Dataset) -> html.Div:
                 " whether or not their imaging data has been provided yet.",
                 color="info",
             ),
+            html.Hr(),
             table_img_counts,
+            html.Hr(),
             table_img_storage,
+            html.Hr(),
             table_trust_count,
             show_last_update(data),
         ]
