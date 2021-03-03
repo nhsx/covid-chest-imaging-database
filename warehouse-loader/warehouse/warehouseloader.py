@@ -445,7 +445,9 @@ def process_patient_data(*args, config, patientcache, s3client):
         training_set = group == "training"
     else:
         # patient group is not cached
-        submitting_centre = helpers.get_submitting_centre_from_key(key)
+        submitting_centre = helpers.get_submitting_centre_from_key(
+            s3client, key
+        )
         if submitting_centre is None:
             logger.error(
                 f"{key} does not have 'SubmittingCentre' entry, skipping!"

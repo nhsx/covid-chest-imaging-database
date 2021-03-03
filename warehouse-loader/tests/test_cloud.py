@@ -650,3 +650,140 @@ def test_data_copy(task, old_key, new_key):
         )
     else:
         assert not s3client.object_exists(new_key)
+
+
+@mock_s3
+def test_process_patient_data():
+
+    bucket_name = "testbucket-12345"
+    conn = boto3.resource("s3", region_name="us-east-1")
+    conn.create_bucket(Bucket=bucket_name)
+    s3client = S3Client(bucket=bucket_name)
+    config = PipelineConfig()
+
+    input_config = dict(
+        {
+            "raw_prefixes": [
+                "raw-nhs-upload/",
+            ],
+            "training_percentage": 0,
+            "sites": {
+                "split": ["SplitCentre"],
+                "training": ["TrainingCentre"],
+                "validation": ["ValidationCentre"],
+            },
+        }
+    )
+    conn.meta.client.put_object(
+        Bucket=bucket_name, Key=CONFIG_KEY, Body=json.dumps(input_config)
+    )
+    next(warehouseloader.load_config(s3client, config))
+
+    processed_list = [
+        "training/data/Covid1/data_2021-03-01.json",
+        "training/data/Covida9a3751d-f614-4d4a-b3ee-c3f5ca1fb858/data_2021-03-01.json",
+        "validation/data/Covid2/data_2021-03-01.json",
+        "validation/data/Covida23f28da6-c470-4dd2-b432-1e17724715a2/data_2021-03-01.json",
+    ]
+    for key in processed_list:
+        conn.meta.client.upload_fileobj(BytesIO(), bucket_name, key)
+
+    raw_folder = "raw-nhs-upload/2021-03-01/data"
+    clinical_records = [
+        ("Covid10", "TrainingCentre"),
+        ("Covid20", "ValidationCentre"),
+        ("Covid30", "SplitCentre"),
+        ("Covid40", "ExtraCentre"),
+        ("Covid50", None),
+    ]
+    data_list = []
+    for pseudonym, centre in clinical_records:
+        for file_type in ["data", "status"]:
+            if centre is not None:
+                content = json.dumps(
+                    {"Pseudonym": pseudonym, "SubmittingCentre": centre}
+                )
+            else:
+                content = json.dumps({"Pseudonym": pseudonym})
+
+            key = f"{raw_folder}/{pseudonym}_{file_type}.json"
+            conn.meta.client.put_object(
+                Bucket=bucket_name, Key=key, Body=content
+            )
+            data_list += [key]
+
+    file_list = processed_list + data_list
+    create_inventory(file_list, bucket_name)
+
+    inv_downloader = InventoryDownloader(main_bucket=bucket_name)
+    patientcache = PatientCache(inv_downloader)
+
+    kwargs = {
+        "config": config,
+        "patientcache": patientcache,
+        "s3client": s3client,
+    }
+
+    # Not handled task
+    args = "copy", "raw-nhs-upload/2021-03-01/data/Covid1.json", None
+    assert (
+        next(warehouseloader.process_patient_data(*args, **kwargs))
+        is bonobo.constants.NOT_MODIFIED
+    )
+
+    # Not handled filename
+    args = (
+        "process",
+        f"raw-nhs-upload/2021-03-01/images/{pydicom.uid.generate_uid()}.dcm",
+        None,
+    )
+    assert (
+        next(warehouseloader.process_patient_data(*args, **kwargs))
+        is bonobo.constants.NOT_MODIFIED
+    )
+
+    # Already processed file existing
+    args = "process", "raw-nhs-upload/2021-03-01/data/Covid1_data.json", None
+    with pytest.raises(StopIteration):
+        next(warehouseloader.process_patient_data(*args, **kwargs))
+    args = "process", "raw-nhs-upload/2021-03-01/data/Covid2_data.json", None
+    with pytest.raises(StopIteration):
+        next(warehouseloader.process_patient_data(*args, **kwargs))
+
+    # Training item
+    args = "process", "raw-nhs-upload/2021-03-01/data/Covid10_data.json", None
+    assert next(warehouseloader.process_patient_data(*args, **kwargs)) == (
+        "copy",
+        "raw-nhs-upload/2021-03-01/data/Covid10_data.json",
+        "training/data/Covid10/data_2021-03-01.json",
+    )
+
+    # Validation item
+    args = (
+        "process",
+        "raw-nhs-upload/2021-03-01/data/Covid20_status.json",
+        None,
+    )
+    assert next(warehouseloader.process_patient_data(*args, **kwargs)) == (
+        "copy",
+        "raw-nhs-upload/2021-03-01/data/Covid20_status.json",
+        "validation/data/Covid20/status_2021-03-01.json",
+    )
+
+    # Split item, training percentage forcing to validation
+    args = "process", "raw-nhs-upload/2021-03-01/data/Covid30_data.json", None
+    assert next(warehouseloader.process_patient_data(*args, **kwargs)) == (
+        "copy",
+        "raw-nhs-upload/2021-03-01/data/Covid30_data.json",
+        "validation/data/Covid30/data_2021-03-01.json",
+    )
+
+    # Unknown submitting centre included
+    args = "process", "raw-nhs-upload/2021-03-01/data/Covid40_data.json", None
+    with pytest.raises(StopIteration):
+        next(warehouseloader.process_patient_data(*args, **kwargs))
+
+    # No submitting centre included
+    args = "process", "raw-nhs-upload/2021-03-01/data/Covid50_data.json", None
+    with pytest.raises(StopIteration):
+        next(warehouseloader.process_patient_data(*args, **kwargs))
