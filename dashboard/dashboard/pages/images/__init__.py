@@ -26,7 +26,7 @@ def serve_layout(data: Dataset) -> html.Div:
     dash_html_components.Div
         The HTML componets of the page layout, wrapped in  div
     """
-    patient = data.data["patient"]
+    patient = data.dataset("patient")
 
     centres = sorted(patient["SubmittingCentre"].unique())
     centres_select = dcc.Dropdown(
@@ -124,6 +124,11 @@ def serve_layout(data: Dataset) -> html.Div:
                 color="black",
                 children=html.Div(id="image-timeseries-plot"),
             ),
+            dbc.Alert(
+                "Note: data collection for the NCCID began in May 2020 "
+                + " but includes images taken in hospital since Februray 2020.",
+                color="info"
+            ),
             show_last_update(data),
         ]
     )
@@ -163,11 +168,10 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
 
 
 def create_image_series(data, group, covid_status, centre):
-    if centre is None:
-        patient = data.data["patient"].copy()
-    else:
-        patient = data.data["patient"][
-            data.data["patient"]["SubmittingCentre"] == centre
+    patient = data.dataset("patient")
+    if centre is not None:
+        patient = patient[
+            patient["SubmittingCentre"] == centre
         ]
 
     if covid_status == "positive":
@@ -190,7 +194,7 @@ def create_image_series(data, group, covid_status, centre):
         )
         # Extend time series on front and back
         extra = pd.Series(
-            [0, result.max()], index=["2020-05-10", pd.to_datetime("today")]
+            [0, result.max()], index=["2020-02-01", pd.to_datetime("today")]
         )
         extra.index = pd.to_datetime(extra.index)
         result = result.append(extra).sort_index()
@@ -198,9 +202,9 @@ def create_image_series(data, group, covid_status, centre):
 
     target_patient_group = set(patient["Pseudonym"])
 
-    ct_timeseries = get_image_timeseries(target_patient_group, data.data["ct"])
+    ct_timeseries = get_image_timeseries(target_patient_group, data.dataset("ct"))
     xray_timeseries = get_image_timeseries(
-        target_patient_group, data.data["xray"]
+        target_patient_group, data.dataset("xray")
     )
 
     lines = [

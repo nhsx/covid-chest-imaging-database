@@ -26,7 +26,7 @@ def serve_layout(data: Dataset) -> html.Div:
         The HTML componets of the page layout, wrapped in  div
     """
 
-    patient = data.data["patient"]
+    patient = data.dataset("patient")
 
     number_patients = patient["Pseudonym"].nunique()
     pos_patients = set(patient[patient["filename_covid_status"]]["Pseudonym"])
@@ -124,7 +124,7 @@ def serve_layout(data: Dataset) -> html.Div:
         responsive=True,
     )
 
-    ct = data.data["ct"]
+    ct = data.dataset("ct")
     number_training_ct_studies = ct[ct["group"] == "training"][
         "StudyInstanceUID"
     ].nunique()
@@ -134,7 +134,7 @@ def serve_layout(data: Dataset) -> html.Div:
     number_ct_studies = (
         number_training_ct_studies + number_validation_ct_studies
     )
-    mri = data.data["mri"]
+    mri = data.dataset("mri")
     number_training_mri_studies = mri[mri["group"] == "training"][
         "StudyInstanceUID"
     ].nunique()
@@ -144,7 +144,7 @@ def serve_layout(data: Dataset) -> html.Div:
     number_mri_studies = (
         number_training_mri_studies + number_validation_mri_studies
     )
-    xray = data.data["xray"]
+    xray = data.dataset("xray")
     number_training_xray_studies = xray[xray["group"] == "training"][
         "StudyInstanceUID"
     ].nunique()
@@ -223,7 +223,7 @@ def serve_layout(data: Dataset) -> html.Div:
         responsive=True,
     )
 
-    storage = data.data["storage"]
+    storage = data.dataset("storage")
 
     ct_training_storage = storage[storage["prefix"] == "training/ct/"][
         "storage"

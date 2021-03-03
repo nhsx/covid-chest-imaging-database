@@ -26,7 +26,7 @@ def serve_layout(data: Dataset) -> html.Div:
     dash_html_components.Div
         The HTML componets of the page layout, wrapped in  div
     """
-    patient = data.data["patient"]
+    patient = data.dataset("patient")
     centres = sorted(patient["SubmittingCentre"].unique())
     centres_select = dcc.Dropdown(
         placeholder="Select a submitting site / centre to filter",
@@ -193,7 +193,7 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
 
 
 def create_completeness_chart(data, centre, fields, sort_by):
-    patient = data.data["patient"]
+    patient = data.dataset("patient")
     covid_positives = patient.loc[patient.filename_covid_status]
 
     if centre is not None:
@@ -250,7 +250,7 @@ def create_completeness_chart(data, centre, fields, sort_by):
 
 
 def create_completeness_table(data, centre, fields, sort_by):
-    patient = data.data["patient"]
+    patient = data.dataset("patient")
     covid_positives = patient.loc[patient.filename_covid_status]
 
     if centre is not None:

@@ -81,6 +81,34 @@ def serve_layout(data: Dataset) -> html.Div:
         ]
     )
 
+    button_timeseries_all_data = dbc.Button(
+        "All Data",
+        id="button_timeseries_all_data",
+        color="primary",
+        outline=True,
+    )
+
+    button_timeseries_train_val = dbc.Button(
+        "Training / Validation",
+        id="button_timeseries_train_val",
+        color="primary",
+        outline=True,
+    )
+    button_timeseries_pos_neg = dbc.Button(
+        "Positive / Negative",
+        id="button_timeseries_pos_neg",
+        color="primary",
+        outline=True,
+    )
+    
+    timeseries_buttons = dbc.ButtonGroup(
+        [
+            button_timeseries_all_data,
+            button_timeseries_train_val,
+            button_timeseries_pos_neg,   
+        ]
+    )
+
     age_selector = html.Div(
         [
             html.Div(
@@ -121,6 +149,25 @@ def serve_layout(data: Dataset) -> html.Div:
         ]
     )
 
+    timeseries_selector = html.Div(
+        [
+            html.Div(
+                children="""
+                    Select chart to view:
+                """
+            ),
+            dbc.Row(
+                [
+                    dbc.Col(
+                        html.Div([timeseries_buttons]),
+                        md=6,
+                        sm=12,
+                    ),
+                ]
+            ),
+        ]
+    )
+
     page = html.Div(
         children=[
             html.H1(children="Patients"),
@@ -143,6 +190,21 @@ def serve_layout(data: Dataset) -> html.Div:
                 type="dot",
                 color="black",
                 children=html.Div(id="ethnicity-breakdown-plot"),
+            ),
+            html.H3("RT-PCR swab dates"),
+            html.P(
+                "This chart shows the number of NCCID patients that have had  "
+                + "an RT-PCR swab test taken each week. This is useful in "
+                + "understanding how data in the NCCID represents patients  "
+                + "throughout the course of the pandemic, e.g., with relation "
+                + "to new strains of the virus."
+            ),
+            timeseries_selector,
+            dcc.Loading(
+                id="loading-timeseries-data",
+                type="dot",
+                color="black",
+                children=html.Div(id="timeseries-plot"),
             ),
             show_last_update(data),
         ]
@@ -238,17 +300,163 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
             pos_neg_outline,
         )
 
+    @app.callback(
+        Output("timeseries-plot", "children"),
+        Output("button_timeseries_all_data", "outline"),
+        Output("button_timeseries_train_val", "outline"),
+        Output("button_timeseries_pos_neg", "outline"),
+        Input("button_timeseries_all_data", "n_clicks"),
+        Input("button_timeseries_train_val", "n_clicks"),
+        Input("button_timeseries_pos_neg", "n_clicks"),
+    )
+    def set_timeseries_buttons(
+        n_clicks_all_data, n_clicks_train_val, n_clicks_pos_neg
+    ):
+        changed_id = [p["prop_id"] for p in dash.callback_context.triggered][0]
+        all_data_outline = train_val_outline = pos_neg_outline = True
+        if changed_id == "button_timeseries_train_val.n_clicks":
+            group = "train_val"
+            train_val_outline = False
+        elif changed_id == "button_timeseries_pos_neg.n_clicks":
+            group = "pos_neg"
+            pos_neg_outline = False
+        else:
+            group = "all"
+            all_data_outline = False
+        
+        return (
+            create_patient_timeseries(data, group),
+            all_data_outline,
+            train_val_outline,
+            pos_neg_outline,
+        )
+
     return app
+
+def create_patient_timeseries(data, group):
+    def aggregate_timeseries(df):
+        timeseries = (
+            df.groupby("all_swab_dates").count()["Pseudonym"]
+            .groupby(pd.Grouper(freq="W"))
+            .sum()
+            .fillna(0)
+            .sort_index()
+        )
+        # Extend time series on front and back
+        extra = pd.Series(
+            [0, 0], index=["2020-02-01", pd.to_datetime("today")]
+        )
+        extra.index = pd.to_datetime(extra.index)
+        timeseries = timeseries.append(extra).sort_index()
+        return timeseries
+
+    patient = data.dataset("patient")
+    # Merges positive and negative swab dates to single field
+    patient["all_swab_dates"] = pd.to_datetime(
+        patient["swab_date"].fillna(
+            patient["date_of_positive_covid_swab"]
+            )
+        )
+    if group == "all":
+        timeseries = aggregate_timeseries(patient)
+
+        lines = [
+            go.Scatter(
+                x=timeseries.index,
+                y=timeseries,
+                mode="lines",
+                name="NCCID",
+                showlegend=False,
+                line_shape="hv",
+            ),
+        ]
+        
+        fig = go.Figure(
+            data=lines,
+            layout={
+                "title": "Number of patients by swab date across whole dataset",
+                "xaxis_title": "Date",
+                "yaxis_title": "# of Patients",
+            }
+        )
+    elif group == "train_val":
+        training_series = aggregate_timeseries(
+            patient[patient["group"] == "training"]
+        )
+        validation_series = aggregate_timeseries(
+            patient[patient["group"] == "validation"]
+        )
+        lines = [
+            go.Scatter(
+                x=training_series.index,
+                y=training_series,
+                mode="lines",
+                name="Training",
+                showlegend=True,
+                line_shape="hv",
+            ),
+            go.Scatter(
+                x=validation_series.index,
+                y=validation_series,
+                mode="lines",
+                name="Validation",
+                showlegend=True,
+                line_shape="hv",
+            ),
+        ]
+        fig = go.Figure(
+            data=lines,
+            layout={
+                "title": "Number of patients by swab date in training and validation sets",
+                "xaxis_title": "Date",
+                "yaxis_title": "# of Patients",
+            }
+        )
+    elif group == "pos_neg":
+        positive_series = aggregate_timeseries(
+            patient[patient["filename_covid_status"]]
+        )
+        negative_series = aggregate_timeseries(
+            patient[~patient["filename_covid_status"]]
+        )
+        lines = [
+            go.Scatter(
+                x=negative_series.index,
+                y=negative_series,
+                mode="lines",
+                name="Negative",
+                showlegend=True,
+                line_shape="hv",
+            ),
+            go.Scatter(
+                x=positive_series.index,
+                y=positive_series,
+                mode="lines",
+                name="Positive",
+                showlegend=True,
+                line_shape="hv",
+            ),
+        ]
+
+        fig = go.Figure(
+            data = lines,
+            layout={
+                "title": "Number of patients by swab date in covid positive and negative patients",
+                "xaxis_title": "Date",
+                "yaxis_title": "# of Patients",
+            }
+        )
+
+    graph = dcc.Graph(id="timeseries", figure=fig)
+    return graph
+
 
 
 def create_age_breakdown(data, group):
-    def biground(x, base=5):
-        return base * round(x / base)
-
-    patient = data.data["patient"]
+    patient = data.dataset("patient")
 
     xbins = dict(  # bins used for histogram
-        start=0, end=biground(patient["age_update"].max()), size=5
+        start=0, end=tools.biground(patient["age_update"].max()), size=5
     )
 
     if group == "all":
@@ -322,7 +530,6 @@ def create_age_breakdown(data, group):
                 xbins=xbins,
             )
         )
-        
 
     fig.update_layout(barmode="overlay", bargap=0.1)
     fig.update_traces(
@@ -335,7 +542,7 @@ def create_age_breakdown(data, group):
 
 
 def create_ethnicity_breakdown(data, group):
-    patient = data.data["patient"]
+    patient = data.dataset("patient")
 
     # The following ensures that histogram categories are plotted in total frequency order
     ethnic_groups = list(
@@ -418,7 +625,7 @@ def create_ethnicity_breakdown(data, group):
 
 
 def create_gender_breakdown(data):
-    patient = data.data["patient"]
+    patient = data.dataset("patient")
     total = patient["sex_update"].value_counts()
     training = patient[patient["group"] == "training"][
         "sex_update"

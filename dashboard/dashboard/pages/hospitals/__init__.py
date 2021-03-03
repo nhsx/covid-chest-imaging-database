@@ -25,7 +25,7 @@ def serve_layout(data: Dataset) -> html.Div:
         The HTML componets of the page layout, wrapped in  div
     """
 
-    patient = data.data["patient"]
+    patient = data.dataset("patient")
 
     centres = sorted(patient["SubmittingCentre"].unique())
     centres_select = dcc.Dropdown(
@@ -152,7 +152,11 @@ def serve_layout(data: Dataset) -> html.Div:
                 color="black",
                 children=html.Div(id="patients-swabs"),
             ),
-            
+            dbc.Alert(
+                "Note: data collection for the NCCID began in May 2020 "
+                + " but includes patients admitted to hospital since Februray 2020.",
+                color="info"
+            ),
             show_last_update(data),
         ]
     )
@@ -212,15 +216,15 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
 
 
 def create_hospital_table(data, covid_status, order_column):
-    patient = data.data["patient"]
+    patient = data.dataset("patient")
     if covid_status == "positive":
         patient = patient[patient["filename_covid_status"]]
     elif covid_status == "negative":
         patient = patient[~patient["filename_covid_status"]]
 
-    ct = data.data["ct"]
-    mri = data.data["mri"]
-    xray = data.data["xray"]
+    ct = data.dataset("ct")
+    mri = data.dataset("mri")
+    xray = data.dataset("xray")
 
     table_header = [
         html.Thead(
@@ -349,12 +353,12 @@ def create_hospital_table(data, covid_status, order_column):
 
 
 def create_hospital_counts(data, centre):
+    patient = data.dataset("patient")
     if centre is None:
         title_filter = "All Submitting Centres"
-        patient = data.data["patient"].copy()
     else:
-        patient = data.data["patient"][
-            data.data["patient"]["SubmittingCentre"] == centre
+        patient = patient[
+            patient["SubmittingCentre"] == centre
         ]
         title_filter = centre
 
@@ -380,7 +384,7 @@ def create_hospital_counts(data, centre):
             [counts[col].max() for col in counts.columns],
         ],
         columns=counts.columns,
-        index=["2020-05-10", pd.to_datetime("today")],
+        index=["2020-02-01", pd.to_datetime("today")],
     )
     extra.index = pd.to_datetime(extra.index)
     counts = counts.append(extra).sort_index()
