@@ -314,10 +314,7 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
     ):
         changed_id = [p["prop_id"] for p in dash.callback_context.triggered][0]
         all_data_outline = train_val_outline = pos_neg_outline = True
-        if changed_id == "button_timeseries_all_data.n_clicks":
-            group = "all"
-            all_data_outline = False
-        elif changed_id == "button_timeseries_train_val.n_clicks":
+        if changed_id == "button_timeseries_train_val.n_clicks":
             group = "train_val"
             train_val_outline = False
         elif changed_id == "button_timeseries_pos_neg.n_clicks":
