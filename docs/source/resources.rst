@@ -33,10 +33,13 @@ that is different from the overview of the above schema description. This will h
 
 * Transforming clinical measurements on the same range
 
-Please note, that this sheet contains only a subset of potential submitting centres, and a
-subset of clinical variables, as it was possible to collect. For some fields you might
-have to make decisions on data cleaning and potentially ignore or drop data that you
-think out of range or entered incorrectly.
+Please note that this sheet contains only a subset of potential submitting centres, and a
+subset of clinical variables. Furthermore, responses for these submitting centres may
+only represent a subset of their hospital sites, where units might vary from hospital to
+hospital. The information presented here should only serve as a guide, and always be
+checked against values to ensure they are sensible. For some fields you might have
+to make decisions on data cleaning and potentially drop values that you think are
+outside the plausible range or entered incorrectly.
 
 
 Frequently Asked Questions
