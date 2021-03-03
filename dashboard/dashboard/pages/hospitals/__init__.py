@@ -52,6 +52,7 @@ def serve_layout(data: Dataset) -> html.Div:
                 "value": "Submitting Centre/Site",
             },
             {"label": "First Submission", "value": "First Submission"},
+            {"label": "Latest Submission", "value": "Latest Submission"},
             {"label": "Patients", "value": "Patients"},
             {"label": "Image Studies", "value": "Image Studies"},
         ],
@@ -231,7 +232,8 @@ def create_hospital_table(data, covid_status, order_column):
             html.Tr(
                 [
                     html.Th("Submitting Centre/Site"),
-                    html.Th("First submission"),
+                    html.Th("First Submission"),
+                    html.Th("Latest Submission"),
                     html.Th("Patients"),
                     html.Th("Image Studies"),
                 ]
@@ -242,6 +244,7 @@ def create_hospital_table(data, covid_status, order_column):
 
     submitting_centres = sorted(patient["SubmittingCentre"].unique())
     earliest_dates = []
+    latest_dates = []
     patient_counts = []
     study_counts = []
     for centre in submitting_centres:
@@ -265,9 +268,14 @@ def create_hospital_table(data, covid_status, order_column):
         ].min()
         earliest_dates += [earliest]
 
+        latest = patient[patient["SubmittingCentre"] == centre][
+            "filename_latest_date"
+        ].max()
+        latest_dates += [latest]
     d = {
         "Submitting Centre/Site": submitting_centres,
         "First Submission": earliest_dates,
+        "Latest Submission": latest_dates,
         "Patients": patient_counts,
         "Image Studies": study_counts,
     }
