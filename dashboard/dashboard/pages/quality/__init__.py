@@ -213,10 +213,10 @@ def create_completeness_chart(data, centre, fields, sort_by):
     completeness = pd.DataFrame(
         {
             "Not-Null": (
-                (~covid_positives.isnull()).sum() * 100 / len(covid_positives)
+                (~covid_positives.isnull()).sum() / len(covid_positives)
             ),
             "Nulls": (
-                covid_positives.isnull().sum() * 100 / len(covid_positives)
+                covid_positives.isnull().sum() / len(covid_positives)
             ),
         }
     )
@@ -241,8 +241,12 @@ def create_completeness_chart(data, centre, fields, sort_by):
         xaxis_title="Fields",
         yaxis_title="% of Nulls",
         legend_title="",
+        yaxis={
+            "tickformat": ',.0%',
+            "range": [0,1]
+        }
     )
-    fig.update_traces(hovertemplate=None)
+    fig.update_traces(hovertemplate='%{y:.2%}')
     fig.update_layout(hovermode="x")
 
     graph = dcc.Graph(id="completeness-graph", figure=fig)
@@ -268,7 +272,6 @@ def create_completeness_table(data, centre, fields, sort_by):
             {
                 "Completeness": (
                     (~covid_positives.isnull()).sum()
-                    * 100
                     / len(covid_positives)
                 ),
             }
@@ -287,7 +290,7 @@ def create_completeness_table(data, centre, fields, sort_by):
         completeness = completeness.sort_values(by="Field")
 
     completeness["Completeness"] = completeness["Completeness"].apply(
-        lambda x: f"{x:.0f}%"
+        lambda x: f"{x:.2%}"
     )
 
     table = dbc.Table.from_dataframe(
