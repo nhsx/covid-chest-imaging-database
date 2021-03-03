@@ -210,10 +210,15 @@ def test_filelist_raw_data():
 @mock_s3
 def test_pending_raw_images_list():
 
+    uuids = [pydicom.uid.generate_uid() for _ in range(4)]
+
     target_response = [
         f"raw-nhs-upload/2021-01-31/images/{pydicom.uid.generate_uid()}.dcm",
         f"raw-nhs-upload/2021-02-28/images/{pydicom.uid.generate_uid()}.dcm",
         f"raw-nhs-upload/2021-02-28/images/{pydicom.uid.generate_uid()}.dcm",
+        f"raw-nhs-upload/2021-02-28/images/{uuids[0]}.dcm",
+        f"raw-nhs-upload/2021-02-28/images/{uuids[1]}.dcm",
+        f"raw-nhs-upload/2021-02-28/images/{uuids[2]}.dcm",
     ]
     other_response = [
         f"raw-nhs-upload/2021-01-31/age-0/images/{pydicom.uid.generate_uid()}.dcm",
@@ -227,6 +232,14 @@ def test_pending_raw_images_list():
         f"{VALIDATION_PREFIX}data/Covid2/status_2020-09-01.json",
         f"{VALIDATION_PREFIX}ct/Covid2/{pydicom.uid.generate_uid()}.dcm",
         f"{VALIDATION_PREFIX}mri/Covid2/{pydicom.uid.generate_uid()}.dcm",
+        # Only copied image, so list the relevant image for metadata
+        f"{TRAINING_PREFIX}xray/Covid1/123/123/{uuids[1]}.dcm",
+        # Only metadata, so list the relevant image
+        f"{TRAINING_PREFIX}xray-metadata/Covid2/234/234/{uuids[2]}.json",
+        # Skip this as it has both image copy and metadata
+        f"raw-nhs-upload/2021-02-28/images/{uuids[3]}.dcm",
+        f"{TRAINING_PREFIX}xray/Covid3/345/345/{uuids[3]}.dcm",
+        f"{TRAINING_PREFIX}xray-metadata/Covid3/345/345/{uuids[3]}.json",
     ]
     test_file_names = target_response + other_response
 
@@ -787,3 +800,99 @@ def test_process_patient_data():
     args = "process", "raw-nhs-upload/2021-03-01/data/Covid50_data.json", None
     with pytest.raises(StopIteration):
         next(warehouseloader.process_patient_data(*args, **kwargs))
+
+
+@mock_s3
+def test_upload_text_data():
+    bucket_name = "testbucket-12345"
+    conn = boto3.resource("s3", region_name="us-east-1")
+    conn.create_bucket(Bucket=bucket_name)
+    s3client = S3Client(bucket=bucket_name)
+
+    task = "upload"
+    key = "test.txt"
+    content = "1234567890" * 10
+
+    ignored_inputs = [
+        ("something", key, content),
+        (task, None, content),
+        (task, key, None),
+    ]
+    for args in ignored_inputs:
+        assert (
+            warehouseloader.upload_text_data(*args, s3client=s3client) is None
+        )
+
+    # Actual upload task
+    args = task, key, content
+    assert (
+        warehouseloader.upload_text_data(*args, s3client=s3client)
+        is bonobo.constants.NOT_MODIFIED
+    )
+    assert s3client.object_content(key).decode("utf-8") == content
+
+
+@mock_s3
+def test_warehouseloader_extract_raw_files():
+    """Test the warehouseloader extract_raw_files_from_folder function."""
+    bucket_name = "testbucket-12345"
+    conn = boto3.resource("s3", region_name="us-east-1")
+    conn.create_bucket(Bucket=bucket_name)
+    s3client = S3Client(bucket=bucket_name)
+    config = PipelineConfig()
+
+    input_config = dict(
+        {
+            "raw_prefixes": [
+                "raw-nhs-upload/",
+            ],
+            "training_percentage": 0,
+            "sites": {
+                "split": [],
+                "training": [],
+                "validation": [],
+            },
+        }
+    )
+    conn.meta.client.put_object(
+        Bucket=bucket_name, Key=CONFIG_KEY, Body=json.dumps(input_config)
+    )
+    next(warehouseloader.load_config(s3client, config))
+
+    uuids = [pydicom.uid.generate_uid() for _ in range(4)]
+
+    target_files = [
+        "raw-nhs-upload/2021-01-31/data/Covid1_data.json",
+        "raw-nhs-upload/2021-01-31/data/Covid2_status.json",
+        "raw-nhs-upload/2021-02-28/data/Covid3_data.json",
+        "raw-nhs-upload/2021-02-28/data/Covid4_status.json",
+        f"raw-nhs-upload/2021-02-28/images/{uuids[0]}.dcm",
+        f"raw-nhs-upload/2021-02-28/images/{uuids[1]}.dcm",
+        f"raw-nhs-upload/2021-02-28/images/{uuids[2]}.dcm",
+    ]
+    extra_files = [
+        "raw-nhs-upload/2021-03-01/age-0/data/Covid6_data.json",
+        f"raw-nhs-upload/2021-02-28/age-0/images/{pydicom.uid.generate_uid()}.dcm",
+        "test/Covid5_data.json"
+        "raw-elsewhere-upload/2021-03-01/data/Covid7_data.json",
+        f"{TRAINING_PREFIX}/data/Covid1/data_2021-01-31.json",
+        # Only copied image, so list the relevant image for metadata
+        f"{TRAINING_PREFIX}xray/Covid1/123/123/{uuids[1]}.dcm",
+        # Only metadata, so list the relevant image
+        f"{TRAINING_PREFIX}xray-metadata/Covid2/234/234/{uuids[2]}.json",
+        # Skip this as it has both image copy and metadata
+        f"raw-nhs-upload/2021-02-28/images/{uuids[3]}.dcm",
+        f"{TRAINING_PREFIX}xray/Covid3/345/345/{uuids[3]}.dcm",
+        f"{TRAINING_PREFIX}xray-metadata/Covid3/345/345/{uuids[3]}.json",
+    ]
+
+    create_inventory(target_files + extra_files, bucket_name)
+
+    inv_downloader = InventoryDownloader(main_bucket=bucket_name)
+    filelist = FileList(inv_downloader)
+
+    result_list = list(
+        warehouseloader.extract_raw_files_from_folder(config, filelist)
+    )
+    key_set = set([key for _, key, _ in result_list])
+    assert key_set ^ set(target_files) == set()
