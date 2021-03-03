@@ -2,15 +2,14 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_table
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objs as go
 from dash.dependencies import Input, Output
 
-from . import columns
 from dataset import Dataset
 from pages.tools import show_last_update
+
+from . import columns
 
 
 def serve_layout(data: Dataset) -> html.Div:
@@ -34,9 +33,6 @@ def serve_layout(data: Dataset) -> html.Div:
         id="hospital-filter",
     )
 
-    columns_values = [
-        {"label": f"{key} fields", "value": key} for key in columns.COLS_MAP
-    ]
     variables_select = dcc.Dropdown(
         options=[
             {"label": f"{key} fields", "value": key}
@@ -129,7 +125,7 @@ def serve_layout(data: Dataset) -> html.Div:
             dbc.Alert(
                 "Note: when plotting for all fields some labels aren't visible,"
                 + " please hover over bars to see missing field names",
-                color="info"
+                color="info",
             ),
             selector,
             dcc.Loading(
@@ -173,18 +169,22 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
 
     @app.callback(
         Output("completeness-chart", "children"),
-        Input("hospital-filter", "value"),
-        Input("variables-filter", "value"),
-        Input("sortby-select", "value"),
+        [
+            Input("hospital-filter", "value"),
+            Input("variables-filter", "value"),
+            Input("sortby-select", "value"),
+        ],
     )
     def set_completeness_chart(centre, fields, sort_by):
         return create_completeness_chart(data, centre, fields, sort_by)
 
     @app.callback(
         Output("completeness-table", "children"),
-        Input("hospital-filter", "value"),
-        Input("variables-filter", "value"),
-        Input("sortby-select", "value"),
+        [
+            Input("hospital-filter", "value"),
+            Input("variables-filter", "value"),
+            Input("sortby-select", "value"),
+        ],
     )
     def set_completeness_table(centre, fields, sort_by):
         return create_completeness_table(data, centre, fields, sort_by)
@@ -215,9 +215,7 @@ def create_completeness_chart(data, centre, fields, sort_by):
             "Not-Null": (
                 (~covid_positives.isnull()).sum() / len(covid_positives)
             ),
-            "Nulls": (
-                covid_positives.isnull().sum() / len(covid_positives)
-            ),
+            "Nulls": (covid_positives.isnull().sum() / len(covid_positives)),
         }
     )
     if sort_by == "Completeness":
@@ -241,12 +239,9 @@ def create_completeness_chart(data, centre, fields, sort_by):
         xaxis_title="Fields",
         yaxis_title="% of Nulls",
         legend_title="",
-        yaxis={
-            "tickformat": ',.0%',
-            "range": [0,1]
-        }
+        yaxis={"tickformat": ",.0%", "range": [0, 1]},
     )
-    fig.update_traces(hovertemplate='%{y:.2%}')
+    fig.update_traces(hovertemplate="%{y:.2%}")
     fig.update_layout(hovermode="x")
 
     graph = dcc.Graph(id="completeness-graph", figure=fig)
@@ -271,8 +266,7 @@ def create_completeness_table(data, centre, fields, sort_by):
         pd.DataFrame(
             {
                 "Completeness": (
-                    (~covid_positives.isnull()).sum()
-                    / len(covid_positives)
+                    (~covid_positives.isnull()).sum() / len(covid_positives)
                 ),
             }
         )

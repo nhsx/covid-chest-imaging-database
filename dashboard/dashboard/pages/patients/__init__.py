@@ -2,9 +2,7 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_table
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 from dash.dependencies import Input, Output
 
@@ -100,22 +98,18 @@ def serve_layout(data: Dataset) -> html.Div:
         color="primary",
         outline=True,
     )
-    
+
     timeseries_buttons = dbc.ButtonGroup(
         [
             button_timeseries_all_data,
             button_timeseries_train_val,
-            button_timeseries_pos_neg,   
+            button_timeseries_pos_neg,
         ]
     )
 
     age_selector = html.Div(
         [
-            html.Div(
-                children="""
-                    Select chart to view:
-                """
-            ),
+            html.Div(children="Select chart to view:"),
             dbc.Row(
                 [
                     dbc.Col(
@@ -233,23 +227,24 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
     app.layout = lambda: serve_layout(data)
 
     @app.callback(
-        Output("age-breakdown-plot", "children"),
-        Output("button_age_all_data", "outline"),
-        Output("button_age_train_val", "outline"),
-        Output("button_age_pos_neg", "outline"),
-        Input("button_age_all_data", "n_clicks"),
-        Input("button_age_train_val", "n_clicks"),
-        Input("button_age_pos_neg", "n_clicks"),
+        [
+            Output("age-breakdown-plot", "children"),
+            Output("button_age_all_data", "outline"),
+            Output("button_age_train_val", "outline"),
+            Output("button_age_pos_neg", "outline"),
+        ],
+        [
+            Input("button_age_all_data", "n_clicks"),
+            Input("button_age_train_val", "n_clicks"),
+            Input("button_age_pos_neg", "n_clicks"),
+        ],
     )
     def set_age_breakdown_buttons(
         n_clicks_all_data, n_clicks_train_val, n_clicks_pos_neg
     ):
         changed_id = [p["prop_id"] for p in dash.callback_context.triggered][0]
         all_data_outline = train_val_outline = pos_neg_outline = True
-        if changed_id == "button_age_all_data.n_clicks":
-            group = "all"
-            all_data_outline = False
-        elif changed_id == "button_age_train_val.n_clicks":
+        if changed_id == "button_age_train_val.n_clicks":
             group = "train_val"
             train_val_outline = False
         elif changed_id == "button_age_pos_neg.n_clicks":
@@ -267,23 +262,24 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
         )
 
     @app.callback(
-        Output("ethnicity-breakdown-plot", "children"),
-        Output("button_ethnicity_all_data", "outline"),
-        Output("button_ethnicity_train_val", "outline"),
-        Output("button_ethnicity_pos_neg", "outline"),
-        Input("button_ethnicity_all_data", "n_clicks"),
-        Input("button_ethnicity_train_val", "n_clicks"),
-        Input("button_ethnicity_pos_neg", "n_clicks"),
+        [
+            Output("ethnicity-breakdown-plot", "children"),
+            Output("button_ethnicity_all_data", "outline"),
+            Output("button_ethnicity_train_val", "outline"),
+            Output("button_ethnicity_pos_neg", "outline"),
+        ],
+        [
+            Input("button_ethnicity_all_data", "n_clicks"),
+            Input("button_ethnicity_train_val", "n_clicks"),
+            Input("button_ethnicity_pos_neg", "n_clicks"),
+        ],
     )
-    def set_age_breakdown_buttons(
+    def set_ethnicity_breakdown_buttons(
         n_clicks_all_data, n_clicks_train_val, n_clicks_pos_neg
     ):
         changed_id = [p["prop_id"] for p in dash.callback_context.triggered][0]
         all_data_outline = train_val_outline = pos_neg_outline = True
-        if changed_id == "button_ethnicity_all_data.n_clicks":
-            group = "all"
-            all_data_outline = False
-        elif changed_id == "button_ethnicity_train_val.n_clicks":
+        if changed_id == "button_ethnicity_train_val.n_clicks":
             group = "train_val"
             train_val_outline = False
         elif changed_id == "button_ethnicity_pos_neg.n_clicks":
@@ -323,7 +319,7 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
         else:
             group = "all"
             all_data_outline = False
-        
+
         return (
             create_patient_timeseries(data, group),
             all_data_outline,
@@ -333,10 +329,12 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
 
     return app
 
+
 def create_patient_timeseries(data, group):
     def aggregate_timeseries(df):
         timeseries = (
-            df.groupby("all_swab_dates").count()["Pseudonym"]
+            df.groupby("all_swab_dates")
+            .count()["Pseudonym"]
             .groupby(pd.Grouper(freq="W"))
             .sum()
             .fillna(0)
@@ -353,10 +351,8 @@ def create_patient_timeseries(data, group):
     patient = data.dataset("patient")
     # Merges positive and negative swab dates to single field
     patient["all_swab_dates"] = pd.to_datetime(
-        patient["swab_date"].fillna(
-            patient["date_of_positive_covid_swab"]
-            )
-        )
+        patient["swab_date"].fillna(patient["date_of_positive_covid_swab"])
+    )
     if group == "all":
         timeseries = aggregate_timeseries(patient)
 
@@ -370,14 +366,14 @@ def create_patient_timeseries(data, group):
                 line_shape="hv",
             ),
         ]
-        
+
         fig = go.Figure(
             data=lines,
             layout={
                 "title": "Number of patients by swab date across whole dataset",
                 "xaxis_title": "Date",
                 "yaxis_title": "# of Patients",
-            }
+            },
         )
     elif group == "train_val":
         training_series = aggregate_timeseries(
@@ -410,7 +406,7 @@ def create_patient_timeseries(data, group):
                 "title": "Number of patients by swab date in training and validation sets",
                 "xaxis_title": "Date",
                 "yaxis_title": "# of Patients",
-            }
+            },
         )
     elif group == "pos_neg":
         positive_series = aggregate_timeseries(
@@ -439,17 +435,16 @@ def create_patient_timeseries(data, group):
         ]
 
         fig = go.Figure(
-            data = lines,
+            data=lines,
             layout={
                 "title": "Number of patients by swab date in covid positive and negative patients",
                 "xaxis_title": "Date",
                 "yaxis_title": "# of Patients",
-            }
+            },
         )
 
     graph = dcc.Graph(id="timeseries", figure=fig)
     return graph
-
 
 
 def create_age_breakdown(data, group):
@@ -533,8 +528,8 @@ def create_age_breakdown(data, group):
 
     fig.update_layout(barmode="overlay", bargap=0.1)
     fig.update_traces(
-        opacity=0.75, 
-        hovertemplate='%{x}: %{y:.2f}<extra></extra>',
+        opacity=0.75,
+        hovertemplate="%{x}: %{y:.2f}<extra></extra>",
     )
 
     graph = dcc.Graph(id="age-histogram", figure=fig)
@@ -618,8 +613,10 @@ def create_ethnicity_breakdown(data, group):
                 histnorm="percent",
             )
         )
-        
-    fig.update_traces(hovertemplate='%{x}: %{y:.2f}<extra></extra>',) 
+
+    fig.update_traces(
+        hovertemplate="%{x}: %{y:.2f}<extra></extra>",
+    )
     graph = dcc.Graph(id="ethnicity-histogram", figure=fig)
     return graph
 
@@ -633,10 +630,6 @@ def create_gender_breakdown(data):
     validation = patient[patient["group"] == "validation"][
         "sex_update"
     ].value_counts()
-    n_patients = patient.count()
-
-    # total_column = [f"{numformat(total['M'])} ({total['M']/n_patients:.1f}%)",
-    #  f"{total['F']}", f"{total['Unknown']}", 0]
 
     def calculate_column(dataset):
         genders = ["M", "F", "Unknown"]

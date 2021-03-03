@@ -55,6 +55,7 @@ def show_last_update(data):
     t = time.strftime("%c", data.get_last_update())
     return html.Div(f"Data last updated: {t}", id="data-last-update")
 
+
 def biground(number, base=5):
     """Round a number to the nearest multiple another
 
