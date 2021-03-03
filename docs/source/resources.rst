@@ -27,6 +27,18 @@ This will help with:
 * Highlighting where there are known erroneous entries for each field
 * Recommending remedial actions for erroneous entries within each field
 
+An :download:`additional spreadsheet <docs/NCCID_site_specific_units.xlsx>` contains
+information on submitting sites that use measurement units for various clinical variable fields
+that is different from the overview of the above schema description. This will help with:
+
+* Transforming clinical measurements on the same range
+
+Please note, that this sheet contains only a subset of potential submitting centres, and a
+subset of clinical variables, as it was possible to collect. For some fields you might
+have to make decisions on data cleaning and potentially ignore or drop data that you
+think out of range or entered incorrectly.
+
+
 Frequently Asked Questions
 ##########################
 
