@@ -122,7 +122,7 @@ def serve_layout(data: Dataset) -> html.Div:
                 children=html.Div(id="image-timeseries-plot"),
             ),
             dbc.Alert(
-                "Note: data collection for the NCCID began in May 2020 "
+                "ⓘ Data collection for the NCCID began in May 2020 "
                 + " but includes images taken in hospital since Februray 2020.",
                 color="info",
             ),

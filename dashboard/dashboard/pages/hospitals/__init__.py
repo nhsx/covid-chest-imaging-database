@@ -121,7 +121,7 @@ def serve_layout(data: Dataset) -> html.Div:
             ),
             centres_select,
             html.P(
-                "Note: click the × mark to clear the selection above and show data for all submitting centres.",
+                "ⓘ Click the × mark to clear the selection above and show data for all submitting centres.",
                 id="centres-note",
             ),
             dcc.Loading(
@@ -131,7 +131,7 @@ def serve_layout(data: Dataset) -> html.Div:
                 children=html.Div(id="patients-swabs"),
             ),
             dbc.Alert(
-                "Note: data collection for the NCCID began in May 2020 "
+                "ⓘ Data collection for the NCCID began in May 2020 "
                 + " but includes patients admitted to hospital since Februray 2020.",
                 color="info",
             ),

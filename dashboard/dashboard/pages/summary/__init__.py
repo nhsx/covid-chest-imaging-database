@@ -398,7 +398,7 @@ def serve_layout(data: Dataset) -> html.Div:
             ),
             table_patient_count,
             dbc.Alert(
-                "Note that the patient counts above include all patients with clinical data,"
+                "ⓘ The patient counts above include all patients with clinical data,"
                 " whether or not their imaging data has been provided yet.",
                 color="info",
             ),
