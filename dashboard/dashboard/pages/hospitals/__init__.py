@@ -2,13 +2,12 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_table
 import pandas as pd
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output
 
 from dataset import Dataset
-from pages.tools import numformat, show_last_update
+from pages.tools import show_last_update
 
 
 def serve_layout(data: Dataset) -> html.Div:
@@ -105,24 +104,6 @@ def serve_layout(data: Dataset) -> html.Div:
             html.H1(children="Hospital Sites"),
             html.H2("Sites Overview"),
             selector,
-            # html.Div(
-            #     [
-            #         html.Label(
-            #             [
-            #                 "Select COVID-19 status to filter the data below.",
-            #             ],
-            #             htmlFor="hospital-filter",
-            #         ),
-            #         covid_status_select,
-            #         html.Label(
-            #             [
-            #                 "Select table ordering column.",
-            #             ],
-            #             htmlFor="table-order",
-            #         ),
-            #         table_order_select,
-            #     ]
-            # ),
             html.Br(),
             dcc.Loading(
                 id="loading-hospital-table",
@@ -130,12 +111,8 @@ def serve_layout(data: Dataset) -> html.Div:
                 color="black",
                 children=html.Div(id="hospital-table"),
             ),
-            # html.Div(id="hospital-table"),
-            # html.Br(),
-            # html.Div(id="hospital-datatable"),
             html.Hr(),
             html.H2("Data Over Time"),
-            # html.Br(),
             html.Label(
                 [
                     "Select Submitting Centre/Site to filter above",
@@ -144,7 +121,7 @@ def serve_layout(data: Dataset) -> html.Div:
             ),
             centres_select,
             html.P(
-                "Note: click the × mark to clear the selection above and show data for all submitting centres.",
+                "ⓘ Click the × mark to clear the selection above and show data for all submitting centres.",
                 id="centres-note",
             ),
             dcc.Loading(
@@ -154,9 +131,9 @@ def serve_layout(data: Dataset) -> html.Div:
                 children=html.Div(id="patients-swabs"),
             ),
             dbc.Alert(
-                "Note: data collection for the NCCID began in May 2020 "
+                "ⓘ Data collection for the NCCID began in May 2020 "
                 + " but includes patients admitted to hospital since Februray 2020.",
-                color="info"
+                color="info",
             ),
             show_last_update(data),
         ]
@@ -192,16 +169,9 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
     def set_hostpital_table(covid_status, order_column):
         return create_hospital_table(data, covid_status, order_column)
 
-    # @app.callback(
-    #     Output("hospital-datatable", "children"),
-    #     [Input("covid-status", "value")],
-    # )
-    # def set_hostpital_datatable(value):
-    #     return create_hospital_datatable(data, value)
-
     @app.callback(
         Output("patients-swabs", "children"),
-        [Input("hospital-filter", "value")],
+        Input("hospital-filter", "value"),
     )
     def set_hospital_counts(centre):
         return create_hospital_counts(data, centre)
@@ -226,21 +196,6 @@ def create_hospital_table(data, covid_status, order_column):
     ct = data.dataset("ct")
     mri = data.dataset("mri")
     xray = data.dataset("xray")
-
-    table_header = [
-        html.Thead(
-            html.Tr(
-                [
-                    html.Th("Submitting Centre/Site"),
-                    html.Th("First Submission"),
-                    html.Th("Latest Submission"),
-                    html.Th("Patients"),
-                    html.Th("Image Studies"),
-                ]
-            ),
-            className="thead-dark",
-        )
-    ]
 
     submitting_centres = sorted(patient["SubmittingCentre"].unique())
     earliest_dates = []
@@ -284,80 +239,8 @@ def create_hospital_table(data, covid_status, order_column):
         by=[order_column], ascending=(order_column == "Submitting Centre/Site")
     )
 
-    # rows = []
-    # for index, row in df_sorted.iterrows():
-    #     rows += [
-    #         html.Tr(
-    #             [
-    #                 html.Td(row["Submitting Centre/Site"]),
-    #                 html.Td(row["First Submission"]),
-    #                 html.Td(
-    #                     numformat(row["Patients"]), className="text-right"
-    #                 ),
-    #                 html.Td(
-    #                     numformat(row["Image Studies"]), className="text-right"
-    #                 ),
-    #             ]
-    #         )
-    #     ]
-    # table_body = [html.Tbody(rows)]
-    # table = dbc.Table(table_header + table_body, bordered=True)
-
     table = dbc.Table.from_dataframe(df_sorted)
     return table
-
-
-# def create_hospital_datatable(data, covid_status):
-#     patient = data.data["patient"]
-#     if covid_status == "positive":
-#         patient = patient[patient["filename_covid_status"]]
-#     elif covid_status == "negative":
-#         patient = patient[~patient["filename_covid_status"]]
-
-#     ct = data.data["ct"]
-#     mri = data.data["mri"]
-#     xray = data.data["xray"]
-
-#     submitting_centres = sorted(patient["SubmittingCentre"].unique())
-#     earliest_dates = []
-#     patient_counts = []
-#     study_counts = []
-#     for centre in submitting_centres:
-#         patient_ids = set(
-#             patient[patient["SubmittingCentre"] == centre]["Pseudonym"]
-#         )
-#         patient_counts += [len(patient_ids)]
-#         ct_studies = ct[ct["Pseudonym"].isin(patient_ids)][
-#             "StudyInstanceUID"
-#         ].nunique()
-#         mri_studies = mri[mri["Pseudonym"].isin(patient_ids)][
-#             "StudyInstanceUID"
-#         ].nunique()
-#         xray_studies = xray[xray["Pseudonym"].isin(patient_ids)][
-#             "StudyInstanceUID"
-#         ].nunique()
-#         study_counts += [ct_studies + mri_studies + xray_studies]
-
-#         earliest = patient[patient["SubmittingCentre"] == centre][
-#             "filename_earliest_date"
-#         ].min()
-#         earliest_dates += [earliest]
-
-#     d = {
-#         "Submitting Centres/Sites": submitting_centres,
-#         "First Submission": earliest_dates,
-#         "Patients": patient_counts,
-#         "Image Studies": study_counts,
-#     }
-#     df = pd.DataFrame(data=d)
-#     table = dash_table.DataTable(
-#         id="table",
-#         columns=[{"name": i, "id": i} for i in df.columns],
-#         data=df.to_dict("records"),
-#         sort_action="native",
-#     )
-
-#     return table
 
 
 def create_hospital_counts(data, centre):
@@ -365,9 +248,7 @@ def create_hospital_counts(data, centre):
     if centre is None:
         title_filter = "All Submitting Centres"
     else:
-        patient = patient[
-            patient["SubmittingCentre"] == centre
-        ]
+        patient = patient[patient["SubmittingCentre"] == centre]
         title_filter = centre
 
     # patients["latest_swab_date"] = pd.to_datetime(patients["latest_swab_date"])

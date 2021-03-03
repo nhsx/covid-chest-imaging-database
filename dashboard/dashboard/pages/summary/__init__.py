@@ -6,8 +6,7 @@ import dash_html_components as html
 import pandas as pd
 
 from dataset import Dataset
-from pages import tools
-from pages.tools import numformat, storage_format, show_last_update
+from pages.tools import numformat, show_last_update, storage_format
 
 RECENT_CUTOFF_DAYS = 30
 
@@ -346,12 +345,6 @@ def serve_layout(data: Dataset) -> html.Div:
     )
 
     trusts = len(set(patient["SubmittingCentre"]))
-    training_trusts = len(
-        set(patient[patient["group"] == "training"]["SubmittingCentre"])
-    )
-    validation_trusts = len(
-        set(patient[patient["group"] == "validation"]["SubmittingCentre"])
-    )
 
     table_trust_count_header = [
         html.Thead(
@@ -396,16 +389,16 @@ def serve_layout(data: Dataset) -> html.Div:
                 html.P(
                     children="""
                     The National COVID-19 Chest Imaging Database (NCCID) comprises chest X-ray,
-                    CT and MR images and other relevant information of patients with suspected COVID-19. 
-                    The database has been created to enable the development and validation of automated 
-                    analysis technologies that may prove effective in supporting COVID-19 care pathways, 
+                    CT and MR images and other relevant information of patients with suspected COVID-19.
+                    The database has been created to enable the development and validation of automated
+                    analysis technologies that may prove effective in supporting COVID-19 care pathways,
                     and to accelerate research projects to better understand the disease.
                 """
                 )
             ),
             table_patient_count,
             dbc.Alert(
-                "Note that the patient counts above include all patients with clinical data,"
+                "ⓘ The patient counts above include all patients with clinical data,"
                 " whether or not their imaging data has been provided yet.",
                 color="info",
             ),

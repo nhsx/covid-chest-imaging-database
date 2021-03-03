@@ -1,10 +1,7 @@
-from datetime import date
-
 import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_table
 import pandas as pd
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output
@@ -125,9 +122,9 @@ def serve_layout(data: Dataset) -> html.Div:
                 children=html.Div(id="image-timeseries-plot"),
             ),
             dbc.Alert(
-                "Note: data collection for the NCCID began in May 2020 "
+                "ⓘ Data collection for the NCCID began in May 2020 "
                 + " but includes images taken in hospital since Februray 2020.",
-                color="info"
+                color="info",
             ),
             show_last_update(data),
         ]
@@ -157,9 +154,11 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
 
     @app.callback(
         Output("image-timeseries-plot", "children"),
-        Input("dataset-select", "value"),
-        Input("covid-status-select", "value"),
-        Input("hospital-filter", "value"),
+        [
+            Input("dataset-select", "value"),
+            Input("covid-status-select", "value"),
+            Input("hospital-filter", "value"),
+        ],
     )
     def set_image_series(group, covid_status, centre):
         return create_image_series(data, group, covid_status, centre)
@@ -170,9 +169,7 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
 def create_image_series(data, group, covid_status, centre):
     patient = data.dataset("patient")
     if centre is not None:
-        patient = patient[
-            patient["SubmittingCentre"] == centre
-        ]
+        patient = patient[patient["SubmittingCentre"] == centre]
 
     if covid_status == "positive":
         patient = patient[patient["filename_covid_status"]]
@@ -202,7 +199,9 @@ def create_image_series(data, group, covid_status, centre):
 
     target_patient_group = set(patient["Pseudonym"])
 
-    ct_timeseries = get_image_timeseries(target_patient_group, data.dataset("ct"))
+    ct_timeseries = get_image_timeseries(
+        target_patient_group, data.dataset("ct")
+    )
     xray_timeseries = get_image_timeseries(
         target_patient_group, data.dataset("xray")
     )
@@ -231,7 +230,7 @@ def create_image_series(data, group, covid_status, centre):
     fig = go.Figure(
         data=lines,
         layout={
-            "title": f"Cumulative Number of Image Studies",
+            "title": "Cumulative Number of Image Studies",
             "xaxis_title": "Date of release to data users",
         },
     )
