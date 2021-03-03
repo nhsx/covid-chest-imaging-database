@@ -26,7 +26,7 @@ def serve_layout(data: Dataset) -> html.Div:
     dash_html_components.Div
         The HTML componets of the page layout, wrapped in  div
     """
-    patient = data.data["patient"]
+    patient = data.dataset("patient")
 
     centres = sorted(patient["SubmittingCentre"].unique())
     centres_select = dcc.Dropdown(
@@ -168,11 +168,10 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
 
 
 def create_image_series(data, group, covid_status, centre):
-    if centre is None:
-        patient = data.data["patient"].copy()
-    else:
-        patient = data.data["patient"][
-            data.data["patient"]["SubmittingCentre"] == centre
+    patient = data.dataset("patient")
+    if centre is not None:
+        patient = patient[
+            patient["SubmittingCentre"] == centre
         ]
 
     if covid_status == "positive":
@@ -203,9 +202,9 @@ def create_image_series(data, group, covid_status, centre):
 
     target_patient_group = set(patient["Pseudonym"])
 
-    ct_timeseries = get_image_timeseries(target_patient_group, data.data["ct"])
+    ct_timeseries = get_image_timeseries(target_patient_group, data.dataset("ct"))
     xray_timeseries = get_image_timeseries(
-        target_patient_group, data.data["xray"]
+        target_patient_group, data.dataset("xray")
     )
 
     lines = [

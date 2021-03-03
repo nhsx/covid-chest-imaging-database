@@ -353,7 +353,7 @@ def create_patient_timeseries(data, group):
         timeseries = timeseries.append(extra).sort_index()
         return timeseries
 
-    patient = data.data["patient"]
+    patient = data.dataset("patient")
     # Merges positive and negative swab dates to single field
     patient["all_swab_dates"] = pd.to_datetime(
         patient["swab_date"].fillna(
@@ -456,13 +456,10 @@ def create_patient_timeseries(data, group):
 
 
 def create_age_breakdown(data, group):
-    def biground(x, base=5):
-        return base * round(x / base)
-
-    patient = data.data["patient"]
+    patient = data.dataset("patient")
 
     xbins = dict(  # bins used for histogram
-        start=0, end=biground(patient["age_update"].max()), size=5
+        start=0, end=tools.biground(patient["age_update"].max()), size=5
     )
 
     if group == "all":
@@ -536,7 +533,6 @@ def create_age_breakdown(data, group):
                 xbins=xbins,
             )
         )
-        
 
     fig.update_layout(barmode="overlay")
     fig.update_traces(opacity=0.75)
@@ -546,7 +542,7 @@ def create_age_breakdown(data, group):
 
 
 def create_ethnicity_breakdown(data, group):
-    patient = data.data["patient"]
+    patient = data.dataset("patient")
 
     # The following ensures that histogram categories are plotted in total frequency order
     ethnic_groups = list(
@@ -622,14 +618,13 @@ def create_ethnicity_breakdown(data, group):
                 histnorm="percent",
             )
         )
-        
 
     graph = dcc.Graph(id="ethnicity-histogram", figure=fig)
     return graph
 
 
 def create_gender_breakdown(data):
-    patient = data.data["patient"]
+    patient = data.dataset("patient")
     total = patient["sex_update"].value_counts()
     training = patient[patient["group"] == "training"][
         "sex_update"

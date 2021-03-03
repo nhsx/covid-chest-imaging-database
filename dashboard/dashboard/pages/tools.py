@@ -54,3 +54,19 @@ def show_last_update(data):
     by the underlying data storage."""
     t = time.strftime("%c", data.get_last_update())
     return html.Div(f"Data last updated: {t}", id="data-last-update")
+
+def biground(number, base=5):
+    """Round a number to the nearest multiple another
+
+    Parameters
+    ----------
+    number : int
+        The number to round.
+    base : int, default=5
+        The base of which the result will be multiples of
+
+    Returns
+    -------
+    int
+    """
+    return base * round(number / base)
