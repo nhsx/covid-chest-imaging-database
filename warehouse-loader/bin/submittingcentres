@@ -41,9 +41,8 @@ main() {
     runtime=$((end-start))
 
     message="Pipeline run in $(convertsecs $runtime) and exited with code ${exitcode}."
-    echo "${message}"
     # One for SNS the notification, append to existing file or create it
-    echo "\n${message}" >> /tmp/message.txt
+    echo "${message}" | tee -a /tmp/message.txt
 
     # shellcheck disable=SC2153
     if [ -n "${TOPIC_ARN}" ]; then
