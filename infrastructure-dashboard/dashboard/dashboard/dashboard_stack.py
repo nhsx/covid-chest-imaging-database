@@ -88,6 +88,9 @@ class DashboardStack(core.Stack):
                 },
             },
             platform_version=ecs.FargatePlatformVersion.VERSION1_4,
+            # See values for these entries at https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs_patterns/NetworkLoadBalancedFargateService.html#networkloadbalancedfargateservice
+            cpu=256,  # .25 vCPU
+            memory_limit_mib=512,  # 0.5 GB
         )
 
         processed_bucket = s3.Bucket.from_bucket_name(
