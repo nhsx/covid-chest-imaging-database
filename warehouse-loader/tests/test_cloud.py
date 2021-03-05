@@ -819,9 +819,13 @@ def test_upload_text_data():
         (task, key, None),
     ]
     for args in ignored_inputs:
+        _, key, _ = args
         assert (
-            warehouseloader.upload_text_data(*args, s3client=s3client) is None
+            warehouseloader.upload_text_data(*args, s3client=s3client)
+            is bonobo.constants.NOT_MODIFIED
         )
+        if key is not None:
+            assert not s3client.object_exists(key)
 
     # Actual upload task
     args = task, key, content
