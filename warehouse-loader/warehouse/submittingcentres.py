@@ -3,39 +3,100 @@ the uploaded raw dataset.
 """
 
 import logging
+import os
+import re
 from pathlib import Path
 
 import bonobo
 import mondrian
-from bonobo.config import Configurable, ContextProcessor, use_raw_input
+from bonobo.config import (
+    Configurable,
+    ContextProcessor,
+    Service,
+    use,
+    use_raw_input,
+)
 from bonobo.util.objects import ValueHolder
 
+import warehouse.components.helpers as helpers
 import warehouse.warehouseloader as wl  # noqa: E402
 from warehouse.components.services import (
-    Inventory,
+    FileList,
+    InventoryDownloader,
     PipelineConfig,
-    SubFolderList,
+    S3Client,
 )
 
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
 
+BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default="chest-data-warehouse")
+NO_OUTPUT_FILE = bool(os.getenv("NO_OUTPUT_FILE", default=False))
+
+
+@use("config")
+@use("filelist")
+def extract_raw_data_files(config, filelist):
+    """Extract files from a given date folder in the data dump
+
+    Parameters
+    ----------
+    config : PipelineConfig
+        A configuration store.
+    filelist : FileList
+        To get the relevant file lists from the inventory.
+
+    Yields
+    ------
+    tuple[str, boto3.resource('s3').ObjectSummary, None]
+        A task name ("process"), object to process, and a placeholder value
+    """
+    raw_prefixes = {prefix.rstrip("/") for prefix in config.get_raw_prefixes()}
+    pattern = re.compile(
+        r"^raw-.*/\d{4}-\d{2}-\d{2}/data/(?P<pseudonym>[^/]*)_(data|status).json$"
+    )
+    donelist = set()
+    # List the clinical data files for processing
+    for key in filelist.get_raw_data_list(raw_prefixes=raw_prefixes):
+        key_match = pattern.match(key)
+        if key_match and key_match.group("pseudonym") not in donelist:
+            donelist.add(key_match.group("pseudonym"))
+            yield "process", key, None
+
 
 class SubmittingCentreExtractor(Configurable):
-    """ Get unique submitting centre names from the full database.
-    """
+    """Get unique submitting centre names from the full database."""
+
+    s3client = Service("s3client")
 
     @ContextProcessor
-    def acc(self, context):
+    def acc(self, context, **kwargs):
         centres = yield ValueHolder(set())
         for centre in sorted(centres.get()):
             print(centre)
+        if not NO_OUTPUT_FILE:
+            with open("/tmp/message.txt", "w") as f:
+                for centre in sorted(centres.get()):
+                    print(centre, file=f)
 
     @use_raw_input
     def __call__(self, centres, *args, **kwargs):
-        task, obj, _ = args
-        if task == "process" and Path(obj.key).suffix.lower() == ".json":
-            centre = wl.get_submitting_centre_from_object(obj)
+        """The accumulator fuction run by the pipeline.
+
+        Parameters
+        ----------
+        centres : ValueHolder(set())
+            Accumulator for the centre names
+        task, obj, _ = tuple[str, boto3.resource('s3').ObjectSummary, None]
+            A task name ("process" is what accepted here) and a clinical data file
+            object to extract the submitting centre from.
+        **kwargs : dict
+            Keyword arguments.
+        """
+        task, key, _ = args
+        s3client = kwargs["s3client"]
+        if task == "process" and Path(key).suffix.lower() == ".json":
+            centre = helpers.get_submitting_centre_from_key(s3client, key)
             if centre is not None:
                 centres.add(centre)
 
@@ -47,14 +108,21 @@ def get_graph(**options):
     """
     This function builds the graph that needs to be executed.
 
-    :return: bonobo.Graph
+    Parameters
+    ----------
+    **options : dict
+        Keyword arguments.
+
+    Returns
+    -------
+    bonobo.Graph
+        The assembled processing graph.
     """
     graph = bonobo.Graph()
 
     graph.add_chain(
         wl.load_config,
-        wl.extract_raw_folders,
-        wl.extract_raw_files_from_folder,
+        extract_raw_data_files,
         SubmittingCentreExtractor(),
     )
 
@@ -69,23 +137,26 @@ def get_services(**options):
     It will be used on top of the defaults provided by bonobo (fs, http, ...). You can override those defaults, or just
     let the framework define them. You can also define your own services and naming is up to you.
 
-    :return: dict
+    Returns
+    -------
+    dict
+        Mapping of service names to objects.
     """
+
     config = PipelineConfig()
-    rawsubfolderlist = SubFolderList(folder_list=["data/"])
-    # Do not use inventory in this task as it is already quite fast
-    inventory = Inventory()
+    inv_downloader = InventoryDownloader(main_bucket=BUCKET_NAME)
+    filelist = FileList(inv_downloader)
+    s3client = S3Client(bucket=BUCKET_NAME)
 
     return {
         "config": config,
-        "rawsubfolderlist": rawsubfolderlist,
-        "inventory": inventory,
+        "filelist": filelist,
+        "s3client": s3client,
     }
 
 
 def main():
-    """Execute the pipeline graph
-    """
+    """Execute the pipeline graph"""
     parser = bonobo.get_argument_parser()
     with bonobo.parse_args(parser) as options:
         bonobo.run(get_graph(**options), services=get_services(**options))
