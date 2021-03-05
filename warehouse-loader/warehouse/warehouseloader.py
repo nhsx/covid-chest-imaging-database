@@ -275,7 +275,7 @@ def process_image(*args, s3client, patientcache):
     image_path = Path(key)
     if task != "process" or image_path.suffix.lower() != ".dcm":
         # not an image, don't do anything with it
-        return bonobo.constants.NOT_MODIFIED
+        yield bonobo.constants.NOT_MODIFIED
 
     image_uuid = image_path.stem
 
@@ -431,7 +431,8 @@ def process_patient_data(*args, config, patientcache, s3client):
         yield bonobo.constants.NOT_MODIFIED
 
     m = re.match(
-        r"^(?P<patient_id>.*)_(?P<outcome>data|status)$", data_path.stem
+        r"^.+/(?P<date>\d{4}-\d{2}-\d{2})/data/(?P<patient_id>.*)_(?P<outcome>data|status).json$",
+        key,
     )
     if m is None:
         # Can't interpret this file based on name, skip
@@ -439,6 +440,7 @@ def process_patient_data(*args, config, patientcache, s3client):
 
     patient_id = m.group("patient_id")
     outcome = m.group("outcome")
+    date = m.group("date")
 
     group = patientcache.get_group(patient_id)
     if group is not None:
@@ -476,11 +478,9 @@ def process_patient_data(*args, config, patientcache, s3client):
         if training_set
         else constants.VALIDATION_PREFIX
     )
-    date = helpers.get_date_from_key(key)
-    if date is not None:
-        new_key = f"{prefix}data/{patient_id}/{outcome}_{date}.json"
-        if not s3client.object_exists(new_key):
-            yield "copy", key, new_key
+    new_key = f"{prefix}data/{patient_id}/{outcome}_{date}.json"
+    if not s3client.object_exists(new_key):
+        yield "copy", key, new_key
 
 
 @use("s3client")
