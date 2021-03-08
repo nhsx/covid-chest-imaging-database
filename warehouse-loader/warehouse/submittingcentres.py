@@ -30,7 +30,7 @@ from warehouse.components.services import (
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
 
-BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default="chest-data-warehouse")
+BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default=None)
 NO_OUTPUT_FILE = bool(os.getenv("NO_OUTPUT_FILE", default=False))
 
 
@@ -142,6 +142,12 @@ def get_services(**options):
     dict
         Mapping of service names to objects.
     """
+    if BUCKET_NAME is None:
+        return {
+            "config": None,
+            "filelist": None,
+            "s3client": None,
+        }
 
     config = PipelineConfig()
     inv_downloader = InventoryDownloader(main_bucket=BUCKET_NAME)
