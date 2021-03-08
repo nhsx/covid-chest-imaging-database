@@ -22,7 +22,7 @@ from warehouse.components import constants, helpers, services
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
 
-BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default="chest-data-warehouse")
+BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default=None)
 DRY_RUN = bool(os.getenv("DRY_RUN", default=False))
 
 KB = 1024
@@ -578,6 +578,14 @@ def get_services(**options):
     dict
         Mapping of service names to objects.
     """
+
+    if BUCKET_NAME is None:
+        return {
+            "s3client": None,
+            "config": None,
+            "patientcache": None,
+            "filelist": None,
+        }
 
     s3client = services.S3Client(bucket=BUCKET_NAME)
     config = services.PipelineConfig()
