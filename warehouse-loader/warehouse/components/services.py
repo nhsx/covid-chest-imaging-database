@@ -130,6 +130,13 @@ class S3Client:
         else:
             return True
 
+    def get_object(self, key):
+        try:
+            args = {"Bucket": self._bucket, "Key": key}
+            return self._client.get_object(**args)
+        except ClientError:
+            raise
+
     def object_content(self, key, content_range=None):
         try:
             args = {"Bucket": self._bucket, "Key": key}
@@ -158,6 +165,8 @@ class S3Client:
         except ClientError:
             raise
 
+    def upload_file(self, key, file_name)
+        self._client.upload_file(file_name, self._bucket, key)
 
 class InventoryDownloader:
     def __init__(self, main_bucket):
