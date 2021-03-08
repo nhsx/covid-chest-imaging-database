@@ -276,6 +276,8 @@ def process_image(*args, s3client, patientcache):
     if task != "process" or image_path.suffix.lower() != ".dcm":
         # not an image, don't do anything with it
         yield bonobo.constants.NOT_MODIFIED
+        # Stop here for processing
+        return
 
     image_uuid = image_path.stem
 
@@ -395,7 +397,7 @@ def upload_text_data(*args, s3client):
         else:
             s3client.put_object(key=outgoing_key, content=outgoing_data)
 
-        return bonobo.constants.NOT_MODIFIED
+    return bonobo.constants.NOT_MODIFIED
 
 
 @use("config")
@@ -429,6 +431,8 @@ def process_patient_data(*args, config, patientcache, s3client):
     if task != "process" or data_path.suffix.lower() != ".json":
         # Not a data file, don't do anything with it
         yield bonobo.constants.NOT_MODIFIED
+        # Stop here with processing as well
+        return
 
     m = re.match(
         r"^.+/(?P<date>\d{4}-\d{2}-\d{2})/data/(?P<patient_id>.*)_(?P<outcome>data|status).json$",
@@ -513,7 +517,7 @@ def data_copy(*args, s3client):
         else:
             s3client.copy_object(old_key, new_key)
 
-        return bonobo.constants.NOT_MODIFIED
+    return bonobo.constants.NOT_MODIFIED
 
 
 ###
