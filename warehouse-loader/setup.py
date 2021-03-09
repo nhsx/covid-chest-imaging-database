@@ -28,7 +28,7 @@ setup(
         # image data
         "pydicom==1.4.2",
         # internal data management
-        "pandas==1.1.1",
+        "pandas==1.1.5",
     ]
     # entry_points={
     #     "console_scripts": [

@@ -21,7 +21,7 @@ from bonobo.config import (
 )
 from bonobo.util.objects import ValueHolder
 from botocore.exceptions import ClientError
-from nccid.cleaning import clean_data_df, patient_df_pipeline
+from nccid_cleaning import clean_data_df, patient_df_pipeline
 
 import warehouse.components.services as services
 
@@ -171,9 +171,35 @@ def load_image_metadata_files(*args, s3client):
     yield modality, record
 
 
+def dicom_age_in_years(age_string):
+    try:
+        units = age_string[-1]
+        value = age_string[0:-1]
+    except IndexError:
+        return
+    try:
+        age = float(value)
+    except ValueError:
+        return
+
+    if units == "Y":
+        # default
+        pass
+    elif units == "M":
+        age /= 12
+    elif units == "W":
+        age /= 52
+    elif units == "D":
+        age = 0
+    else:
+        # unknown
+        return
+    return age
+
+
 def patient_data_dicom_update(patients, images) -> pd.DataFrame:
     """
-    Fills in missing values for Sex and Age from xray dicom headers.
+    Fills in missing values for Sex and Age from imaging dicom headers.
     """
 
     demo = pd.concat(
@@ -182,9 +208,7 @@ def patient_data_dicom_update(patients, images) -> pd.DataFrame:
             for modality in images
         ]
     )
-    demo["ParsedPatientAge"] = demo["PatientAge"].map(
-        lambda a: float("".join(filter(str.isdigit, a)))
-    )
+    demo["ParsedPatientAge"] = demo["PatientAge"].map(dicom_age_in_years)
     demo_dedup = (
         demo.sort_values("ParsedPatientAge", ascending=True)
         .drop_duplicates(subset=["Pseudonym"], keep="last")
@@ -289,8 +313,8 @@ class DataExtractor(Configurable):
         collection["path"] += [output_path]
 
         patient = clean_data_df(patient, patient_df_pipeline)
-
         patient_clean = patient_data_dicom_update(patient, images)
+
         file_name = "patient_clean.csv"
         output_path = file_name
         patient_clean.to_csv(output_path, **csv_settings)
