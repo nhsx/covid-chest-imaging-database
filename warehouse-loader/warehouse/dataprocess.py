@@ -47,6 +47,19 @@ DICOM_FIELDS = {
 
 @use("filelist")
 def list_clinical_files(filelist):
+    """Listing of processed clinical files in the warehouse.
+
+    Parameters
+    ----------
+    filelist : FileList
+        To use to query the contents of the warehouse
+
+    Yields
+    ------
+    tupe(str, dict)
+        The pseudonym and the corresponding dictionary with group and file list info
+        (group: str, files: list)
+    """
     patients = {}
     pattern = re.compile(
         r"^(?P<group>training|validation)/data/(?P<pseudonym>[^/]+)/(?P<filename>[^/]+\.json)$"
@@ -70,6 +83,25 @@ def list_clinical_files(filelist):
 
 @use("s3client")
 def load_clinical_files(*args, s3client):
+    """Processing of the clinical files in the warehouse.
+
+    Parameters
+    ----------
+    args : tuple
+        pseudonym, data tuple, as passed on by "list_clinical_files"
+    s3client : S3Client
+        The S3 client set up to interact with the warehouse bucket
+
+    Yields
+    ------
+    tuple(str, dict)
+        The data group name "patient", and the extracted clinical record
+
+    Raises
+    ------
+    ClientError
+        If there's an issue with getting the latest data file
+    """
     pseudonym, data = args
     filename_list = data["files"]
 
@@ -125,6 +157,19 @@ def load_clinical_files(*args, s3client):
 
 @use("filelist")
 def list_image_metadata_files(filelist):
+    """Listing of processed image metadata files in the warehouse.
+    Only lists a single file per imaging study.
+
+    Parameters
+    ----------
+    filelist : FileList
+        To use to query the contents of the warehouse
+
+    Yields
+    ------
+    tupe(str, str, str)
+        group, modality, filename (key) value set
+    """
     studies = set()
     pattern = re.compile(
         r"^(?P<group>training|validation)/(?P<modality>[^-/]*)-metadata/(?P<pseudonym>[^/]+)/(?P<studyid>[^/]+)/(?P<seriesid>[^/]+)/(?P<filename>[^/]+\.json)$"
@@ -138,6 +183,25 @@ def list_image_metadata_files(filelist):
 
 @use("s3client")
 def load_image_metadata_files(*args, s3client):
+    """Processing of the clinical files in the warehouse.
+
+    Parameters
+    ----------
+    args : tuple
+        group, modality, filename info as passed on by "list_image_metadata_files"
+    s3client : S3Client
+        The S3 client set up to interact with the warehouse bucket
+
+    Yields
+    ------
+    tuple(str, dict)
+        The data group name (modality) and the extracted image record
+
+    Raises
+    ------
+    ClientError
+        If there's an issue with getting the latest data file
+    """
     group, modality, image_file = args
     try:
         result = s3client.get_object(key=image_file)
@@ -172,6 +236,19 @@ def load_image_metadata_files(*args, s3client):
 
 
 def dicom_age_in_years(age_string):
+    """Helper function to extract DICOM age into float
+
+    Parameters
+    ----------
+    age_string : str
+        The age string as defined in the DICOM standard,
+        see http://dicom.nema.org/medical/dicom/current/output/chtml/part05/sect_6.2.html
+
+    Returns
+    -------
+    float or None
+        The age or None if any conversiomn went wrong.
+    """
     try:
         units = age_string[-1]
         value = age_string[0:-1]
@@ -197,9 +274,20 @@ def dicom_age_in_years(age_string):
     return age
 
 
-def patient_data_dicom_update(patients, images) -> pd.DataFrame:
-    """
-    Fills in missing values for Sex and Age from imaging dicom headers.
+def patient_data_dicom_update(patients, images):
+    """Fills in missing values for Sex and Age from imaging dicom headers.
+
+    Parameters
+    ----------
+    patients : pd.DataFrame
+        The patient clinical data record that needs filling in.
+    images : pd.DataFrame
+        The image metadata record.
+
+    Returns
+    -------
+    pd.DataFrame
+        Patient data with updated sex and age information filled in from the images data
     """
 
     demo = pd.concat(
@@ -249,6 +337,18 @@ def patient_data_dicom_update(patients, images) -> pd.DataFrame:
 
 @use("inventory")
 def get_storage_stats(inventory):
+    """Calculate storage metrics from an inventory
+
+    Parameters
+    ----------
+    inventory : InventoryDownloader
+        The service set up for downloading inventory data
+
+    Returns
+    -------
+    tuple[str, dict]
+        The data type "stats", and the metrics as a dictionary
+    """
     prefixes = [
         "training/ct/",
         "training/xray/",
@@ -350,6 +450,10 @@ class DataExtractor(Configurable):
 
     @use_raw_input
     def __call__(self, records, *args, **kwargs):
+        """The function that is run on each incoming data from the
+        It collects information in the stateful value holder, in
+        a way that it can be easily processed later.
+        """
         record_type, record = args
         if record_type not in records:
             records[record_type] = dict()
@@ -397,7 +501,10 @@ def get_services(**options):
     It will be used on top of the defaults provided by bonobo (fs, http, ...). You can override those defaults, or just
     let the framework define them. You can also define your own services and naming is up to you.
 
-    :return: dict
+    Returns
+    -------
+    dict
+        The mapping of the specific services
     """
     if BUCKET_NAME is None:
         return {
