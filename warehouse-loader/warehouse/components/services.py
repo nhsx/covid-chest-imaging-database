@@ -165,8 +165,12 @@ class S3Client:
         except ClientError:
             raise
 
-    def upload_file(self, key, file_name)
-        self._client.upload_file(file_name, self._bucket, key)
+    def upload_file(self, key, file_name):
+        try:
+            self._client.upload_file(file_name, self._bucket, key)
+        except ClientError:
+            raise
+
 
 class InventoryDownloader:
     def __init__(self, main_bucket):
@@ -411,7 +415,7 @@ class FileList:
         pattern = re.compile(
             r"^(training|validation)/data/.*/(?P<filename>[^/]*)$"
         )
-        for f, fragment_reader in self.downloader.get_inventory():
+        for _, fragment_reader in self.downloader.get_inventory():
             for row in fragment_reader:
                 key = row[1]
                 key_match = pattern.match(key)
@@ -419,6 +423,20 @@ class FileList:
                     yield key
 
     def get_processed_images_list(self):
-        # Only a single image per study, keep track of studies
-        # TODO
-        pass
+        """Getting the list of processed non-data files (ie. images and
+        metadata) from the warehouse.
+
+        Yields
+        ------
+        str
+            The keys to the processed data files to look at.
+        """
+        pattern = re.compile(
+            r"^(training|validation)/(?!data)[^/]*/.*/(?P<filename>[^/]*)$"
+        )
+        for _, fragment_reader in self.downloader.get_inventory():
+            for row in fragment_reader:
+                key = row[1]
+                key_match = pattern.match(key)
+                if key_match:
+                    yield key

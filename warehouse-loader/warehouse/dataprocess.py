@@ -9,7 +9,6 @@ import re
 from datetime import datetime
 
 import bonobo
-import boto3
 import mondrian
 import pandas as pd
 import pydicom
@@ -30,7 +29,7 @@ mondrian.setup(excepthook=True)
 logger = logging.getLogger()
 
 BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default=None)
-LOCAL_ONLY = bool(os.getenv("LOCAL_SAVE", default=False))
+LOCAL_ONLY = bool(os.getenv("LOCAL_ONLY", default=False))
 
 DICOM_FIELDS = {
     "PatientSex",
@@ -44,27 +43,6 @@ DICOM_FIELDS = {
     "ManufacturerModelName",
     "Modality",
 }
-
-
-def get_files_list(file_list):
-    regex = re.compile(r"^(?P<prefix>.*/)[^/]+$")
-    series_prefix = None
-    series_files = []
-    for file in file_list:
-        file_match = regex.match(file)
-        if file_match:
-            file_prefix = file_match.group("prefix")
-            if series_prefix == file_prefix:
-                series_files += [file]
-            else:
-                if series_prefix:
-                    # We have some files to share
-                    yield series_files
-                # start new series
-                series_prefix = file_prefix
-                series_files = [file]
-    if series_files:
-        yield series_files
 
 
 @use("filelist")
@@ -88,6 +66,7 @@ def list_clinical_files(filelist):
 
     for pseudonym in sorted(patients.keys()):
         yield pseudonym, patients[pseudonym]
+
 
 @use("s3client")
 def load_clinical_files(*args, s3client):
@@ -115,8 +94,11 @@ def load_clinical_files(*args, s3client):
     try:
         result = s3client.get_object(key=latest_file)
         # result = s3client.get_object(Bucket=inventory.bucket, Key=latest_file)
-    except ClientError:
-        logger.info(f"No object found: {latest_file}")
+    except ClientError as ex:
+        if ex.response["Error"]["Code"] == "NoSuchKey":
+            logger.error(f"No object found: {latest_file}")
+        else:
+            raise
         return
 
     last_modified = result["LastModified"].date()
@@ -141,29 +123,29 @@ def load_clinical_files(*args, s3client):
     yield "patient", latest_record
 
 
-@use("inventory")
-def list_image_metadata_files(inventory):
-    for group in ["training", "validation"]:
-        for modality in ["ct", "mri", "xray"]:
-            # counter = 0
-            prefix = f"{group}/{modality}-metadata"
-            modality_files = sorted(inventory.filter_keys(Prefix=prefix))
-            for series in get_files_list(modality_files):
-                # counter += 1
-                yield group, modality, series
-                # if counter >= 50:
-                # break
+@use("filelist")
+def list_image_metadata_files(filelist):
+    studies = set()
+    pattern = re.compile(
+        r"^(?P<group>training|validation)/(?P<modality>[^-/]*)-metadata/(?P<pseudonym>[^/]+)/(?P<studyid>[^/]+)/(?P<seriesid>[^/]+)/(?P<filename>[^/]+\.json)$"
+    )
+    for processed_file in filelist.get_processed_images_list():
+        match = pattern.match(processed_file)
+        if match and match.group("studyid") not in studies:
+            studies.add(match.group("studyid"))
+            yield match.group("group"), match.group("modality"), processed_file
 
 
-@use("inventory")
-def load_image_metadata_files(*args, inventory):
-    group, modality, series = args
-    image_file = series[0]
-    s3_client = boto3.client("s3")
+@use("s3client")
+def load_image_metadata_files(*args, s3client):
+    group, modality, image_file = args
     try:
-        result = s3_client.get_object(Bucket=inventory.bucket, Key=image_file)
-    except s3_client.exceptions.NoSuchKey:
-        logger.info(f"No object found: {image_file}")
+        result = s3client.get_object(key=image_file)
+    except ClientError as ex:
+        if ex.response["Error"]["Code"] == "NoSuchKey":
+            logger.error(f"No object found: {image_file}")
+        else:
+            raise
         return
 
     last_modified = result["LastModified"].date()
@@ -241,37 +223,8 @@ def patient_data_dicom_update(patients, images) -> pd.DataFrame:
     return patients
 
 
-def calculate_prefix_sums(prefixes):
-    INVENTORY_BUCKET = f"{BUCKET_NAME}-inventory"
-    s3_client = boto3.client("s3")
-    # Get the latest list of inventory files
-    objs = s3_client.list_objects_v2(
-        Bucket=INVENTORY_BUCKET,
-        Prefix=f"{BUCKET_NAME}/daily-full-inventory/hive",
-    )["Contents"]
-    latest_symlink = sorted([obj["Key"] for obj in objs])[-1]
-    response = s3_client.get_object(
-        Bucket=INVENTORY_BUCKET, Key=latest_symlink
-    )
-    prefix_sums = {key: 0 for key in prefixes}
-    for inventory_file in response["Body"].read().decode("utf-8").split("\n"):
-        # inventory_file_name = inventory_file.replace(
-        #     f"s3://{INVENTORY_BUCKET}/", ""
-        # )
-        # print(f"Downloading inventory file: {inventory_file_name}")
-        data = pd.read_csv(
-            inventory_file,
-            low_memory=False,
-            names=["bucket", "key", "size", "date"],
-        )
-        for prefix in prefixes:
-            prefix_sums[prefix] += data[data["key"].str.startswith(prefix)][
-                "size"
-            ].sum()
-    return prefix_sums
-
-
-def get_storage_stats():
+@use("inventory")
+def get_storage_stats(inventory):
     prefixes = [
         "training/ct/",
         "training/xray/",
@@ -282,59 +235,39 @@ def get_storage_stats():
         "validation/mri/",
         "validation/",
     ]
+    prefix_sums = {key: 0 for key in prefixes}
 
-    prefix_sums = calculate_prefix_sums(prefixes)
+    for _, fragment_reader in inventory.get_inventory():
+        for row in fragment_reader:
+            key = row[1]
+            for prefix in prefixes:
+                if key.startswith(prefix):
+                    size = int(row[2])
+                    prefix_sums[prefix] += size
+
     yield "stats", prefix_sums
-
-
-def upload_file(file_name, bucket, object_name=None):
-    """Upload a file to an S3 bucket
-
-    :param file_name: File to upload
-    :param bucket: Bucket to upload to
-    :param object_name: S3 object name. If not specified then file_name is used
-    :return: True if file was uploaded, else False
-    """
-
-    # If S3 object_name was not specified, use file_name
-    if object_name is None:
-        object_name = file_name
-
-    # Upload the file, using the global client
-    try:
-        s3_client.upload_file(file_name, bucket, object_name)
-    except ClientError as e:
-        logging.error(e)
-        return False
-    return True
 
 
 class DataExtractor(Configurable):
     """Get unique submitting centre names from the full database."""
 
-    s3client_processed = Service("s3client_processed")
-
+    s3client = Service("s3client_processed")
 
     @ContextProcessor
-    def acc(self, context, *, inventory):
+    def acc(self, context, *, s3client):
         records = yield ValueHolder(dict())
         # At the end of the processing of all previous nodes,
         # it will continue from here
-
-        # save some memory
-        inventory.purge()
 
         values = records.get()
         images = []
         csv_settings = dict(index=False, header=True)
         collection = {"archive": [], "path": []}
-        processed_bucket = BUCKET_NAME + "-processed"
         batch_date = datetime.now().isoformat()
 
         for modality in ["ct", "xray", "mri"]:
             if modality in values:
                 df = pd.DataFrame.from_dict(values[modality], orient="index")
-                del values[modality]
                 images += [df]
                 file_name = f"{modality}.csv"
                 output_path = file_name
@@ -342,18 +275,17 @@ class DataExtractor(Configurable):
                 collection["archive"] += [modality]
                 if not LOCAL_ONLY:
                     output_path = f"{batch_date}/{file_name}"
-                    upload_file(file_name, processed_bucket, output_path)
+                    s3client.upload_file(output_path, file_name)
                 collection["path"] += [output_path]
 
         patient = pd.DataFrame.from_dict(values["patient"], orient="index")
-        del values["patient"]
         file_name = "partient.csv"
         output_path = file_name
         patient.to_csv(output_path, **csv_settings)
         collection["archive"] += ["patient"]
         if not LOCAL_ONLY:
             output_path = f"{batch_date}/{file_name}"
-            upload_file(file_name, processed_bucket, output_path)
+            s3client.upload_file(output_path, file_name)
         collection["path"] += [output_path]
 
         patient = clean_data_df(patient, patient_df_pipeline)
@@ -365,7 +297,7 @@ class DataExtractor(Configurable):
         collection["archive"] += ["patient_clean"]
         if not LOCAL_ONLY:
             output_path = f"{batch_date}/{file_name}"
-            upload_file(file_name, processed_bucket, output_path)
+            s3client.upload_file(output_path, file_name)
         collection["path"] += [output_path]
 
         # Save storate stats
@@ -380,7 +312,7 @@ class DataExtractor(Configurable):
         collection["archive"] += ["storage"]
         if not LOCAL_ONLY:
             output_path = f"{batch_date}/{file_name}"
-            upload_file(file_name, processed_bucket, output_path)
+            s3client.upload_file(output_path, file_name)
         collection["path"] += [output_path]
 
         # Save a list of latest files
@@ -390,7 +322,7 @@ class DataExtractor(Configurable):
             output_path, **csv_settings
         )
         if not LOCAL_ONLY:
-            upload_file(file_name, processed_bucket, output_path)
+            s3client.upload_file(output_path, file_name)
 
     @use_raw_input
     def __call__(self, records, *args, **kwargs):
@@ -411,24 +343,24 @@ def get_graph(**options):
     """
     graph = bonobo.Graph()
 
-    # graph.add_chain(DataExtractor(), _input=None, _name="extractor")
+    graph.add_chain(DataExtractor(), _input=None, _name="extractor")
 
     graph.add_chain(
         list_clinical_files,
         load_clinical_files,
-        # _output="extractor",
+        _output="extractor",
     )
 
-    # graph.add_chain(
-    #     list_image_metadata_files,
-    #     load_image_metadata_files,
-    #     _output="extractor",
-    # )
+    graph.add_chain(
+        list_image_metadata_files,
+        load_image_metadata_files,
+        _output="extractor",
+    )
 
-    # graph.add_chain(
-    #     get_storage_stats,
-    #     _output="extractor",
-    # )
+    graph.add_chain(
+        get_storage_stats,
+        _output="extractor",
+    )
 
     return graph
 
@@ -446,6 +378,7 @@ def get_services(**options):
     if BUCKET_NAME is None:
         return {
             "filelist": None,
+            "inventory": None,
             "s3client": None,
             "s3client_processed": None,
         }
@@ -457,8 +390,9 @@ def get_services(**options):
 
     return {
         "filelist": filelist,
+        "inventory": inv_downloader,
         "s3client": s3client,
-        "s3client_processed": s3client_processed
+        "s3client_processed": s3client_processed,
     }
 
 
