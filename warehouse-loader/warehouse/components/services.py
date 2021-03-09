@@ -118,7 +118,9 @@ class S3Client:
         Raises
         ------
         botocore.exceptions.ClientError
-            If there's any transfer error.
+            If there's any client side transfer error.
+        FileNotFoundError
+            If the file to be uploaded doesn't exists.
         """
         try:
             self._client.head_object(Bucket=self._bucket, Key=key)
@@ -168,7 +170,7 @@ class S3Client:
     def upload_file(self, key, file_name):
         try:
             self._client.upload_file(file_name, self._bucket, key)
-        except ClientError:
+        except (ClientError, FileNotFoundError):
             raise
 
 

@@ -33,5 +33,6 @@ setup(
         "pydicom==1.4.2",
         # internal data management
         "pandas==1.1.5",
+        "nccid_cleaning",
     ],
 )

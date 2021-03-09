@@ -382,6 +382,25 @@ def test_object_content():
     assert oversized_test_content == content
 
 
+@mock_s3
+def test_get_object():
+    """Test get_object helper"""
+    bucket_name = "testbucket-12345"
+    conn = boto3.resource("s3", region_name="us-east-1")
+    conn.create_bucket(Bucket=bucket_name)
+
+    key = "test.json"
+    content = "1234567890"
+    conn.meta.client.put_object(Bucket=bucket_name, Key=key, Body=content)
+
+    s3client = S3Client(bucket=bucket_name)
+    test_content = s3client.get_object(key)["Body"].read().decode("utf-8")
+    assert test_content == content
+
+    with pytest.raises(ClientError):
+        helpers.get_submitting_centre_from_key(s3client, key + ".bak")
+
+
 @pytest.mark.parametrize(
     "key",
     ["testfile", "path/testfile", "path/subpath/testfile"],
@@ -424,6 +443,31 @@ def test_copy_object(old_key, new_key):
 
 
 @mock_s3
+def test_upload_file(tmp_path):
+    """Test get_object helper"""
+    bucket_name = "testbucket-12345"
+    conn = boto3.resource("s3", region_name="us-east-1")
+    conn.create_bucket(Bucket=bucket_name)
+
+    s3client = S3Client(bucket=bucket_name)
+
+    d = tmp_path / "upload"
+    d.mkdir()
+    p = d / "hello.txt"
+    content = "1234567890" * 10
+    p.write_text(content)
+
+    # Uploading a test file
+    key = "testfile"
+    s3client.upload_file(key, str(p))
+    assert s3client.object_content(key).decode("utf-8") == content
+
+    # Trying to upload a nonexistent file
+    with pytest.raises(FileNotFoundError):
+        s3client.upload_file(key, str(d / "nonexistent.txt"))
+
+
+@mock_s3
 def test_get_submitting_centre():
     bucket_name = "testbucket-12345"
     conn = boto3.resource("s3", region_name="us-east-1")
@@ -461,7 +505,7 @@ def test_get_submitting_centre():
         helpers.get_submitting_centre_from_key(s3client, key_invalid)
 
     with pytest.raises(ClientError):
-        helpers.get_submitting_centre_from_key(s3client, key_valid + ". bak")
+        helpers.get_submitting_centre_from_key(s3client, key_valid + ".bak")
 
 
 @mock_s3

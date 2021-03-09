@@ -267,7 +267,7 @@ def dicom_age_in_years(age_string):
     elif units == "W":
         age /= 52
     elif units == "D":
-        age = 0
+        age /= 365
     else:
         # unknown
         return
