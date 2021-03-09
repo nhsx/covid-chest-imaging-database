@@ -351,7 +351,7 @@ def create_patient_timeseries(data, group):
     patient = data.dataset("patient")
     # Merges positive and negative swab dates to single field
     patient["all_swab_dates"] = pd.to_datetime(
-        patient["swab_date"].fillna(patient["date_of_positive_covid_swab"])
+        patient["swabdate"].fillna(patient["date_of_positive_covid_swab"])
     )
     if group == "all":
         timeseries = aggregate_timeseries(patient)
