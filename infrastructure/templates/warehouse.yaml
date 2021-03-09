@@ -776,8 +776,8 @@ Resources:
       Family:  !Sub "${AWS::StackName}-Pipeline"
       RequiresCompatibilities:
         - "FARGATE"
-      Cpu: "2048"  # 2 vCPU
-      Memory: "14GB"
+      Cpu: "1024"  # 1 vCPU
+      Memory: "2GB"
       NetworkMode: "awsvpc"
       ExecutionRoleArn: !GetAtt [ECSTaskExecutionRole, Arn]
       TaskRoleArn: !GetAtt [PipelineRole, Arn]
