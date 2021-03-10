@@ -235,106 +235,6 @@ def load_image_metadata_files(*args, s3client):
     yield modality, record
 
 
-def dicom_age_in_years(age_string):
-    """Helper function to extract DICOM age into float
-
-    Parameters
-    ----------
-    age_string : str
-        The age string as defined in the DICOM standard,
-        see http://dicom.nema.org/medical/dicom/current/output/chtml/part05/sect_6.2.html
-
-    Returns
-    -------
-    float or None
-        The age or None if any conversiomn went wrong.
-    """
-    try:
-        units = age_string[-1]
-        value = age_string[0:-1]
-    except IndexError:
-        return
-    try:
-        age = float(value)
-    except ValueError:
-        return
-
-    if units == "Y":
-        # default
-        pass
-    elif units == "M":
-        age /= 12
-    elif units == "W":
-        age /= 52
-    elif units == "D":
-        age /= 365
-    else:
-        # unknown
-        return
-    return age
-
-
-def patient_data_dicom_update(patients, images):
-    """Fills in missing values for Sex and Age from imaging dicom headers.
-
-    Parameters
-    ----------
-    patients : pd.DataFrame
-        The patient clinical data record that needs filling in.
-    images : pd.DataFrame
-        The image metadata record.
-
-    Returns
-    -------
-    pd.DataFrame
-        Patient data with updated sex and age information filled in from the images data
-    """
-
-    demo = pd.concat(
-        [
-            modality[["Pseudonym", "PatientSex", "PatientAge"]]
-            for modality in images
-        ]
-    )
-    demo["ParsedPatientAge"] = demo["PatientAge"].map(dicom_age_in_years)
-    demo_dedup = (
-        demo.sort_values("ParsedPatientAge", ascending=True)
-        .drop_duplicates(subset=["Pseudonym"], keep="last")
-        .sort_index()
-    )
-
-    def _fill_sex(x, df_dicom):
-        sex = x["sex"]
-        if sex == "Unknown":
-            try:
-                sex = df_dicom.loc[df_dicom["Pseudonym"] == x["Pseudonym"]][
-                    "PatientSex"
-                ].values[0]
-            except IndexError:
-                pass
-                # print(f'Pseudonym not in df_dicom data: {x["Pseudonym"]}')
-        return sex
-
-    def _fill_age(x, df_dicom):
-        age = x["age"]
-        if pd.isnull(age):
-            try:
-                age = df_dicom.loc[df_dicom["Pseudonym"] == x["Pseudonym"]][
-                    "ParsedPatientAge"
-                ].values[0]
-            except IndexError:
-                pass
-        return age
-
-    patients["age_update"] = patients.apply(
-        lambda x: _fill_age(x, demo_dedup), axis=1
-    )
-    patients["sex_update"] = patients.apply(
-        lambda x: _fill_sex(x, demo_dedup), axis=1
-    )
-    return patients
-
-
 @use("inventory")
 def get_storage_stats(inventory):
     """Calculate storage metrics from an inventory
@@ -412,8 +312,7 @@ class DataExtractor(Configurable):
             s3client.upload_file(output_path, file_name)
         collection["path"] += [output_path]
 
-        patient = clean_data_df(patient, patient_df_pipeline)
-        patient_clean = patient_data_dicom_update(patient, images)
+        patient_clean = clean_data_df(patient, patient_df_pipeline)
 
         file_name = "patient_clean.csv"
         output_path = file_name

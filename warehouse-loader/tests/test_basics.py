@@ -4,7 +4,6 @@ import pydicom
 import pytest
 
 import warehouse.components.helpers as helpers
-from warehouse.dataprocess import dicom_age_in_years
 from warehouse.warehouseloader import (
     patient_in_training_set,
     process_dicom_data,
@@ -83,21 +82,3 @@ def test_process_dicom_data():
 )
 def test_get_date_from_key(key, expected):
     assert helpers.get_date_from_key(key) == expected
-
-
-@pytest.mark.parametrize(
-    "value,expected",
-    [
-        ("", None),
-        ("111Y", 111.0),
-        ("023Y", 23.0),
-        ("002Y", 2.0),
-        ("024M", 2.0),
-        ("026W", 0.5),
-        ("073D", 0.2),
-        ("XXXX", None),
-        ("XXXY", None),
-    ],
-)
-def test_dicom_age_in_years(value, expected):
-    assert dicom_age_in_years(value) == pytest.approx(expected)
