@@ -166,6 +166,12 @@ def serve_layout(data: Dataset) -> html.Div:
         children=[
             html.H1(children="Patients"),
             html.H2("Patients demographics breakdown"),
+            dbc.Alert(
+                "ⓘ Gender and age reported on this page can have missing values"
+                " in the clinical data which are filled in from the relevant DICOM"
+                " headers present in the given patient's images.",
+                color="info",
+            ),
             html.H3("Gender"),
             create_gender_breakdown(data),
             html.Hr(),
