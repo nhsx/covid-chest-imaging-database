@@ -2,7 +2,6 @@ FROM phusion/baseimage:18.04-1.0.0
 
 # Install generic dependencies
 RUN apt-get update \
- && DEBIAN_FRONTEND=noninteractive apt-get upgrade -q -y \
  && DEBIAN_FRONTEND=noninteractive apt-get install -q -y --no-install-recommends \
       awscli=1.18.69-1ubuntu0.18.04.1 \
       gcc=4:7.4.0-1ubuntu2.3 \
@@ -14,9 +13,8 @@ RUN apt-get update \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Upgrade the heavily outdated Ubuntu pip versiomn to the latest
-RUN python3 -m pip install --no-cache-dir --upgrade pip \
- && python3 -m pip --version
+# Upgrade the heavily outdated Ubuntu pip version
+RUN python3 -m pip install --no-cache-dir pip==21.0.1
 
 # Add a new user to run our code as
 RUN groupadd -g 1001 pipeline \
