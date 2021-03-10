@@ -2,6 +2,7 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
+import numpy as np
 import pandas as pd
 import plotly.express as px
 from dash.dependencies import Input, Output
@@ -195,6 +196,10 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
 def create_completeness_chart(data, centre, fields, sort_by):
     patient = data.dataset("patient")
     covid_positives = patient.loc[patient.filename_covid_status]
+
+    # Turn "Unknown" fields to nulls, as the cleaning pipeline
+    # filled them in before
+    covid_positives = covid_positives.replace("Unknown", np.nan)
 
     if centre is not None:
         covid_positives = covid_positives[
