@@ -14,6 +14,7 @@ from botocore.exceptions import ClientError
 from moto import mock_s3
 
 import warehouse.components.helpers as helpers
+import warehouse.dataprocess as dataprocess
 import warehouse.submittingcentres as submittingcentres
 import warehouse.warehouseloader as warehouseloader
 from warehouse.components.constants import (
@@ -382,6 +383,25 @@ def test_object_content():
     assert oversized_test_content == content
 
 
+@mock_s3
+def test_get_object():
+    """Test get_object helper"""
+    bucket_name = "testbucket-12345"
+    conn = boto3.resource("s3", region_name="us-east-1")
+    conn.create_bucket(Bucket=bucket_name)
+
+    key = "test.json"
+    content = "1234567890"
+    conn.meta.client.put_object(Bucket=bucket_name, Key=key, Body=content)
+
+    s3client = S3Client(bucket=bucket_name)
+    test_content = s3client.get_object(key)["Body"].read().decode("utf-8")
+    assert test_content == content
+
+    with pytest.raises(ClientError):
+        helpers.get_submitting_centre_from_key(s3client, key + ".bak")
+
+
 @pytest.mark.parametrize(
     "key",
     ["testfile", "path/testfile", "path/subpath/testfile"],
@@ -424,6 +444,31 @@ def test_copy_object(old_key, new_key):
 
 
 @mock_s3
+def test_upload_file(tmp_path):
+    """Test get_object helper"""
+    bucket_name = "testbucket-12345"
+    conn = boto3.resource("s3", region_name="us-east-1")
+    conn.create_bucket(Bucket=bucket_name)
+
+    s3client = S3Client(bucket=bucket_name)
+
+    d = tmp_path / "upload"
+    d.mkdir()
+    p = d / "hello.txt"
+    content = "1234567890" * 10
+    p.write_text(content)
+
+    # Uploading a test file
+    key = "testfile"
+    s3client.upload_file(key, str(p))
+    assert s3client.object_content(key).decode("utf-8") == content
+
+    # Trying to upload a nonexistent file
+    with pytest.raises(FileNotFoundError):
+        s3client.upload_file(key, str(d / "nonexistent.txt"))
+
+
+@mock_s3
 def test_get_submitting_centre():
     bucket_name = "testbucket-12345"
     conn = boto3.resource("s3", region_name="us-east-1")
@@ -461,7 +506,7 @@ def test_get_submitting_centre():
         helpers.get_submitting_centre_from_key(s3client, key_invalid)
 
     with pytest.raises(ClientError):
-        helpers.get_submitting_centre_from_key(s3client, key_valid + ". bak")
+        helpers.get_submitting_centre_from_key(s3client, key_valid + ".bak")
 
 
 @mock_s3
@@ -879,7 +924,7 @@ def test_warehouseloader_extract_raw_files():
         f"raw-nhs-upload/2021-02-28/age-0/images/{pydicom.uid.generate_uid()}.dcm",
         "test/Covid5_data.json"
         "raw-elsewhere-upload/2021-03-01/data/Covid7_data.json",
-        f"{TRAINING_PREFIX}/data/Covid1/data_2021-01-31.json",
+        f"{TRAINING_PREFIX}data/Covid1/data_2021-01-31.json",
         # Only copied image, so list the relevant image for metadata
         f"{TRAINING_PREFIX}xray/Covid1/123/123/{uuids[1]}.dcm",
         # Only metadata, so list the relevant image
@@ -900,3 +945,143 @@ def test_warehouseloader_extract_raw_files():
     )
     key_set = set([key for _, key, _ in result_list])
     assert key_set ^ set(target_files) == set()
+
+
+@mock_s3
+def test_list_clinical_files():
+    """Test the dataprocess list_clinical_files function."""
+    bucket_name = "testbucket-12345"
+    conn = boto3.resource("s3", region_name="us-east-1")
+    conn.create_bucket(Bucket=bucket_name)
+
+    target_files = [
+        f"{TRAINING_PREFIX}data/Covid1/data_2021-03-01.json",
+        f"{TRAINING_PREFIX}data/Covid2/status_2021-03-01.json",
+        f"{TRAINING_PREFIX}data/Covid3/data_2021-03-01.json",
+        f"{TRAINING_PREFIX}data/Covid3/data_2021-03-05.json",
+        f"{TRAINING_PREFIX}data/Covid3/status_2021-03-01.json",
+        f"{TRAINING_PREFIX}data/Covid3/status_2021-03-05.json",
+        f"{VALIDATION_PREFIX}data/Covid4/data_2021-03-01.json",
+        f"{VALIDATION_PREFIX}data/Covid5/status_2021-03-01.json",
+        f"{VALIDATION_PREFIX}data/Covid6/data_2021-03-01.json",
+        f"{VALIDATION_PREFIX}data/Covid6/data_2021-03-05.json",
+        f"{VALIDATION_PREFIX}data/Covid6/status_2021-03-01.json",
+        f"{VALIDATION_PREFIX}data/Covid6/status_2021-03-05.json",
+    ]
+    extra_files = [
+        "raw-nhs-upload/2021-03-01/data/Covid6_data.json",
+        "raw-nhs-upload/2021-03-06/data/Covid6_data.json",
+        f"raw-nhs-upload/2021-02-28/images/{pydicom.uid.generate_uid()}.dcm",
+        "test/Covid5_data.json"
+        f"{TRAINING_PREFIX}xray/Covid1/{pydicom.uid.generate_uid()}/{pydicom.uid.generate_uid()}/{pydicom.uid.generate_uid()}.dcm",
+        f"{TRAINING_PREFIX}xray-metadata/Covid1/{pydicom.uid.generate_uid()}/{pydicom.uid.generate_uid()}/{pydicom.uid.generate_uid()}.json",
+        f"{VALIDATION_PREFIX}ct/Covid2/{pydicom.uid.generate_uid()}/{pydicom.uid.generate_uid()}/{pydicom.uid.generate_uid()}.dcm",
+        f"{VALIDATION_PREFIX}ct-metadata/Covid2/{pydicom.uid.generate_uid()}/{pydicom.uid.generate_uid()}/{pydicom.uid.generate_uid()}.json",
+    ]
+
+    create_inventory(target_files + extra_files, bucket_name)
+
+    inv_downloader = InventoryDownloader(main_bucket=bucket_name)
+    filelist = FileList(inv_downloader)
+
+    # Function under test
+    results = list(dataprocess.list_clinical_files(filelist))
+
+    assert len(results) == 6
+
+    assert results[0] == (
+        "Covid1",
+        {"group": "training", "files": ["data_2021-03-01.json"]},
+    )
+
+    assert results[1] == (
+        "Covid2",
+        {"group": "training", "files": ["status_2021-03-01.json"]},
+    )
+
+    assert results[2][0] == "Covid3"
+    assert results[2][1]["group"] == "training"
+    assert sorted(results[2][1]["files"]) == sorted(
+        [
+            "data_2021-03-01.json",
+            "data_2021-03-05.json",
+            "status_2021-03-01.json",
+            "status_2021-03-05.json",
+        ]
+    )
+
+    assert results[3] == (
+        "Covid4",
+        {"group": "validation", "files": ["data_2021-03-01.json"]},
+    )
+
+    assert results[4] == (
+        "Covid5",
+        {"group": "validation", "files": ["status_2021-03-01.json"]},
+    )
+
+    assert results[5][0] == "Covid6"
+    assert results[5][1]["group"] == "validation"
+    assert sorted(results[5][1]["files"]) == sorted(
+        [
+            "data_2021-03-01.json",
+            "data_2021-03-05.json",
+            "status_2021-03-01.json",
+            "status_2021-03-05.json",
+        ]
+    )
+
+
+@mock_s3
+def test_list_image_metadata_files():
+    """Test the dataprocess list_image_metadata_files function."""
+    bucket_name = "testbucket-12345"
+    conn = boto3.resource("s3", region_name="us-east-1")
+    conn.create_bucket(Bucket=bucket_name)
+
+    target_files = [
+        f"{TRAINING_PREFIX}xray-metadata/Covid1/1000/2000/3000.json",
+        f"{TRAINING_PREFIX}ct-metadata/Covid2/1010/2010/3010.json",
+        f"{TRAINING_PREFIX}mri-metadata/Covid3/1020/2020/3020.json",
+        f"{VALIDATION_PREFIX}xray-metadata/Covid4/1030/2030/3030.json",
+        f"{VALIDATION_PREFIX}ct-metadata/Covid5/1040/2040/3040.json",
+        f"{VALIDATION_PREFIX}mri-metadata/Covid6/1050/2050/3050.json",
+        # Multiple files per section
+        f"{TRAINING_PREFIX}xray-metadata/Covid7/1060/2020/3060.json",
+        f"{TRAINING_PREFIX}xray-metadata/Covid7/1060/2020/3061.json",
+        f"{TRAINING_PREFIX}xray-metadata/Covid7/1060/2020/3062.json",
+        f"{TRAINING_PREFIX}xray-metadata/Covid7/1060/2021/3063.json",
+        f"{TRAINING_PREFIX}xray-metadata/Covid7/1060/2021/3064.json",
+    ]
+    extra_files = [
+        f"{TRAINING_PREFIX}xray/Covid1/1000/2000/3000.dcm",
+        f"{TRAINING_PREFIX}ct/Covid2/1010/2010/3010.dcm",
+        f"{TRAINING_PREFIX}mri/Covid3/1020/2020/3020.dcm",
+        f"{VALIDATION_PREFIX}xray/Covid4/1030/2030/3030.dcm",
+        f"{VALIDATION_PREFIX}ct/Covid5/1040/2040/3040.dcm",
+        f"{VALIDATION_PREFIX}mri/Covid6/1050/2050/3050.dcm",
+    ]
+
+    create_inventory(target_files + extra_files, bucket_name)
+
+    inv_downloader = InventoryDownloader(main_bucket=bucket_name)
+    filelist = FileList(inv_downloader)
+
+    # Function under test
+    results = list(dataprocess.list_image_metadata_files(filelist))
+
+    assert len(results) == 7
+
+    assert ("training", "xray", target_files[0]) in results
+    assert ("training", "ct", target_files[1]) in results
+    assert ("training", "mri", target_files[2]) in results
+    assert ("validation", "xray", target_files[3]) in results
+    assert ("validation", "ct", target_files[4]) in results
+    assert ("validation", "mri", target_files[5]) in results
+
+    # find the result of multifile
+    multi_file_result = [
+        item for item in results if item[2] in target_files[6:]
+    ][0]
+    assert multi_file_result[0] == "training"
+    assert multi_file_result[1] == "xray"

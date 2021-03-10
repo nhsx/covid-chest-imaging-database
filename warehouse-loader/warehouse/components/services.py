@@ -118,7 +118,9 @@ class S3Client:
         Raises
         ------
         botocore.exceptions.ClientError
-            If there's any transfer error.
+            If there's any client side transfer error.
+        FileNotFoundError
+            If the file to be uploaded doesn't exists.
         """
         try:
             self._client.head_object(Bucket=self._bucket, Key=key)
@@ -129,6 +131,13 @@ class S3Client:
                 raise ClientError
         else:
             return True
+
+    def get_object(self, key):
+        try:
+            args = {"Bucket": self._bucket, "Key": key}
+            return self._client.get_object(**args)
+        except ClientError:
+            raise
 
     def object_content(self, key, content_range=None):
         try:
@@ -156,6 +165,12 @@ class S3Client:
             }
             self._client.copy_object(**args)
         except ClientError:
+            raise
+
+    def upload_file(self, key, file_name):
+        try:
+            self._client.upload_file(file_name, self._bucket, key)
+        except (ClientError, FileNotFoundError):
             raise
 
 
@@ -402,7 +417,7 @@ class FileList:
         pattern = re.compile(
             r"^(training|validation)/data/.*/(?P<filename>[^/]*)$"
         )
-        for f, fragment_reader in self.downloader.get_inventory():
+        for _, fragment_reader in self.downloader.get_inventory():
             for row in fragment_reader:
                 key = row[1]
                 key_match = pattern.match(key)
@@ -410,6 +425,20 @@ class FileList:
                     yield key
 
     def get_processed_images_list(self):
-        # Only a single image per study, keep track of studies
-        # TODO
-        pass
+        """Getting the list of processed non-data files (ie. images and
+        metadata) from the warehouse.
+
+        Yields
+        ------
+        str
+            The keys to the processed data files to look at.
+        """
+        pattern = re.compile(
+            r"^(training|validation)/(?!data)[^/]*/.*/(?P<filename>[^/]*)$"
+        )
+        for _, fragment_reader in self.downloader.get_inventory():
+            for row in fragment_reader:
+                key = row[1]
+                key_match = pattern.match(key)
+                if key_match:
+                    yield key

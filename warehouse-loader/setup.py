@@ -19,7 +19,11 @@ setup(
     packages=find_packages(),
     classifiers=["Programming Language :: Python :: 3"],
     python_requires=">=3.6",
-    scripts=["bin/warehouseloader", "bin/submittingcentres"],
+    scripts=[
+        "bin/warehouseloader",
+        "bin/submittingcentres",
+        "bin/dataprocess",
+    ],
     install_requires=[
         # pipeline
         "bonobo==0.6.4",
@@ -28,12 +32,7 @@ setup(
         # image data
         "pydicom==1.4.2",
         # internal data management
-        "pandas==1.1.1",
-    ]
-    # entry_points={
-    #     "console_scripts": [
-    #         "warehouseloader=warehouse.warehouseloader:main",
-    #         "submittingcentres=warehouse.submittingcentres:main",
-    #     ],
-    # },
+        "pandas==1.1.5",
+        "nccid_cleaning",
+    ],
 )
