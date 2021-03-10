@@ -257,6 +257,10 @@ def create_completeness_table(data, centre, fields, sort_by):
     patient = data.dataset("patient")
     covid_positives = patient.loc[patient.filename_covid_status]
 
+    # Turn "Unknown" fields to nulls, as the cleaning pipeline
+    # filled them in before
+    covid_positives = covid_positives.replace("Unknown", np.nan)
+
     if centre is not None:
         covid_positives = covid_positives[
             covid_positives["SubmittingCentre"] == centre
