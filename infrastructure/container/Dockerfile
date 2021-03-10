@@ -15,7 +15,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Upgrade the heavily outdated Ubuntu pip versiomn to the latest
-RUN python3 -m pip install --upgrade pip \
+RUN python3 -m pip install --no-cache-dir --upgrade pip \
  && python3 -m pip --version
 
 # Add a new user to run our code as
