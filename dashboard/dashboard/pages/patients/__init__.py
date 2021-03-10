@@ -451,7 +451,7 @@ def create_age_breakdown(data, group):
     patient = data.dataset("patient")
 
     xbins = dict(  # bins used for histogram
-        start=0, end=tools.biground(patient["age"].max()), size=5
+        start=0, end=tools.biground(patient["age_update"].max()), size=5
     )
 
     if group == "all":
@@ -465,7 +465,7 @@ def create_age_breakdown(data, group):
         )
         fig.add_trace(
             go.Histogram(
-                x=patient["age"],
+                x=patient["age_update"],
                 histnorm="percent",
                 xbins=xbins,
             )
@@ -484,7 +484,7 @@ def create_age_breakdown(data, group):
         )
         fig.add_trace(
             go.Histogram(
-                x=patient_training["age"],
+                x=patient_training["age_update"],
                 name="Training",
                 histnorm="percent",
                 xbins=xbins,
@@ -492,7 +492,7 @@ def create_age_breakdown(data, group):
         )
         fig.add_trace(
             go.Histogram(
-                x=patient_validation["age"],
+                x=patient_validation["age_update"],
                 name="Validation",
                 histnorm="percent",
                 xbins=xbins,
@@ -511,7 +511,7 @@ def create_age_breakdown(data, group):
         )
         fig.add_trace(
             go.Histogram(
-                x=patient_negative["age"],
+                x=patient_negative["age_update"],
                 name="Negative",
                 histnorm="percent",
                 xbins=xbins,
@@ -519,7 +519,7 @@ def create_age_breakdown(data, group):
         )
         fig.add_trace(
             go.Histogram(
-                x=patient_postive["age"],
+                x=patient_postive["age_update"],
                 name="Positive",
                 histnorm="percent",
                 xbins=xbins,
@@ -623,10 +623,12 @@ def create_ethnicity_breakdown(data, group):
 
 def create_gender_breakdown(data):
     patient = data.dataset("patient")
-    total = patient["sex"].value_counts()
-    training = patient[patient["group"] == "training"]["sex"].value_counts()
+    total = patient["sex_update"].value_counts()
+    training = patient[patient["group"] == "training"][
+        "sex_update"
+    ].value_counts()
     validation = patient[patient["group"] == "validation"][
-        "sex"
+        "sex_update"
     ].value_counts()
 
     def calculate_column(dataset):
