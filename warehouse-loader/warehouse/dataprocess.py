@@ -403,7 +403,7 @@ class DataExtractor(Configurable):
                 collection["path"] += [output_path]
 
         patient = pd.DataFrame.from_dict(values["patient"], orient="index")
-        file_name = "partient.csv"
+        file_name = "patient.csv"
         output_path = file_name
         patient.to_csv(output_path, **csv_settings)
         collection["archive"] += ["patient"]
