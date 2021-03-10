@@ -67,8 +67,8 @@ DATE_COLUMNS = [
 ]
 
 DEMOGRAPHIC_COLUMNS = [
-    "age_update",
-    "sex_update",
+    "age",
+    "sex",
     "ethnicity",
 ]
 
