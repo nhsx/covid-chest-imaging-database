@@ -351,7 +351,7 @@ def create_patient_timeseries(data, group):
     patient = data.dataset("patient")
     # Merges positive and negative swab dates to single field
     patient["all_swab_dates"] = pd.to_datetime(
-        patient["swab_date"].fillna(patient["date_of_positive_covid_swab"])
+        patient["swabdate"].fillna(patient["date_of_positive_covid_swab"])
     )
     if group == "all":
         timeseries = aggregate_timeseries(patient)
@@ -451,7 +451,7 @@ def create_age_breakdown(data, group):
     patient = data.dataset("patient")
 
     xbins = dict(  # bins used for histogram
-        start=0, end=tools.biground(patient["age_update"].max()), size=5
+        start=0, end=tools.biground(patient["age"].max()), size=5
     )
 
     if group == "all":
@@ -465,7 +465,7 @@ def create_age_breakdown(data, group):
         )
         fig.add_trace(
             go.Histogram(
-                x=patient["age_update"],
+                x=patient["age"],
                 histnorm="percent",
                 xbins=xbins,
             )
@@ -484,7 +484,7 @@ def create_age_breakdown(data, group):
         )
         fig.add_trace(
             go.Histogram(
-                x=patient_training["age_update"],
+                x=patient_training["age"],
                 name="Training",
                 histnorm="percent",
                 xbins=xbins,
@@ -492,7 +492,7 @@ def create_age_breakdown(data, group):
         )
         fig.add_trace(
             go.Histogram(
-                x=patient_validation["age_update"],
+                x=patient_validation["age"],
                 name="Validation",
                 histnorm="percent",
                 xbins=xbins,
@@ -511,7 +511,7 @@ def create_age_breakdown(data, group):
         )
         fig.add_trace(
             go.Histogram(
-                x=patient_negative["age_update"],
+                x=patient_negative["age"],
                 name="Negative",
                 histnorm="percent",
                 xbins=xbins,
@@ -519,7 +519,7 @@ def create_age_breakdown(data, group):
         )
         fig.add_trace(
             go.Histogram(
-                x=patient_postive["age_update"],
+                x=patient_postive["age"],
                 name="Positive",
                 histnorm="percent",
                 xbins=xbins,
@@ -623,12 +623,10 @@ def create_ethnicity_breakdown(data, group):
 
 def create_gender_breakdown(data):
     patient = data.dataset("patient")
-    total = patient["sex_update"].value_counts()
-    training = patient[patient["group"] == "training"][
-        "sex_update"
-    ].value_counts()
+    total = patient["sex"].value_counts()
+    training = patient[patient["group"] == "training"]["sex"].value_counts()
     validation = patient[patient["group"] == "validation"][
-        "sex_update"
+        "sex"
     ].value_counts()
 
     def calculate_column(dataset):
