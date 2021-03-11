@@ -807,7 +807,7 @@ Resources:
   ProcessingTaskdefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
-      Family:  !Sub "${AWS::StackName}-ProcessingTaskdefinition"
+      Family:  !Sub "${AWS::StackName}-DataProcessing"
       RequiresCompatibilities:
         - "FARGATE"
       Cpu: "1024"  # 1 vCPU
