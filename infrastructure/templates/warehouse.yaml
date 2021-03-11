@@ -776,8 +776,8 @@ Resources:
       Family:  !Sub "${AWS::StackName}-Pipeline"
       RequiresCompatibilities:
         - "FARGATE"
-      Cpu: "2048"  # 2 vCPU
-      Memory: "14GB"
+      Cpu: "1024"  # 1 vCPU
+      Memory: "2GB"
       NetworkMode: "awsvpc"
       ExecutionRoleArn: !GetAtt [ECSTaskExecutionRole, Arn]
       TaskRoleArn: !GetAtt [PipelineRole, Arn]
@@ -803,15 +803,15 @@ Resources:
               awslogs-group: !Ref TaskLogGroup
               awslogs-stream-prefix: ecs
 
-  # The the actual pipeline task
+  # The data processing pipeline task for the dashboards
   ProcessingTaskdefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
-      Family:  !Sub "${AWS::StackName}-ProcessingTaskdefinition"
+      Family:  !Sub "${AWS::StackName}-DataProcessing"
       RequiresCompatibilities:
         - "FARGATE"
       Cpu: "1024"  # 1 vCPU
-      Memory: "8GB"
+      Memory: "2GB"
       NetworkMode: "awsvpc"
       ExecutionRoleArn: !GetAtt [ECSTaskExecutionRole, Arn]
       TaskRoleArn: !GetAtt [ProcessingRole, Arn]
