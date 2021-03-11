@@ -97,3 +97,21 @@ Ashford and St Peter’s Hospitals NHS Foundation Trust
 -----------------------------------------------------
 
 Chest X-rays are often one of the first tests used to help guide doctors with deciding how likely a patient is to have COVID-19 and also how severe the infection is. We are aiming to see how accurate chest X-rays are for detecting COVID-19 and telling doctors how severe the disease is. We plan to answer this by having doctors specialising in X-rays assess chest X-rays of patients in the national COVID-19 imaging database and then compare this assessment to clinical details, such as if they had COVID-19 and how well they did in hospital. We hope this will give us a better understanding of chest X-ray accuracy in COVID-19 and appearances that are linked to COVID-19 or more severe infection. We also additionally aim to use Neural networks (advanced computational algorithms) on the chest X-rays in the database to see if these can be used to automatically detect COVID-19 in chest X-rays. This research will hopefully one day help with the development of clinical algorithms and technology that can be used to speed up chest X-ray assessment for COVID-19.
+
+
+Behold.ai
+---------
+
+`Behold.ai <https://behold.ai/>`_ is currently operating existing services within the NHS for the triage of chest X-rays based on the presence of abnormalities, as determined by artificial intelligence algorithms. In this study Behold.ai aims to achieve two key goals.
+
+First, we aim to validate that an algorithm developed for the general detection of abnormalities on plain-film chest X-rays can identify novel forms of abnormality (such as COVID-19) despite being developed prior to that pathology’s initial presentation (in this case, prior to February 2020). We propose that this will show that the use of existing AI-based patient triage can assist healthcare systems in the efficient use of resource and radiological capacity during high stress periods such as pandemic flu, even when novel pathologies are present.
+
+Secondly, in recognition of the increased utilisation of AI across healthcare sectors, we aim to establish a set of best practices for rapidly and regularly updating clinically deployed algorithms in order to enable efficient ‘learning’ of the characteristics of novel pathologies. This will be validated by the ability of existing chest X-ray models to learn the characteristics of COVID-19 as demonstrated in the NCCID. We suggest that this work will ensure that the implementation of AI into health systems improves future pandemic preparedness as well as maximising responsiveness to population health.
+
+
+The Royal Surrey NHS Foundation Trust
+-------------------------------------
+
+Chest imaging is increasingly used as an alternative method for screening COVID-19, with high sensitivity compared to laboratory testing methods. AI tools have the potential to enable fast and accurate diagnosis from chest X-rays (CXR). However, several issues of image quality have been identified as a limitation to the diagnostic performance of CXR, for example, in images acquired on portable machines, and where under-exposure occurs due to patient positioning or patient BMI. Little is known about the impact of image-quality upon the accuracy and sensitivity of AI algorithms, and we propose to investigate this, having been significantly involved in the development of the NCCID database, and having successfully led previous evaluations of AI tools, for example for diagnosis in breast screening.
+
+The aim of this study is to evaluate the impact of image quality on the performance of AI models by analysing performance metrics during training and validation using the NCCID dataset. Published, open-source models shown to classify COVID-19 on CXR will be identified and the best-performing algorithm selected by assessing performance on the NCCID test dataset. The NCCID training and test datasets will be analysed using existing image analysis tools developed in-house at RSNFT, enabling the categorisation of the NCCID dataset according to image quality, and the dataset will be stratified into datasets of different image quality. The AI model will be retrained and tested on different combinations of training and test data image-quality and the impact of image-quality upon the accuracy and sensitivity of the model evaluated.
