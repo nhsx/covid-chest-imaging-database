@@ -451,28 +451,38 @@ def process_patient_data(*args, config, patientcache, s3client):
         training_set = group == "training"
     else:
         # patient group is not cached
-        submitting_centre = helpers.get_submitting_centre_from_key(
-            s3client, key
-        )
-        if submitting_centre is None:
-            logger.error(
-                f"{key} does not have 'SubmittingCentre' entry, skipping!"
+        try:
+            submitting_centre, patient_group = helpers.get_split_info_from_key(
+                s3client, key
             )
-            return
-
-        config_group = config.get_site_group(submitting_centre)
-        if config_group is None:
-            logger.warning(
-                f"Site '{submitting_centre}' is not in configuration, skipping!"
-            )
-            return
-        if config_group == "split":
-            training_set = patient_in_training_set(
-                patient_id, config.get_training_percentage()
-            )
+        except (ClientError, json.decoder.JSONDecodeError):
+            raise
+        # Check PatientGroup first
+        if patient_group in ["training", "validation"]:
+            training_set = patient_group == "training"
         else:
-            # deciding between "training" and "validation" groups.
-            training_set = config_group == "training"
+            # Patient group is not set or invalid, check SubmittingCentre
+            if submitting_centre is None:
+                logger.error(
+                    f"{key} does not have 'SubmittingCentre' entry, skipping!"
+                )
+                return
+            # Extract how to handle a given SubmittingCEntre from the config
+            config_group = config.get_site_group(submitting_centre)
+            if config_group is None:
+                logger.warning(
+                    f"Site '{submitting_centre}' is not in configuration, skipping!"
+                )
+                return
+            if config_group == "split":
+                training_set = patient_in_training_set(
+                    patient_id, config.get_training_percentage()
+                )
+            else:
+                # deciding between "training" and "validation" groups.
+                training_set = config_group == "training"
+
+        # Cache the results
         patientcache.add(
             patient_id, "training" if training_set else "validation"
         )
