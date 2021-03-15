@@ -1,0 +1,25 @@
+{% from "macros/navbar.html" import navbar %}
+{% extends "base.html" %}
+{% block title %}<title>NCCID Dashboard</title>{% endblock %}
+{% block header %}{{ navbar("home") }}{% endblock %}
+{% block body %}
+{% if alert %}
+<div class="alert alert-danger" role="alert">
+  {{ alert }}
+</div>
+{% endif %}
+<div class="container mb-5">
+  <div class="dbcd-masthead">
+    <div class="row justify-content-center mt-3">
+      <div class="col col-md-10 col-lg-8 col-xl-6 text-center">
+        <h1 class="font-weight-light">NCCID dashboard</h1>
+        <a
+          class="btn btn-outline-secondary"
+          href="{{ url_for('login') }}"
+          >Login with Okta
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

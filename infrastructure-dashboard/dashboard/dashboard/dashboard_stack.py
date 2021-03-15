@@ -7,17 +7,23 @@ from aws_cdk import (
     aws_cloudfront as _cloudfront,
     aws_cloudfront_origins as _origins,
     aws_secretsmanager as secretsmanager,
+    aws_s3 as s3,
     core,
 )
 
 
 class DashboardStack(core.Stack):
-    def __init__(self, scope: core.Construct, construct_id: str, **kwargs) -> None:
+    def __init__(
+        self, scope: core.Construct, construct_id: str, **kwargs
+    ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         # Domain name to redirect
         domain_name = core.CfnParameter(
-            self, "domainName", type="String", description="Domain name to redirect",
+            self,
+            "domainName",
+            type="String",
+            description="Domain name to redirect",
         )
 
         # Here we use a specific certificate from parameter values
@@ -34,13 +40,29 @@ class DashboardStack(core.Stack):
             type="String",
             description="Image tag to deploy as container",
         )
+
+        processed_bucket_name = core.CfnParameter(
+            self,
+            "processedBucket",
+            type="String",
+            description="Name of the S3 bucket holding the processed data",
+        )
+
+        cookie_secret = core.CfnParameter(
+            self,
+            "cookieSecret",
+            type="String",
+            description="The secret value to encrypt the login cookies by the dashboard.",
+        )
         # End: Input variables
 
         # Create VPC and Fargate Cluster
         # NOTE: Limit AZs to avoid reaching resource quotas
         vpc = ec2.Vpc(self, "DashboardVPC", max_azs=2)
 
-        cluster = ecs.Cluster(self, "DashboardCluster", vpc=vpc)
+        cluster = ecs.Cluster(
+            self, "DashboardCluster", vpc=vpc, container_insights=True
+        )
 
         repository = ecr.Repository(
             self, "DashboardRepository", repository_name="nccid-dashboard"
@@ -59,20 +81,31 @@ class DashboardStack(core.Stack):
                     repository=repository, tag=image_tag.value_as_string
                 ),
                 "secrets": [service_secret],
+                "environment": {
+                    "AWS_PROCESSED_BUCKET": processed_bucket_name.value_as_string,
+                    "COOKIE_SECRET_KEY": cookie_secret.value_as_string,
+                    "DASHBOARD_DOMAIN": domain_name.value_as_string,
+                },
             },
             platform_version=ecs.FargatePlatformVersion.VERSION1_4,
+            # See values for these entries at https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs_patterns/NetworkLoadBalancedFargateService.html#networkloadbalancedfargateservice
+            cpu=256,  # .25 vCPU
+            memory_limit_mib=512,  # 0.5 GB
         )
 
-        fargate_service.service.connections.security_groups[0].add_ingress_rule(
+        processed_bucket = s3.Bucket.from_bucket_name(
+            self,
+            id="ProcessedBucket",
+            bucket_name=processed_bucket_name.value_as_string,
+        )
+        processed_bucket.grant_read(fargate_service.task_definition.task_role)
+
+        fargate_service.service.connections.security_groups[
+            0
+        ].add_ingress_rule(
             peer=ec2.Peer.ipv4(vpc.vpc_cidr_block),
             connection=ec2.Port.tcp(80),
             description="Allow HTTP inbound from VPC",
-        )
-
-        core.CfnOutput(
-            self,
-            "LoadBalancerDNS",
-            value=fargate_service.load_balancer.load_balancer_dns_name,
         )
 
         cert = _acm.Certificate.from_certificate_arn(
@@ -80,9 +113,16 @@ class DashboardStack(core.Stack):
         )
 
         origin = _origins.HttpOrigin(
-            domain_name=fargate_service.load_balancer.load_balancer_dns_name
+            domain_name=fargate_service.load_balancer.load_balancer_dns_name,
+            protocol_policy=_cloudfront.OriginProtocolPolicy.HTTP_ONLY,
         )
-        behaviour = _cloudfront.BehaviorOptions(origin=origin)
+        behaviour = _cloudfront.BehaviorOptions(
+            origin=origin,
+            allowed_methods=_cloudfront.AllowedMethods.ALLOW_ALL,
+            cache_policy=_cloudfront.CachePolicy.CACHING_DISABLED,
+            origin_request_policy=_cloudfront.OriginRequestPolicy.ALL_VIEWER,
+            viewer_protocol_policy=_cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        )
 
         distribution = _cloudfront.Distribution(
             self,
@@ -94,8 +134,14 @@ class DashboardStack(core.Stack):
         # Explicit dependency setup
         distribution.node.add_dependency(fargate_service.load_balancer)
 
-        # Outputs
-        distribution_domain = core.CfnOutput(  # noqa:  F841
+        # Output values
+        core.CfnOutput(
+            self,
+            "LoadBalancerDNS",
+            value=fargate_service.load_balancer.load_balancer_dns_name,
+        )
+
+        core.CfnOutput(
             self,
             "nccidDashboardDomain",
             value=distribution.distribution_domain_name,

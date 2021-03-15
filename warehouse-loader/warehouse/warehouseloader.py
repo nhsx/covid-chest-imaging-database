@@ -11,24 +11,18 @@ from io import BytesIO
 from pathlib import Path, posixpath
 
 import bonobo
-import boto3
 import mondrian
 import pydicom
 from bonobo.config import use
 from botocore.exceptions import ClientError
 
-from warehouse.components import constants, services
+from warehouse.components import constants, helpers, services
 
 # set up logging
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
 
-s3_resource = boto3.resource("s3")
-s3_client = boto3.client("s3")
-
-BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default="chest-data-warehouse")
-bucket = s3_resource.Bucket(BUCKET_NAME)
-
+BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default=None)
 DRY_RUN = bool(os.getenv("DRY_RUN", default=False))
 
 KB = 1024
@@ -36,73 +30,26 @@ KB = 1024
 ###
 # Helpers
 ###
-def object_exists(key):
-    """ Checking whether a given object exists in our work bucket
-
-    :param key: the object key in question
-    :type key: string
-    :raises botocore.exceptions.ClientError: if there's any transfer error
-    :return: True if object exists in the work bucket
-    :rtype: boolean
-    """
-    try:
-        bucket.Object(key).load()
-    except ClientError as e:
-        if e.response["Error"]["Code"] == "404":
-            return False
-        else:
-            raise ClientError
-    else:
-        return True
-
-
-def get_date_from_key(key):
-    """ Extract date from an object key from the bucket's directory pattern,
-    for a given prefix
-
-    :param key: the object key in question
-    :type key: string
-    :return: the extracted date if found
-    :rtype: string or None
-    """
-    date_match = re.match(r"^.+/(?P<date>\d{4}-\d{2}-\d{2})/.+", key)
-    if date_match:
-        return date_match.group("date")
-
-
-def get_submitting_centre_from_object(obj):
-    """Extract the SubmittingCentre value from an S3 object that is
-    a JSON file in the expected format.
-
-    :param obj: the S3 object of the JSON file to process
-    :type obj: boto3.resource('s3').ObjectSummary
-    :return: the value defined for SubmittingCentre in the file
-    :rtype: string or None
-    """
-    file_content = obj.Object().get()["Body"].read().decode("utf-8")
-    try:
-        json_content = json.loads(file_content)
-    except json.decoder.JSONDecodeError:
-        logger.error("Couldn't decode contents of {obj.key} as JSON.")
-        raise
-    return json_content.get("SubmittingCentre")
-
-
 def patient_in_training_set(
     patient_id, training_percent=constants.TRAINING_PERCENTAGE
 ):
-    """ Separating patient ID's into training and validation sets, check
+    """Separating patient ID's into training and validation sets, check
     which one this ID should fall into.
 
     It uses a hashing (sha512) to get pseudo-randomisation based on ID,
     and do the cut-off with a set percentage.
 
-    :param patient_id: the candidate patient ID
-    :type patient_id: string
-    :param training_percent: the percentage of patience to assign to the training set (defaults to the global TRAINING_PERCENTAGE)
-    :type training_percent: int
-    :return: True if the patient ID should fall into the training set
-    :rtype: boolean
+    Parameters
+    ----------
+    patient_id : str
+        The candidate patient ID to check
+    training_percent : int, default=constants.TRAINING_PERCENTAGE
+        The percentage of patience to assign to the training set (defaults to the global TRAINING_PERCENTAGE)
+
+    Returns
+    -------
+    boolean
+        True if the patient ID should fall into the training set
     """
     return (
         int(
@@ -122,10 +69,12 @@ def inplace_nullify(d, key):
 
     Extracted from https://bitbucket.org/scicomcore/dcm2slimjson/src/master/dcm2slimjson/main.py
 
-    :param d: dict to modify
-    :type d: dict
-    :param key: specific key to modify
-    :type key: anything that can be a dict key
+    Parameters
+    ----------
+    d : dict
+        The python dict to modify
+    key
+        The specific key to set to None, any type that can be a dict key is accepted
     """
     if isinstance(d, list):
         [inplace_nullify(_, key) for _ in d]
@@ -145,10 +94,15 @@ def scrub_dicom(fd):
 
     Extracted from https://bitbucket.org/scicomcore/dcm2slimjson/src/master/dcm2slimjson/main.py
 
-    :param fd: image data to scrub
-    :type fd: pydicom.FileDataset
-    :return: the scrubbed image data
-    :rtype: dict
+    Parameters
+    ----------
+    fd : pydicom.FileDataset
+        Image data to scrub
+
+    Returns
+    -------
+    dict
+        Scrubbed image data as dictionary
     """
 
     # Use a large value to bypass binary data handler
@@ -168,11 +122,22 @@ class PartialDicom:
     on traffic.
     """
 
-    def __init__(self, obj, initial_range_kb=20):
+    def __init__(self, s3client, key, initial_range_kb=20):
+        """Download partial DICOM files iteratively, to save
+        on traffic.
+
+        Parameters
+        ----------
+        obj : boto3.resource('s3').ObjectSummary
+            DICOM file object to download.
+        initial_range_kb : int, default=20
+            The starting range of the file to download.
+        """
         # Default value of 20Kb initial range is based on
         # tests run on representative data
         self._found_image_tag = False
-        self.obj = obj
+        self.s3client = s3client
+        self.key = key
         self.range_kb = initial_range_kb
 
     def _stop_when(self, tag, VR, length):
@@ -184,14 +149,21 @@ class PartialDicom:
         return self._found_image_tag
 
     def download(self):
-        """Download file iteratively, and return the image data
+        """Download file iteratively
+
+        Returns
+        -------
+        pydicom.FileDataset
+            The image data.
         """
         with BytesIO() as tmp:
             while True:
                 tmp.seek(0)
                 toprange = (self.range_kb * KB) - 1
-                stream = self.obj.get(Range=f"bytes=0-{toprange}")["Body"]
-                tmp.write(stream.read())
+                content = self.s3client.object_content(
+                    content_range=f"bytes=0-{toprange}", key=self.key
+                )
+                tmp.write(content)
                 tmp.seek(0)
                 try:
                     image_data = pydicom.filereader.read_partial(
@@ -213,14 +185,24 @@ class PartialDicom:
 ###
 # Transformation steps
 ###
+@use("s3client")
 @use("config")
-def load_config(config):
+def load_config(s3client, config):
     """Load configuration from the bucket
+
+    Parameters
+    ----------
+    s3client : S3Client
+        The service that handles S3 data access
+    config : PipelineConfig
+        The configuration to update with values from the constants.CONFIG_KEY config file
     """
     try:
-        obj = bucket.Object(constants.CONFIG_KEY).get()
-        contents = json.loads(obj["Body"].read().decode("utf-8"))
+        contents = json.loads(
+            s3client.object_content(constants.CONFIG_KEY).decode("utf-8")
+        )
         config.set_config(contents)
+        # Yield for the rest of the pipeline to kick in
         yield
     except ClientError as ex:
         if ex.response["Error"]["Code"] == "NoSuchKey":
@@ -229,97 +211,40 @@ def load_config(config):
             )
         else:
             raise
-
-
-@use("keycache")
-@use("patientcache")
-@use("inventory")
-def load_existing_files(keycache, patientcache, inventory):
-    """ Loading existing files from the training and
-    validation sets into the keycache.
-
-    :param keycache: the key cache service (provided by bonobo)
-    :type keycache: Keycache
-    """
-    # Set up our listing function.
-    if inventory.enabled:
-        listing = inventory.filter_keys
-    else:
-        # When using the original listing without inventory, we need to
-        # transform the objects returned by the filter
-        def listing(Prefix):
-            return map(
-                lambda obj: obj.key, bucket.objects.filter(Prefix=Prefix)
-            )
-
-    patient_file_name = re.compile(
-        r"^.+/data/(?P<patient_id>.*)/(?:data|status)_\d{4}-\d{2}-\d{2}.json$"
-    )
-    for group, prefix in [
-        ("validation", constants.VALIDATION_PREFIX),
-        ("training", constants.TRAINING_PREFIX),
-    ]:
-        for key in listing(Prefix=prefix):
-            m = patient_file_name.match(key)
-            if m:
-                # It is a patient file
-                patient_id = m.group("patient_id")
-                patientcache.add(patient_id, group)
-            else:
-                # It is an image file
-                try:
-                    keycache.add(key)
-                except services.DuplicateKeyError:
-                    logger.exception(f"{key} is duplicate in cache.")
-                    continue
-    return bonobo.constants.NOT_MODIFIED
+    except json.decoder.JSONDecodeError:
+        raise
 
 
 @use("config")
-@use("inventory")
-@use("rawsubfolderlist")
-def extract_raw_folders(config, inventory, rawsubfolderlist):
-    """ Extractor: get all date folders within the `raw/` data drop
+@use("filelist")
+def extract_raw_files_from_folder(config, filelist):
+    """Extract files from a given date folder in the data dump
 
-    :return: subfolders within the `raw/` prefix (yield)
-    :rtype: string
+    Parameters
+    ----------
+    config : PipelineConfig
+        A configurations store.
+    filelist : FileList
+        A FileList set up for the warehouse
+
+    Yields
+    ------
+    tuple[str, boto3.resource('s3').ObjectSummary, None]
+        Tuple containing the task to do ("process"), the object, and a placeholder
     """
-    for site_raw_prefix in config.get_raw_prefixes():
-        if not site_raw_prefix.endswith("/"):
-            site_raw_prefix += "/"
-
-        if inventory.enabled:
-            prefixes = inventory.list_folders(site_raw_prefix)
-        else:
-            result = s3_client.list_objects(
-                Bucket=BUCKET_NAME, Prefix=site_raw_prefix, Delimiter="/"
-            )
-            prefixes = [p.get("Prefix") for p in result.get("CommonPrefixes")]
-        # list folders in date order
-        for folder in sorted(prefixes, reverse=False):
-            for subfolder in rawsubfolderlist.get():
-                yield folder + subfolder
+    raw_prefixes = {prefix.rstrip("/") for prefix in config.get_raw_prefixes()}
+    # List the clinical data files for processing
+    for key in filelist.get_raw_data_list(raw_prefixes=raw_prefixes):
+        yield "process", key, None
+    # List the unprocessed image files for processing
+    for key in filelist.get_pending_raw_images_list(raw_prefixes=raw_prefixes):
+        yield "process", key, None
 
 
-@use("inventory")
-def extract_raw_files_from_folder(folder, inventory):
-    """ Extract files from a given date folder in the data dump
-
-    :param folder: the folder to process
-    :type key: string
-    :return: each object (yield)
-    :rtype: boto3.resource('s3').ObjectSummary
-    """
-    listing = inventory.filter if inventory.enabled else bucket.objects.filter
-    for obj in listing(Prefix=folder):
-        yield "process", obj, None
-
-
-@use("keycache")
-@use("config")
+@use("s3client")
 @use("patientcache")
-def process_image(*args, keycache, config, patientcache):
-    """ Processing images from the raw dump
+def process_image(*args, s3client, patientcache):
+    """Processing images from the raw dump
 
     Takes a single image, downloads it into temporary storage
     and extracts its metadata.
@@ -329,33 +254,39 @@ def process_image(*args, keycache, config, patientcache):
     If the image file already exists at the correct location, it's not passed
     on to the next step.
 
-    :param obj: the object in question
-    :type obj: boto3.resource('s3').ObjectSummary
-    :param keycache: the key cache service (provided by bonobo)
-    :type keycache: Keycache
-    :return: a task name, the original object, and a new key where it should be copied within the bucket
-    :rtype: (string, boto3.resource('s3').ObjectSummary, string)
+    Parameters
+    ----------
+    task, key, _ : tuple[str, str, None]
+        A task name (only handling "process" tasks), and an object to act on.
+    s3client : S3Client
+        The service that handles S3 data access
+    patientcache:
+        The cache that stores the asignments of patients to groups
+
+    Yields
+    ------
+    tuple[str, str, str or pydicom.FileDataset]
+        Tuple containing the task name("copy" or "metadata"), and other parameters
+        depending on the task. "copy" passes on the original object and new location.
+        "metadata" passes on the target metadata location and the image data to extract from.
     """
     # check file type
-    task, obj, _ = args
-    if task != "process" or Path(obj.key).suffix.lower() != ".dcm":
+    task, key, _ = args
+    image_path = Path(key)
+    if task != "process" or image_path.suffix.lower() != ".dcm":
         # not an image, don't do anything with it
-        return bonobo.constants.NOT_MODIFIED
-
-    # check if work is already done
-    image_in_cache = keycache.exists(obj.key)
-    image_uuid = Path(obj.key).stem
-    metadata_in_cache = keycache.exists(f"{image_uuid}.json")
-    if metadata_in_cache and image_in_cache:
-        # files exist, nothing to do here
+        yield bonobo.constants.NOT_MODIFIED
+        # Stop here for processing
         return
 
+    image_uuid = image_path.stem
+
     # download the image
-    image_data = PartialDicom(obj.Object()).download()
+    image_data = PartialDicom(s3client, key).download()
     if image_data is None:
         # we couldn't read the image data correctly
         logger.warning(
-            f"Object '{obj.key}' couldn't be loaded as a DICOM file, skipping!"
+            f"Object '{key}' couldn't be loaded as a DICOM file, skipping!"
         )
         return
 
@@ -368,7 +299,7 @@ def process_image(*args, keycache, config, patientcache):
         training_set = group == "training"
     else:
         logger.error(
-            f"Image without patient data: {obj.key}; "
+            f"Image without patient data: {key}; "
             + f"included patient ID: {patient_id}; "
             + "skipping!"
         )
@@ -382,7 +313,7 @@ def process_image(*args, keycache, config, patientcache):
         image_data["Modality"].value, "unknown"
     )
 
-    date = get_date_from_key(obj.key)
+    date = helpers.get_date_from_key(key)
     if date:
         # the location of the new files
         new_key = posixpath.join(
@@ -391,7 +322,7 @@ def process_image(*args, keycache, config, patientcache):
             patient_id,
             study_id,
             series_id,
-            Path(obj.key).name,
+            image_path.name,
         )
         metadata_key = posixpath.join(
             prefix,
@@ -402,41 +333,60 @@ def process_image(*args, keycache, config, patientcache):
             f"{image_uuid}.json",
         )
         # send off to copy or upload steps
-        if not object_exists(new_key):
-            yield "copy", obj, new_key
-        if not object_exists(metadata_key):
+        if not s3client.object_exists(new_key):
+            yield "copy", key, new_key
+        if not s3client.object_exists(metadata_key):
             yield "metadata", metadata_key, image_data
 
 
 def process_dicom_data(*args):
     """Process DICOM images, by scrubbing the image data
 
-    :param task: task informatiomn, needs to be equal to "metadata" to be processed here
-    :type task: string
-    :param metadata_key: location to upload the extracted metadata later
-    :type metadata_key: string
-    :param image_data: DICOM image data
-    :type image_data: pydicom.FileDataset
-    :return: metadata key and scrubbed image data, if processed
-    :rtype: tuple
+    Parameters
+    ----------
+    task, metadata_key, image_data : tuple[str, str, pydicom.FileDataset]
+        A task name (only handling "metadata" tasks), the location where
+        to create the metadata file further down the chain, and the image
+        data to scrub and extract.
+
+    Yields
+    ------
+    tuple[str, str, str]
+        A task name ("upload"), the key of the metadata file to create,
+        and the JSON content to in the file.
     """
-    task, metadata_key, image_data, = args
+    (
+        task,
+        metadata_key,
+        image_data,
+    ) = args
     if task == "metadata":
         scrubbed_image_data = scrub_dicom(image_data)
         yield "upload", metadata_key, json.dumps(scrubbed_image_data)
 
 
-def upload_text_data(*args):
+@use("s3client")
+def upload_text_data(*args, s3client):
     """Upload the text data to the correct bucket location.
 
-    :param task: selector to run this task or not, needs to be "upload" to process a file
-    :type task: string
-    :param outgoing_key: location to upload the data
-    :type outgoing_key: string
-    :param outgoing_data: text to file content to upload
-    :type outgoing_data: string
+    Parameters
+    ----------
+    task, outgoing_key, outgoing_data : tuple[str, str, str]
+        Task name (only processing "upload" tasks), the key and contents
+        of the text file to handle
+    s3client : S3Client
+        The service that handles S3 data access
+
+    Returns
+    -------
+    bonobo.constants.NOT_MODIFIED
+        Not modified result, to be able to pass the input on to other bonobo tasks if needed
     """
-    task, outgoing_key, outgoing_data, = args
+    (
+        task,
+        outgoing_key,
+        outgoing_data,
+    ) = args
     if (
         task == "upload"
         and outgoing_key is not None
@@ -445,32 +395,48 @@ def upload_text_data(*args):
         if DRY_RUN:
             logger.info(f"Would upload to key: {outgoing_key}")
         else:
-            bucket.put_object(Body=outgoing_data, Key=outgoing_key)
+            s3client.put_object(key=outgoing_key, content=outgoing_data)
 
-        return bonobo.constants.NOT_MODIFIED
+    return bonobo.constants.NOT_MODIFIED
 
 
 @use("config")
 @use("patientcache")
-def process_patient_data(*args, config, patientcache):
+@use("s3client")
+def process_patient_data(*args, config, patientcache, s3client):
     """Processing patient data from the raw dump
 
     Get the patient ID from the filename, do a training/validation
     test split, and create the key for the new location for the
     next processing step to copy things to.
 
-    :param obj: the object in question
-    :type obj: boto3.resource('s3').ObjectSummary
-    :return: a task name, the original object, and a new key where it should be copied within the bucket
-    :rtype: (string, boto3.resource('s3').ObjectSummary, string)
+    Parameters
+    ----------
+    task, key, _ : tuple[str, str, None]
+        Task name (only processing "upload" tasks), the object in question to process.
+    config : PipelineConfig
+        A configuration store.
+    patientcache : PatientCache
+        A cache of patient assignments to training/validation groups
+    s3client : S3Client
+        The service that handles S3 data access
+
+    Yields
+    ------
+    tuple[str, str, str]
+        A task name ("copy"), the original object, and a new key where it should be copied within the bucket
     """
-    task, obj, _ = args
-    if task != "process" or Path(obj.key).suffix.lower() != ".json":
+    task, key, _ = args
+    data_path = Path(key)
+    if task != "process" or data_path.suffix.lower() != ".json":
         # Not a data file, don't do anything with it
         yield bonobo.constants.NOT_MODIFIED
+        # Stop here with processing as well
+        return
 
     m = re.match(
-        r"^(?P<patient_id>.*)_(?P<outcome>data|status)$", Path(obj.key).stem
+        r"^.+/(?P<date>\d{4}-\d{2}-\d{2})/data/(?P<patient_id>.*)_(?P<outcome>data|status).json$",
+        key,
     )
     if m is None:
         # Can't interpret this file based on name, skip
@@ -478,16 +444,19 @@ def process_patient_data(*args, config, patientcache):
 
     patient_id = m.group("patient_id")
     outcome = m.group("outcome")
+    date = m.group("date")
 
     group = patientcache.get_group(patient_id)
     if group is not None:
         training_set = group == "training"
     else:
         # patient group is not cached
-        submitting_centre = get_submitting_centre_from_object(obj)
+        submitting_centre = helpers.get_submitting_centre_from_key(
+            s3client, key
+        )
         if submitting_centre is None:
             logger.error(
-                f"{obj.key} does not have 'SubmittingCentre' entry, skipping!"
+                f"{key} does not have 'SubmittingCentre' entry, skipping!"
             )
             return
 
@@ -513,35 +482,42 @@ def process_patient_data(*args, config, patientcache):
         if training_set
         else constants.VALIDATION_PREFIX
     )
-    date = get_date_from_key(obj.key)
-    if date is not None:
-        new_key = f"{prefix}data/{patient_id}/{outcome}_{date}.json"
-        if not object_exists(new_key):
-            yield "copy", obj, new_key
+    new_key = f"{prefix}data/{patient_id}/{outcome}_{date}.json"
+    if not s3client.object_exists(new_key):
+        yield "copy", key, new_key
 
 
-def data_copy(*args):
+@use("s3client")
+def data_copy(*args, s3client):
     """Copy objects within the bucket
 
     Only if both original object and new key is provided.
 
-    :param task: selector to run this task or not, needs to be "copy" to process a file
-    :type task: string
-    :param obj: the object key in question
-    :type obj: boto3.resource('s3').ObjectSummary
-    :param obj: the new key to copy data to
-    :type obj: string
-    :return: standard constant for bonobo "load" steps, so they can be chained
-    :rtype: bonobo.constants.NOT_MODIFIED
-    """
-    task, obj, new_key, = args
-    if task == "copy" and obj is not None and new_key is not None:
-        if DRY_RUN:
-            logger.info(f"Would copy: {obj.key} -> {new_key}")
-        else:
-            bucket.copy({"Bucket": obj.bucket_name, "Key": obj.key}, new_key)
+    Parameters
+    ----------
+    task, old_key, new_key : tuple[str, str, str]
+        Task name (this only runs on "copy" tasks, the object to be copied,
+        and the new key to copy the object to
+    s3client : S3Client
+        The service that handles S3 data access
 
-        return bonobo.constants.NOT_MODIFIED
+    Returns
+    -------
+    bonobo.constants.NOT_MODIFIED
+        Not modified result, to be able to pass the input on to other bonobo tasks if needed
+    """
+    (
+        task,
+        old_key,
+        new_key,
+    ) = args
+    if task == "copy" and old_key is not None and new_key is not None:
+        if DRY_RUN:
+            logger.info(f"Would copy: {old_key} -> {new_key}")
+        else:
+            s3client.copy_object(old_key, new_key)
+
+    return bonobo.constants.NOT_MODIFIED
 
 
 ###
@@ -551,14 +527,20 @@ def get_graph(**options):
     """
     This function builds the graph that needs to be executed.
 
-    :return: bonobo.Graph
+    Parameters
+    ----------
+    **options : dict
+        Keyword arguments.
+
+    Returns
+    -------
+    bonobo.Graph
+        The assembled processing graph.
     """
     graph = bonobo.Graph()
 
     graph.add_chain(
         load_config,
-        load_existing_files,
-        extract_raw_folders,
         extract_raw_files_from_folder,
     )
 
@@ -591,30 +573,42 @@ def get_services(**options):
     It will be used on top of the defaults provided by bonobo (fs, http, ...). You can override those defaults, or just
     let the framework define them. You can also define your own services and naming is up to you.
 
-    :return: dict
+    Returns
+    -------
+    dict
+        Mapping of service names to objects.
     """
-    config = services.PipelineConfig()
-    keycache = services.KeyCache()
-    patientcache = services.PatientCache()
-    rawsubfolderlist = services.SubFolderList()
 
-    if bool(os.getenv("SKIP_INVENTORY", default=False)):
-        inventory = services.Inventory()
-    else:
-        inventory = services.Inventory(main_bucket=BUCKET_NAME)
+    if BUCKET_NAME is None:
+        return {
+            "s3client": None,
+            "config": None,
+            "patientcache": None,
+            "filelist": None,
+        }
+
+    s3client = services.S3Client(bucket=BUCKET_NAME)
+    config = services.PipelineConfig()
+    inv_downloader = services.InventoryDownloader(main_bucket=BUCKET_NAME)
+    patientcache = services.PatientCache(inv_downloader)
+    filelist = services.FileList(inv_downloader)
 
     return {
+        "s3client": s3client,
         "config": config,
-        "keycache": keycache,
         "patientcache": patientcache,
-        "rawsubfolderlist": rawsubfolderlist,
-        "inventory": inventory,
+        "filelist": filelist,
     }
 
 
 def main():
-    """Execute the pipeline graph
-    """
+    """Execute the pipeline graph"""
+    # logfilename = "wh.log"
+    # logger = logging.getLogger()
+    # ch = logging.FileHandler(logfilename)
+    # formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    # ch.setFormatter(formatter)
+    # logger.addHandler(ch)
     parser = bonobo.get_argument_parser()
     with bonobo.parse_args(parser) as options:
         bonobo.run(get_graph(**options), services=get_services(**options))
