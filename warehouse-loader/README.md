@@ -215,6 +215,19 @@ Normally these pipelines are run in AWS, following these steps:
 Once done, hit `Run task`, wait for it to be provisioned, then follow the logs, or the metrics
 in CloudWatch.
 
+## Logs and monitoring
+
+You can monitor the logs in the running task, or can find the logs of a given run later on
+in **CloudWatch** / **Logs** / **Log groups** and the relevant `/ecs/warehouse-<stack>-pipeline`
+log group. You can also use [`infrastructure/tools/get_logs.py`](../infrastructure/tools/get_logs.py) to download a log
+stream (one run) into a local JSON file, including all log fragments (run the script with `-h`
+to see the options available.)
+
+For resource metrics and monitoring, you can visit **CloudWatch** / **Container Insights**. When the
+task is running for a few few minutes, it will show up in **Resources** and can be selected for monitoring.
+Or using **Performance Monitoring** within Container Insights, do the filtering yourself, when the metrics
+start to flow.
+
 ## Development and testing
 
 The loader pipelines come with extensive tests, and you can run those by installing
