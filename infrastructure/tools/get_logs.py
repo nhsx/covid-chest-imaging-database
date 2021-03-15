@@ -65,7 +65,7 @@ def get_logs(
 
 if __name__ == "__main__":
     # Arguments setup
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Get a whole log stream with all the fragments from AWS.")
     parser.add_argument(
         "-g",
         "--group-name",

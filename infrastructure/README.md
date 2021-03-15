@@ -6,6 +6,9 @@ NCCID warehouse and processing pipeline, and for this repository:
 The `templates` folder hosts the [CloudFormation](https://aws.amazon.com/cloudformation/)
 templates, while the Python scripts are used for applying those templates.
 
+The `tools` folder hosts some practical tools to interact with the infrastructure
+in various ways, [see what's included](tools/README.md).
+
 ## Warehouse
 
 The docs previews for this repository are stored in an S3 bucket,
@@ -27,8 +30,7 @@ The (simplified) infrastructure of the warehouse outline in the diagram below.
 Solid arrows mean data flow or write access, dashed lines mean read-only access,
 dotted line means logical connection between items.
 
-![](nccid_infrastructure_outline.png)
-
+![NCCID infrastructure outline](nccid_infrastructure_outline.png)
 
 To regenerate the above graphics, run `diagram.py`.
 
