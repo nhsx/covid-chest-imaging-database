@@ -36,6 +36,11 @@ dotted line means logical connection between items.
 
 To regenerate the above graphics, run `diagram.py`.
 
+### Container
+
+The [`container`](./container) folder contains the source code of the
+Docker image, in which the warehouse pipeline tasks are all run.
+
 ## Docs Preview
 
 The docs previews for this repository are stored in an S3 bucket,
