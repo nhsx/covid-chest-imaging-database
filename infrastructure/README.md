@@ -1,13 +1,15 @@
 # Infrastructure
 
 This folder contains the relevant infrastructure setup for the
-NCCID warehouse and processing pipeline, and for this repository:
+NCCID warehouse and processing pipeline:
 
 The `templates` folder hosts the [CloudFormation](https://aws.amazon.com/cloudformation/)
 templates, while the Python scripts are used for applying those templates.
 
 The `tools` folder hosts some practical tools to interact with the infrastructure
 in various ways, [see what's included](tools/README.md).
+
+For the internal dashboard infrastructure, check [here](../infrastructure-dashboard/README.md).
 
 ## Warehouse
 
