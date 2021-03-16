@@ -5,5 +5,5 @@ This folder contains the infrastructure definitions required by the internal das
 These use the [AWS Cloud Development Kit (CDK)](https://aws.amazon.com/cdk/) to define and deploy
 the given infrastructure (through CloudFormation).
 
-* [dashboard](dashboard/README.md) contains for the dashboard infrastructure
-* [nccid-redirect](nccid-redirect/README.md) contains a website redirection infrastructure
+* [dashboard](./dashboard) contains for the dashboard infrastructure
+* [nccid-redirect](./nccid-redirect) contains a website redirection infrastructure
