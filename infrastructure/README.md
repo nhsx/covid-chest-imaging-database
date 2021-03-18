@@ -7,9 +7,9 @@ The `templates` folder hosts the [CloudFormation](https://aws.amazon.com/cloudfo
 templates, while the Python scripts are used for applying those templates.
 
 The `tools` folder hosts some practical tools to interact with the infrastructure
-in various ways, [see what's included](tools/README.md).
+in various ways, [see what's included](tools).
 
-For the internal dashboard infrastructure, check [here](../infrastructure-dashboard/README.md).
+For the internal dashboard infrastructure, check [here](../infrastructure-dashboard).
 
 ## Warehouse
 
