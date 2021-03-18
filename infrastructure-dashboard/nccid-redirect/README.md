@@ -1,10 +1,9 @@
-
 # NCCID Redirection stack
 
 ## Prerequisites
 
 Create a certificate for the desired domain (that will be redirected), making
-sure the certificate is in the `us-east-1` zone (required by Cloudfront).
+sure the certificate is in the `us-east-1` zone (required by CloudFront).
 
 Wait until the certificate is validated, and grab it's ARN.
 

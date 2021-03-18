@@ -1,10 +1,15 @@
 # Infrastructure
 
 This folder contains the relevant infrastructure setup for the
-NCCID warehouse and processing pipeline, and for this repository:
+NCCID warehouse and processing pipeline:
 
 The `templates` folder hosts the [CloudFormation](https://aws.amazon.com/cloudformation/)
 templates, while the Python scripts are used for applying those templates.
+
+The `tools` folder hosts some practical tools to interact with the infrastructure
+in various ways, [see what's included](tools/README.md).
+
+For the internal dashboard infrastructure, check [here](../infrastructure-dashboard/README.md).
 
 ## Warehouse
 
@@ -27,10 +32,14 @@ The (simplified) infrastructure of the warehouse outline in the diagram below.
 Solid arrows mean data flow or write access, dashed lines mean read-only access,
 dotted line means logical connection between items.
 
-![](nccid_infrastructure_outline.png)
-
+![NCCID infrastructure outline](nccid_infrastructure_outline.png)
 
 To regenerate the above graphics, run `diagram.py`.
+
+### Container
+
+The [`container`](./container) folder contains the source code of the
+Docker image, in which the warehouse pipeline tasks are all run.
 
 ## Docs Preview
 

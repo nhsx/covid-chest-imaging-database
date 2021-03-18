@@ -134,16 +134,9 @@ class DashboardStack(core.Stack):
         # Explicit dependency setup
         distribution.node.add_dependency(fargate_service.load_balancer)
 
-        # Output values
         core.CfnOutput(
             self,
-            "LoadBalancerDNS",
-            value=fargate_service.load_balancer.load_balancer_dns_name,
-        )
-
-        core.CfnOutput(
-            self,
-            "nccidDashboardDomain",
+            "nccidCloudfrontDistribution",
             value=distribution.distribution_domain_name,
             description="Cloudfront domain to set the CNAME for.",
         )
