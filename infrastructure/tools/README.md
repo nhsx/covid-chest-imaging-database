@@ -45,3 +45,40 @@ optional arguments:
   --delete              Acutally try to delete after querying
   --workers WORKERS     Number of parallel workers when getting versions from an 'infile'
 ```
+
+## Inventory files downloader
+
+The S3 inventory files are a series of gzip-compressed CSV files, that
+are hosted in a specific location in the warehouse infrastructure.
+They are generated automatically by AWS on a regular cadence (1x a day).
+
+The CSV files have a series of file names included (up to 3,000,000 in each
+file), and a whole set of inventory files add up to a full inventory.
+
+To get the latest set of inventory files, use the `get_inventory.py` script:
+
+```shell
+$ ./get_inventory.py --help
+usage: get_inventory.py [-h] [-b BUCKET] [-o OUTPUT_FOLDER]
+
+Download the latest set of S3 inventory files.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -b BUCKET, --bucket BUCKET
+                        The bucket whose inventory to grab.
+  -o OUTPUT_FOLDER, --output-folder OUTPUT_FOLDER
+                        Where to download the inventory files
+```
+
+and when run with the default settings:
+
+```shell
+$ ./get_inventory.py
+INFO:botocore.credentials:Found credentials in environment variables.
+INFO:root:Downloading inventory file: nccid-data-warehouse-prod/daily-full-inventory/data/e082ecb7-b3b5-457a-83c1-c53abfa08b45.csv.gz
+INFO:root:Saved to: e082ecb7-b3b5-457a-83c1-c53abfa08b45.csv.gz
+INFO:root:Downloading inventory file: nccid-data-warehouse-prod/daily-full-inventory/data/628c1dcb-681b-43e2-b190-720f0e8de880.csv.gz
+INFO:root:Saved to: 628c1dcb-681b-43e2-b190-720f0e8de880.csv.gz
+...
+```
