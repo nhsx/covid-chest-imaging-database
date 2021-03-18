@@ -1,4 +1,3 @@
-
 # NCCID Redirection stack
 
 ## Prerequisites
