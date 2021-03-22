@@ -5,8 +5,9 @@ The National COVID-19 Chest Imaging Database (NCCID) comprises chest X-ray,
 CT and MR images and other relevant information of patients with suspected
 COVID-19. The database has been created to enable the development and validation
 of automated analysis technologies that may prove effective in supporting COVID-19
-care pathways, and to accelerate research projects to better understand the disease.
+care pathways.
 
+And now for something completely different....
 
 What data is collected
 ----------------------
