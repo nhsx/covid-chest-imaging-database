@@ -4,6 +4,7 @@
 Resources for data users
 ************************
 
+Look at these, as they should be very handy.
 
 Data cleaning pipeline and guidelines
 #####################################
