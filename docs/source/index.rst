@@ -9,6 +9,9 @@ care pathways.
 
 And now for something completely different....
 
+.. image:: images/garfield.jpeg
+   :width: 200
+
 What data is collected
 ----------------------
 
