@@ -1085,3 +1085,129 @@ def test_list_image_metadata_files():
     ][0]
     assert multi_file_result[0] == "training"
     assert multi_file_result[1] == "xray"
+
+
+@pytest.mark.parametrize(
+    "clinical_centre,config_centre,config_group,final_location",
+    [
+        ("CentreA", "CentreA", "training", "training"),
+        ("CentreA", "CentreA", "validation", "validation"),
+        ("CentreA", "CentreA", "split", "validation"),
+        ("CentreA", "CentreB", "training", None),
+    ],
+)
+@mock_s3
+def test_warehouseloader_e2e(
+    clinical_centre, config_centre, config_group, final_location
+):
+    """Full pipeline run of the pipeline test
+
+    Single image file, checking processing and copying going to the right
+    place.
+    """
+    test_file_name = (
+        "1.3.6.1.4.1.11129.5.5.110503645592756492463169821050252582267888.dcm"
+    )
+    test_file_path = str(
+        pathlib.Path(__file__).parent.absolute() / "test_data" / test_file_name
+    )
+    patient_id = "Covid0000"
+    study_id = (
+        "1.3.6.1.4.1.11129.5.5.112507010803284478207522016832191866964708"
+    )
+    series_id = (
+        "1.3.6.1.4.1.11129.5.5.112630850362182468372440828755218293352329"
+    )
+
+    # Test setup
+    bucket_name = "testbucket-12345"
+    conn = boto3.resource("s3", region_name="us-east-1")
+    conn.create_bucket(Bucket=bucket_name)
+    s3client = S3Client(bucket=bucket_name)
+    config = PipelineConfig()
+
+    input_config = dict(
+        {
+            "raw_prefixes": [
+                "raw-nhs-upload/",
+            ],
+            "training_percentage": 0,
+            "sites": {
+                "split": [],
+                "training": [],
+                "validation": [],
+            },
+        }
+    )
+    input_config["sites"][config_group] += [config_centre]
+    conn.meta.client.put_object(
+        Bucket=bucket_name, Key=CONFIG_KEY, Body=json.dumps(input_config)
+    )
+    next(warehouseloader.load_config(s3client, config))
+
+    # Upload the test image
+    image_file = f"raw-nhs-upload/2021-03-01/images/{test_file_name}"
+    conn.meta.client.upload_file(test_file_path, bucket_name, image_file)
+
+    clinical_files = [
+        "raw-nhs-upload/2021-02-15/data/Covid0000_status.json",
+        "raw-nhs-upload/2021-03-01/data/Covid0000_data.json",
+    ]
+    file_content = json.dumps(
+        {"Pseudonym": patient_id, "SubmittingCentre": clinical_centre}
+    )
+    for clinical_file in clinical_files:
+        conn.meta.client.put_object(
+            Bucket=bucket_name, Key=clinical_file, Body=file_content
+        )
+
+    target_files = [image_file] + clinical_files
+    create_inventory(target_files, bucket_name)
+
+    inv_downloader = InventoryDownloader(main_bucket=bucket_name)
+    filelist = FileList(inv_downloader)
+    patientcache = PatientCache(inv_downloader)
+    services = {
+        "config": config,
+        "filelist": filelist,
+        "patientcache": patientcache,
+        "s3client": s3client,
+    }
+    bonobo.run(warehouseloader.get_graph(), services=services)
+
+    if final_location is not None:
+        # Image copied to the right place
+        image_key = f"{final_location}/xray/{patient_id}/{study_id}/{series_id}/{test_file_name}"
+        assert s3client.object_exists(image_key)
+
+        # DICOM tags are extracted
+        json_key = f"{final_location}/xray-metadata/{patient_id}/{study_id}/{series_id}/{test_file_name.replace('dcm', 'json')}"
+        assert s3client.object_exists(json_key)
+
+        with open(test_file_path.replace("dcm", "json"), "r") as f:
+            test_json = f.read().replace("\n", "")
+        assert s3client.object_content(json_key).decode("utf-8") == test_json
+
+        # Clinical files copied to the right place
+        clinical_file_status = (
+            f"{final_location}/data/{patient_id}/status_2021-02-15.json"
+        )
+        assert s3client.object_exists(clinical_file_status)
+        clinical_file_data = (
+            f"{final_location}/data/{patient_id}/data_2021-03-01.json"
+        )
+        assert s3client.object_exists(clinical_file_data)
+    else:
+        for group in ["training", "validation"]:
+            image_key = f"{group}/xray/{patient_id}/{study_id}/{series_id}/{test_file_name}"
+            assert not s3client.object_exists(image_key)
+            json_key = f"{group}/xray-metadata/{patient_id}/{study_id}/{series_id}/{test_file_name.replace('dcm', 'json')}"
+            assert not s3client.object_exists(json_key)
+            clinical_file_status = (
+                f"{group}/data/{patient_id}/status_2021-02-15.json"
+            )
+            assert not s3client.object_exists(clinical_file_status)
+            clinical_file_data = (
+                f"{group}/data/{patient_id}/data_2021-03-01.json"
+            )
+            assert not s3client.object_exists(clinical_file_data)
