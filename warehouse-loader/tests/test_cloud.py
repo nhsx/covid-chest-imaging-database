@@ -1093,7 +1093,7 @@ def test_list_image_metadata_files():
         ("CentreA", "CentreA", "training", "training"),
         ("CentreA", "CentreA", "validation", "validation"),
         ("CentreA", "CentreA", "split", "validation"),
-        # ("CentreA", "CentreB", "training", None),
+        ("CentreA", "CentreB", "training", None),
     ],
 )
 @mock_s3
@@ -1177,9 +1177,25 @@ def test_warehouseloader_e2e(
         assert s3client.object_exists(image_key)
         json_key = f"{final_location}/xray-metadata/{patient_id}/{study_id}/{series_id}/{test_file_name.replace('dcm', 'json')}"
         assert s3client.object_exists(json_key)
-        # clinical_file_status = f"{final_location}/data/{patient_id}/status_2021-02-15.json"
-        # assert s3client.object_exists(clinical_file_status)
-        # clinical_file_data = f"{final_location}/data/{patient_id}/data_2021-03-01.json"
-        # assert s3client.object_exists(clinical_file_data)
-
-    # assert False
+        clinical_file_status = (
+            f"{final_location}/data/{patient_id}/status_2021-02-15.json"
+        )
+        assert s3client.object_exists(clinical_file_status)
+        clinical_file_data = (
+            f"{final_location}/data/{patient_id}/data_2021-03-01.json"
+        )
+        assert s3client.object_exists(clinical_file_data)
+    else:
+        for group in ["training", "validation"]:
+            image_key = f"{group}/xray/{patient_id}/{study_id}/{series_id}/{test_file_name}"
+            assert not s3client.object_exists(image_key)
+            json_key = f"{group}/xray-metadata/{patient_id}/{study_id}/{series_id}/{test_file_name.replace('dcm', 'json')}"
+            assert not s3client.object_exists(json_key)
+            clinical_file_status = (
+                f"{group}/data/{patient_id}/status_2021-02-15.json"
+            )
+            assert not s3client.object_exists(clinical_file_status)
+            clinical_file_data = (
+                f"{group}/data/{patient_id}/data_2021-03-01.json"
+            )
+            assert not s3client.object_exists(clinical_file_data)
