@@ -510,6 +510,31 @@ def test_get_submitting_centre():
 
 
 @mock_s3
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        ({"SubmittingCentre": "Centre"}, ("Centre", None)),
+        (
+            {"SubmittingCentre": "Centre", "PatientGroup": "training"},
+            ("Centre", "training"),
+        ),
+        ({"PatientGroup": "training"}, (None, "training")),
+        ({"Something": "Else"}, (None, None)),
+    ],
+)
+def test_get_split_info_from_key(value, expected):
+    bucket_name = "testbucket-12345"
+    conn = boto3.resource("s3", region_name="us-east-1")
+    conn.create_bucket(Bucket=bucket_name)
+    s3client = S3Client(bucket=bucket_name)
+
+    key = "valid.json"
+    content = json.dumps(value)
+    conn.meta.client.put_object(Bucket=bucket_name, Key=key, Body=content)
+    assert helpers.get_split_info_from_key(s3client, key) == expected
+
+
+@mock_s3
 def test_load_config():
     bucket_name = "testbucket-12345"
     conn = boto3.resource("s3", region_name="us-east-1")
