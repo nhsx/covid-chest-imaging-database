@@ -50,9 +50,16 @@ def test_training_set_equivalence(
     ) == patient_in_training_set(alternate_patient_id, training_percentage)
 
 
-def test_process_dicom_data():
+@pytest.mark.parametrize(
+    "input_file",
+    [
+        "sample.dcm",
+        "1.3.6.1.4.1.11129.5.5.110503645592756492463169821050252582267888.dcm",
+    ],
+)
+def test_process_dicom_data(input_file):
     test_file_name = str(
-        pathlib.Path(__file__).parent.absolute() / "test_data" / "sample.dcm"
+        pathlib.Path(__file__).parent.absolute() / "test_data" / input_file
     )
 
     test_file_json = test_file_name.replace(".dcm", ".json")
