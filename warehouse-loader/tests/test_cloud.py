@@ -1100,7 +1100,11 @@ def test_list_image_metadata_files():
 def test_warehouseloader_e2e(
     clinical_centre, config_centre, config_group, final_location
 ):
-    """Full pipeline run of the pipeline test"""
+    """Full pipeline run of the pipeline test
+
+    Single image file, checking processing and copying going to the right
+    place.
+    """
     test_file_name = (
         "1.3.6.1.4.1.11129.5.5.110503645592756492463169821050252582267888.dcm"
     )
@@ -1136,7 +1140,6 @@ def test_warehouseloader_e2e(
         }
     )
     input_config["sites"][config_group] += [config_centre]
-    print(input_config)
     conn.meta.client.put_object(
         Bucket=bucket_name, Key=CONFIG_KEY, Body=json.dumps(input_config)
     )
@@ -1173,10 +1176,19 @@ def test_warehouseloader_e2e(
     bonobo.run(warehouseloader.get_graph(), services=services)
 
     if final_location is not None:
+        # Image copied to the right place
         image_key = f"{final_location}/xray/{patient_id}/{study_id}/{series_id}/{test_file_name}"
         assert s3client.object_exists(image_key)
+
+        # DICOM tags are extracted
         json_key = f"{final_location}/xray-metadata/{patient_id}/{study_id}/{series_id}/{test_file_name.replace('dcm', 'json')}"
         assert s3client.object_exists(json_key)
+
+        with open(test_file_path.replace("dcm", "json"), "r") as f:
+            test_json = f.read().replace("\n", "")
+        assert s3client.object_content(json_key).decode("utf-8") == test_json
+
+        # Clinical files copied to the right place
         clinical_file_status = (
             f"{final_location}/data/{patient_id}/status_2021-02-15.json"
         )
