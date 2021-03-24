@@ -20,11 +20,22 @@ SERVE_LOCALLY = True
 HERE = Path(__file__).parent
 TEMPLATES = HERE.parent / "templates"
 
+# This template is used by all the Plotly pages created by
+# the setup further down the line. It shares the template
+# with the rest of the Flask app, except there are a couple
+# of template entries that are escaped here and filled out by Plotly
+# at rendering time: "app_entry", "config", "scripts", "renderer", "title"
+#
+# The elements needed to display the sidebar in the "pages.html" that
+# this extends is contained in the following variables passed to the
+# template: "sidenav_items", "sidenav_active".
+#
+# With this template rendered, the only active part is the "app_entry"
+# section managed by Plotly.
 INDEX_STRING_TEMPLATE = """{% from "macros/navbar.html" import navbar %}
 {% extends "pages.html" %}
 {% block head %}
 {{ super() }}
-{{ "{%metas%}{%css%}" }}
 {% endblock %}
 {% block title %}
 <title>{{ "{%title%}" }}</title>
