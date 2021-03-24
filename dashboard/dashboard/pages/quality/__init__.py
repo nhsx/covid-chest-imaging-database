@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 from dash.dependencies import Input, Output
+from jinja2 import utils
 
 from dataset import Dataset
 from pages.tools import show_last_update
@@ -211,7 +212,7 @@ def create_completeness_chart(data, centre, fields, sort_by):
     covid_positives = covid_positives[columns.COLS_MAP[fields]]
     if covid_positives.empty:
         return dbc.Alert(
-            f"{centre} doesn't seem to have any positive patients, please select another centre!",
+            f"{utils.escape(centre)} doesn't seem to have any positive patients, please select another centre!",
             color="warning",
         )
 
@@ -240,7 +241,7 @@ def create_completeness_chart(data, centre, fields, sort_by):
     fig.update_layout(
         barmode="stack",
         xaxis_tickangle=-45,
-        title=f"Completeness of Fields: {centre}, {fields} fields",
+        title=f"Completeness of Fields: {utils.escape(centre)}, {utils.escape(fields)} fields",
         xaxis_title="Fields",
         yaxis_title="% of Nulls",
         legend_title="",

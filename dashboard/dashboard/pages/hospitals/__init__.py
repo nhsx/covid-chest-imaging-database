@@ -5,6 +5,7 @@ import dash_html_components as html
 import pandas as pd
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output
+from jinja2 import utils
 
 from dataset import Dataset
 from pages.tools import show_last_update
@@ -251,8 +252,6 @@ def create_hospital_counts(data, centre):
         patient = patient[patient["SubmittingCentre"] == centre]
         title_filter = centre
 
-    # patients["latest_swab_date"] = pd.to_datetime(patients["latest_swab_date"])
-
     counts = (
         patient.rename(columns={"filename_covid_status": "Covid Status"})
         .groupby(["filename_earliest_date", "Covid Status"])
@@ -297,7 +296,7 @@ def create_hospital_counts(data, centre):
     fig = go.Figure(
         data=lines,
         layout={
-            "title": f"Cumulative Number of Patients by COVID status: {title_filter}",
+            "title": f"Cumulative Number of Patients by COVID status: {utils.escape(title_filter)}",
             "xaxis_title": "Date of upload to the warehouse before processing.",
         },
     )
