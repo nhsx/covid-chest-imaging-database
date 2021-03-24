@@ -647,9 +647,7 @@ def test_submittingcentres_e2e(capsys):
 
     input_config = dict(
         {
-            "raw_prefixes": [
-                "raw-nhs-upload/",
-            ],
+            "raw_prefixes": ["raw-nhs-upload/", "raw-nhs2-upload"],
             "training_percentage": 0,
             "sites": {
                 "split": [],
@@ -666,11 +664,11 @@ def test_submittingcentres_e2e(capsys):
     target_files = [
         "raw-nhs-upload/2021-01-31/data/Covid1_data.json",
         "raw-nhs-upload/2021-01-31/data/Covid2_status.json",
-        "raw-nhs-upload/2021-02-28/data/Covid3_data.json",
-        "raw-nhs-upload/2021-02-28/data/Covid4_status.json",
+        "raw-nhs2-upload/2021-02-28/data/Covid3_data.json",
+        "raw-nhs2-upload/2021-02-28/data/Covid4_status.json",
     ]
+    # Extra files that won't be processed
     extra_files = [
-        "raw-nhs-upload/2021-03-01/data/Covid1_data.json",
         "test/Covid5_data.json"
         "raw-nhs-upload/age-0/2021-03-01/data/Covid6_data.json",
         "raw-elsewhere-upload/2021-03-01/data/Covid7_data.json",
@@ -682,8 +680,18 @@ def test_submittingcentres_e2e(capsys):
         conn.meta.client.put_object(
             Bucket=bucket_name, Key=target_file, Body=file_content
         )
+    # Add extra centre with "PatientGroup" set (ie. centre should be be ignored)
+    patient_group_file = "raw-nhs-upload/2021-01-31/data/Covid1_data.json"
+    file_content = json.dumps(
+        {"SubmittingCentre": "CentreX", "PatientGroup": "training"}
+    )
+    conn.meta.client.put_object(
+        Bucket=bucket_name, Key=patient_group_file, Body=file_content
+    )
 
-    create_inventory(target_files + extra_files, bucket_name)
+    create_inventory(
+        target_files + extra_files + ["patient_group_file"], bucket_name
+    )
 
     inv_downloader = InventoryDownloader(main_bucket=bucket_name)
     filelist = FileList(inv_downloader)
