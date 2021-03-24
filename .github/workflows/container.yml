@@ -6,7 +6,7 @@ jobs:
   docker-lint:
     runs-on: ubuntu-latest
 
-    container: hadolint/hadolint
+    container: hadolint/hadolint:latest-debian
 
     steps:
       - uses: actions/checkout@v2
@@ -15,6 +15,8 @@ jobs:
           find infrastructure/container -name Dockerfile | xargs -I{} sh -c "echo Checking {}; hadolint {}"
           find dashboard/ -name Dockerfile | xargs -I{} sh -c "echo Checking {}; hadolint {}"
       - name: shellcheck on container scripts
+        env:
+          DEBIAN_FRONTEND: noninteractive
         run: |
-          apk add --no-cache shellcheck
+          apt-get update && apt-get install -qy shellcheck
           find infrastructure/container -name "*.sh" | xargs -I{} sh -c "echo Checking {}; shellcheck {}"
