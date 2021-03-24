@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 
 TEMPLATES_DIRECTORY = Path("templates")
 DEFAULT_TEMPLATE_NAME = "warehouse"
-DEAFULT_BUCKET_NAME = "nccid-data-warehouse"
+DEFAULT_BUCKET_NAME = "nccid-data-warehouse"
 
 CLIENT = boto3.client("cloudformation", region_name="eu-west-2")
 
@@ -32,7 +32,7 @@ def create_warehouse(suffix=None):
     changeset_name = f"{DEFAULT_TEMPLATE_NAME}-{timestamp_suffix}"
     stack_name = f"{DEFAULT_TEMPLATE_NAME}{suffix_string}"
     logging.info(f"Stack name: {stack_name}")
-    bucket_name = f"{DEAFULT_BUCKET_NAME}{suffix_string}"
+    bucket_name = f"{DEFAULT_BUCKET_NAME}{suffix_string}"
 
     # Update or create as needed
     changeset_type = "UPDATE" if _stack_exists(stack_name) else "CREATE"
