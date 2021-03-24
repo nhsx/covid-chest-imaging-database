@@ -444,7 +444,7 @@ def create_patient_timeseries(data, group):
         fig = go.Figure(
             data=lines,
             layout={
-                "title": "Number of patients by swab date in covid positive and negative patients",
+                "title": "Number of patients by swab date in COVID-19 positive and negative patients",
                 "xaxis_title": "Date",
                 "yaxis_title": "# of Patients",
             },
@@ -510,7 +510,7 @@ def create_age_breakdown(data, group):
         patient_negative = patient[~patient["filename_covid_status"]]
         fig = go.Figure(
             layout={
-                "title": "Age distribution in covid positive and negative patients",
+                "title": "Age distribution in COVID-19 positive and negative patients",
                 "xaxis_title": "Age",
                 "yaxis_title": "% of Patients",
                 "legend_title": "Group",
@@ -600,10 +600,10 @@ def create_ethnicity_breakdown(data, group):
         patient_negative = patient[~patient["filename_covid_status"]]
         fig = go.Figure(
             layout={
-                "title": "Ethnicity distribution in covid positive and negative patients",
+                "title": "Ethnicity distribution in COVID-19 positive and negative patients",
                 "xaxis_title": "Ethnicity",
                 "yaxis_title": "% of Patients",
-                "legend_title": "Covid status",
+                "legend_title": "COVID-19 status",
             },
         )
         fig.add_trace(

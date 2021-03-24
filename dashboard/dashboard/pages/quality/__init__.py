@@ -121,7 +121,7 @@ def serve_layout(data: Dataset) -> html.Div:
                 + "DICOM header information. For each field of the clinical "
                 + "data, the percentage of entries with non-null values is "
                 + "shown against the percentage of null values. "
-                + "The plots shown are relevent only for COVID-positive patients "
+                + "The plots shown are relevent only for COVID-19 positive patients "
                 + "as the majority of this data has not been requested for negative patients."
             ),
             dbc.Alert(
@@ -212,7 +212,8 @@ def create_completeness_chart(data, centre, fields, sort_by):
     covid_positives = covid_positives[columns.COLS_MAP[fields]]
     if covid_positives.empty:
         return dbc.Alert(
-            f"{utils.escape(centre)} doesn't seem to have any positive patients, please select another centre!",
+            f"{utils.escape(centre)} doesn't seem to have any positive patients, "
+            + "please select another centre!",
             color="warning",
         )
 

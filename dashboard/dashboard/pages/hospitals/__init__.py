@@ -122,7 +122,8 @@ def serve_layout(data: Dataset) -> html.Div:
             ),
             centres_select,
             html.P(
-                "ⓘ Click the × mark to clear the selection above and show data for all submitting centres.",
+                "ⓘ Click the × mark to clear the selection above and "
+                + "show data for all submitting centres.",
                 id="centres-note",
             ),
             dcc.Loading(
@@ -253,8 +254,8 @@ def create_hospital_counts(data, centre):
         title_filter = centre
 
     counts = (
-        patient.rename(columns={"filename_covid_status": "Covid Status"})
-        .groupby(["filename_earliest_date", "Covid Status"])
+        patient.rename(columns={"filename_covid_status": "COVID-19 Status"})
+        .groupby(["filename_earliest_date", "COVID-19 Status"])
         .count()
         .sort_index()["Pseudonym"]
         .unstack()
@@ -296,7 +297,7 @@ def create_hospital_counts(data, centre):
     fig = go.Figure(
         data=lines,
         layout={
-            "title": f"Cumulative Number of Patients by COVID status: {utils.escape(title_filter)}",
+            "title": f"Cumulative Patients Count by COVID-19 status: {utils.escape(title_filter)}",
             "xaxis_title": "Date of upload to the warehouse before processing.",
         },
     )
