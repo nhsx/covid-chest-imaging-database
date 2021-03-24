@@ -6,7 +6,7 @@ jobs:
   docker-lint:
     runs-on: ubuntu-latest
 
-    container: hadolint/hadolint
+    container: hadolint/hadolint:v1.23.0-8-gb01c5a9
 
     steps:
       - uses: actions/checkout@v2
