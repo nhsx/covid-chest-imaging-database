@@ -96,8 +96,12 @@ class SubmittingCentreExtractor(Configurable):
         task, key, _ = args
         s3client = kwargs["s3client"]
         if task == "process" and Path(key).suffix.lower() == ".json":
-            centre = helpers.get_submitting_centre_from_key(s3client, key)
-            if centre is not None:
+            centre, patient_group = helpers.get_split_info_from_key(
+                s3client, key
+            )
+            # Only add the centre to the output list if PatientGroup is not set,
+            # since otherwise it won't need to be added to the
+            if patient_group is None and centre is not None:
                 centres.add(centre)
 
 
