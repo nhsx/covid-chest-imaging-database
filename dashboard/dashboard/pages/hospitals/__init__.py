@@ -167,7 +167,7 @@ def create_app(data: Dataset, **kwargs: str) -> dash.Dash:
         Input("covid-status", "value"),
         Input("table-order", "value"),
     )
-    def set_hostpital_table(covid_status, order_column):
+    def set_hospital_table(covid_status, order_column):
         return create_hospital_table(data, covid_status, order_column)
 
     @app.callback(
