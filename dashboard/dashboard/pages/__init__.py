@@ -24,7 +24,8 @@ TEMPLATES = HERE.parent / "templates"
 # the setup further down the line. It shares the template
 # with the rest of the Flask app, except there are a couple
 # of template entries that are escaped here and filled out by Plotly
-# at rendering time: "app_entry", "config", "scripts", "renderer", "title"
+# at rendering time: "app_entry", "config", "scripts", "renderer", "title",
+# "metas", "css".
 #
 # The elements needed to display the sidebar in the "pages.html" that
 # this extends is contained in the following variables passed to the
@@ -38,6 +39,7 @@ INDEX_STRING_TEMPLATE = """{% from "macros/navbar.html" import navbar %}
 {% extends "pages.html" %}
 {% block head %}
 {{ super() }}
+{{ "{%metas%}{%css%}" }}
 {% endblock %}
 {% block title %}
 <title>{{ "{%title%}" }}</title>
