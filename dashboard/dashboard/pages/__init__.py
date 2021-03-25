@@ -32,6 +32,8 @@ TEMPLATES = HERE.parent / "templates"
 #
 # With this template rendered, the only active part is the "app_entry"
 # section managed by Plotly.
+# For more details, check this documentation:
+# https://dash.plotly.com/external-resources
 INDEX_STRING_TEMPLATE = """{% from "macros/navbar.html" import navbar %}
 {% extends "pages.html" %}
 {% block head %}
