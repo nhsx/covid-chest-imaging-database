@@ -396,7 +396,7 @@ def upload_text_data(*args, s3client):
         and outgoing_data is not None
     ):
         if DRY_RUN:
-            logger.debug(f"Would upload to key: {outgoing_key}")
+            logger.info(f"Would upload to key: {outgoing_key}")
         else:
             s3client.put_object(key=outgoing_key, content=outgoing_data)
 
@@ -516,7 +516,7 @@ def data_copy(*args, s3client):
     ) = args
     if task == "copy" and old_key is not None and new_key is not None:
         if DRY_RUN:
-            logger.debug(f"Would copy: {old_key} -> {new_key}")
+            logger.info(f"Would copy: {old_key} -> {new_key}")
         else:
             s3client.copy_object(old_key, new_key)
 
