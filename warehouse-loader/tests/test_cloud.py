@@ -671,7 +671,7 @@ def test_submittingcentres_e2e(capsys):
 
     with open("/tmp/message.txt", "r") as f:
         output = f.read().splitlines()
-    assert output == sorted(list(set(centres)))
+    assert output == ["CentreA", "CentreB", "CentreC"]
 
 
 ##
