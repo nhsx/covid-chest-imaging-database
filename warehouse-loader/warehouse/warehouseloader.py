@@ -21,6 +21,7 @@ from warehouse.components import constants, helpers, services
 # set up logging
 mondrian.setup(excepthook=True)
 logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default=None)
 DRY_RUN = bool(os.getenv("DRY_RUN", default=False))
@@ -234,9 +235,11 @@ def extract_raw_files_from_folder(config, filelist):
     """
     raw_prefixes = {prefix.rstrip("/") for prefix in config.get_raw_prefixes()}
     # List the clinical data files for processing
+    logger.info("Starting on clinical data file processing.")
     for key in filelist.get_raw_data_list(raw_prefixes=raw_prefixes):
         yield "process", key, None
     # List the unprocessed image files for processing
+    logger.info("Starting on image file processing.")
     for key in filelist.get_pending_raw_images_list(raw_prefixes=raw_prefixes):
         yield "process", key, None
 
@@ -393,7 +396,7 @@ def upload_text_data(*args, s3client):
         and outgoing_data is not None
     ):
         if DRY_RUN:
-            logger.info(f"Would upload to key: {outgoing_key}")
+            logger.debug(f"Would upload to key: {outgoing_key}")
         else:
             s3client.put_object(key=outgoing_key, content=outgoing_data)
 
@@ -513,7 +516,7 @@ def data_copy(*args, s3client):
     ) = args
     if task == "copy" and old_key is not None and new_key is not None:
         if DRY_RUN:
-            logger.info(f"Would copy: {old_key} -> {new_key}")
+            logger.debug(f"Would copy: {old_key} -> {new_key}")
         else:
             s3client.copy_object(old_key, new_key)
 
