@@ -25,6 +25,8 @@ logger.setLevel(logging.INFO)
 
 BUCKET_NAME = os.getenv("WAREHOUSE_BUCKET", default=None)
 DRY_RUN = bool(os.getenv("DRY_RUN", default=False))
+if DRY_RUN:
+    logger.info("This is a **dry run** with no file intended to be changed.")
 
 KB = 1024
 
