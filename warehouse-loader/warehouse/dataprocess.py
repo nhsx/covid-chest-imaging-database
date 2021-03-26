@@ -125,7 +125,6 @@ def load_clinical_files(*args, s3client):
 
     try:
         result = s3client.get_object(key=latest_file)
-        # result = s3client.get_object(Bucket=inventory.bucket, Key=latest_file)
     except ClientError as ex:
         if ex.response["Error"]["Code"] == "NoSuchKey":
             logger.error(f"No object found: {latest_file}")
