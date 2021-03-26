@@ -3,7 +3,9 @@ import pathlib
 import pydicom
 import pytest
 
+import warehouse.components.constants as constants
 import warehouse.components.helpers as helpers
+import warehouse.components.services as services
 from warehouse.dataprocess import dicom_age_in_years
 from warehouse.warehouseloader import (
     patient_in_training_set,
@@ -108,3 +110,33 @@ def test_get_date_from_key(key, expected):
 )
 def test_dicom_age_in_years(value, expected):
     assert dicom_age_in_years(value) == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        (-10, 0),
+        (50, 50),
+        (150, 100),
+        (None, constants.TRAINING_PERCENTAGE),
+        (34.4, 34.4),
+    ],
+)
+def test_pipeline_config_training_percent(value, expected):
+    """
+    WHEN various values of training percentage is set
+    THEN the results are correctly clipped and filled in from default.
+    """
+    input_config = dict(
+        {
+            "raw_prefixes": [],
+            "sites": {"split": [], "training": [], "validation": []},
+        }
+    )
+    if value is not None:
+        input_config["training_percentage"] = value
+
+    pipelineconfig = services.PipelineConfig()
+    pipelineconfig.set_config(input_config)
+
+    assert pipelineconfig.get_training_percentage() == pytest.approx(expected)

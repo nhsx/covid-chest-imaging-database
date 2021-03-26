@@ -1,4 +1,5 @@
 import csv
+import datetime
 import gzip
 import json
 import math
@@ -314,9 +315,7 @@ def test_inventory_downloader():
 
     # Check for runtime error
     with pytest.raises(SystemExit) as pytest_wrapped_e:
-        inv_downloader = InventoryDownloader(
-            main_bucket=main_bucket_name + "-nonexistent"
-        )
+        InventoryDownloader(main_bucket=main_bucket_name + "-nonexistent")
     assert pytest_wrapped_e.type == SystemExit
     assert pytest_wrapped_e.value.code == 1
 
@@ -1211,3 +1210,51 @@ def test_warehouseloader_e2e(
                 f"{group}/data/{patient_id}/data_2021-03-01.json"
             )
             assert not s3client.object_exists(clinical_file_data)
+
+
+@pytest.mark.parametrize(
+    "clinical_files",
+    ["data", "status", "mixed"],
+)
+@mock_s3
+def test_dataprocess_load_clinical_files(clinical_files):
+    bucket_name = "testbucket-12345"
+    conn = boto3.resource("s3", region_name="us-east-1")
+    conn.create_bucket(Bucket=bucket_name)
+    s3client = S3Client(bucket=bucket_name)
+
+    # Files per type
+    pseudonym = "Covid1234"
+    group = "training"
+    file_count = 4
+    filenames = []
+    base_path = f"{group}/data/{pseudonym}/"
+    for item in range(1, file_count + 1):
+        date = f"2021-03-{item:02d}"
+        if clinical_files == "mixed":
+            file_type = "data" if item % 2 == 0 else "status"
+        else:
+            file_type = clinical_files
+        filename = f"{file_type}_{date}.json"
+        filenames += [filename]
+        content = json.dumps({"Pseudonym": pseudonym, "key": f"value{item}"})
+        conn.meta.client.put_object(
+            Bucket=bucket_name, Key=base_path + filename, Body=content
+        )
+
+    target_result = {
+        "filename_earliest_date": datetime.date(2021, 3, 1),
+        "filename_latest_date": datetime.date(2021, 3, 4),
+        "filename_covid_status": clinical_files in {"data", "mixed"},
+        "last_modified": datetime.date.today(),
+        "group": group,
+        "Pseudonym": pseudonym,
+        "key": "value4",
+    }
+
+    data = {"group": group, "files": filenames}
+    args = pseudonym, data
+    result = next(dataprocess.load_clinical_files(*args, s3client=s3client))
+
+    assert result[0] == "patient"
+    assert result[1] == target_result
