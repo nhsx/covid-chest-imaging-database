@@ -647,7 +647,7 @@ def test_submittingcentres_e2e(capsys):
 
     input_config = dict(
         {
-            "raw_prefixes": ["raw-nhs-upload/", "raw-nhs2-upload"],
+            "raw_prefixes": ["raw-nhs-upload/", "raw-nhs2-upload/"],
             "training_percentage": 0,
             "sites": {
                 "split": [],
