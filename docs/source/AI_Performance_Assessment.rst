@@ -26,7 +26,7 @@ How do I apply?
 
 | Applications from technology developers with products that have already achieved ISO13485 certification or other Quality Management System (QMS) certification are particularly welcome. **This is not a prerequisite for a product to be eligible for this assessment.** However, please note that it is a prerequisite of both the derogation and standard pathways for gaining the UKCA/CE mark.
 
-| If you would like to apply, please complete this `application form <https://docs.google.com/document/d/1NtXiiGo2AbAWWu82bxMqKnS5gdMEC6aB6HxZK7gdksE/edit#/>`_ . If you have any questions, please contact us on imaging@nhsx.nhs.uk. **The application process is open from now and will close at 1pm on 28 May 2021.** This will be followed by a 3-week review process by a pool of expert reviewers, by the end of which you will receive feedback on the outcome of your application. 
+| If you would like to apply, please complete this `application form <https://forms.gle/bcerY7XQcxeZj4Lg9/>`_ . If you have any questions, please contact us on imaging@nhsx.nhs.uk. **The application process is open from now and will close at 1pm on 28 May 2021.** This will be followed by a 3-week review process by a pool of expert reviewers, by the end of which you will receive feedback on the outcome of your application. 
 
 
 What will I receive at the end of the assessment?
