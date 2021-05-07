@@ -174,6 +174,7 @@ Information Regulations 2002) ceases effect.
    :caption: Other Information
 
    NCCID_Collaborative
+   AI_Performance_Assessment
    project_summaries
    other_datasets
    stats
