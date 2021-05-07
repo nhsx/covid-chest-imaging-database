@@ -1,5 +1,8 @@
 .. _AI_Performance_Assessment:
 
+Performance Assessment Call
+===================
+
 Call for AI driven COVID-19 models: Performance assessment using the National COVID-19 Chest Imaging Database 
 ===================
 
@@ -29,6 +32,12 @@ How do I apply?
 
 | **The application process is open from now and will close at 1pm on 28 May 2021.** This will be followed by a 3-week review process by a pool of expert reviewers, by the end of which you will receive feedback on the outcome of your application. 
 
+What will I receive at the end of the assessment?
+-------------------------------------------------
+The technology developer will receive a written report from the external assessors that documents how the AI model in question performed against the defined performance criteria. This will include an assessment of model performance (sensitivity, specificity etc.), and clinical applicability that can be used as evidence to support applications to the MHRA for derogation of UKCA/CE marking or via standard conformance assessment processes.
+
+| In addition, depending on the outcome of the exercise, NHSX can support technology developers in identifying and making introductions to NHS trusts which have expressed an interest in commissioning new AI technologies.
+
 Is this a route to regulatory conformance?
 ------------------------------------------
 | No, it is important to note that this process does not replace the path to achieve UKCA/CE/UKNI marking.
@@ -36,7 +45,9 @@ Is this a route to regulatory conformance?
 | In the context of bringing AI models to fruition as part of the COVID-19 response, the developers undergoing the proposed performance assessment process will, depending on the outcome of the exercise, be able to generate high quality evidence that their model performs as intended, which they can submit to the Medicines and Healthcare products Regulatory Agency (MHRA) to support their application for derogation (for more information please visit `Exemptions from Devices regulations during the coronavirus outbreak <https://www.gov.uk/guidance/exemptions-from-devices-regulations-during-the-coronavirus-covid-19-outbreak#exemptions-for-all-other-kind-of-medical-device/>`_ on the Gov.uk website). 
 
 | Alternatively, standard routes to conformity under the device regulations remain open. Evidence generated via the proposed performance assessment process may form part of a standard regulatory submission. For more information please visit `How to comply with the legal requirements in Great Britain <https://www.gov.uk/guidance/medical-devices-how-to-comply-with-the-legal-requirements/>`_ on the Gov.uk website. 
-| What will this exercise involve for the technology developer? [accordion]
+
+What will this exercise involve for the technology developer?
+-------------------------------------------------------------
 | The NHS AI Lab will be using independent assessors to run the exercise, and assess the performance of the technology developer’s AI model. By doing this, NHSX aims to source deep subject matter expertise on both a technical and clinical level, in order to ensure that the exercise is carried out effectively and objectively.
 
 | The validation will be performed within a cloud-computing infrastructure provided by NHSX, containing the NCCID unseen dataset. This will guarantee the dataset remains in a safe and secure location, and mitigate the risk of data being shared.
@@ -77,12 +88,6 @@ How long will the assessment process take?
 The process end-to-end will take approximately 12-16 weeks to complete, depending on the complexity of the model deployment and analysis.
 How many AI models do you intend to assess?
 This will depend on the number of applications received and the strength of the proposals. 
-
-What will I receive at the end of the assessment?
--------------------------------------------------
-The technology developer will receive a written report from the external assessors that documents how the AI model in question performed against the defined performance criteria. This will include an assessment of model performance (sensitivity, specificity etc.), and clinical applicability that can be used as evidence to support applications to the MHRA for derogation of UKCA/CE marking or via standard conformance assessment processes.
-
-| In addition, depending on the outcome of the exercise, NHSX can support technology developers in identifying and making introductions to NHS trusts which have expressed an interest in commissioning new AI technologies.
 
 How much will this assessment cost me?
 --------------------------------------
