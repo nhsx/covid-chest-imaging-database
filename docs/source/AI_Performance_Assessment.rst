@@ -4,7 +4,7 @@ Performance Assessment Call
 ===================
 
 Call for AI driven COVID-19 models: Performance assessment using the National COVID-19 Chest Imaging Database 
-===================
+------------------------------------------------------------------------------------------------------------
 
 Introduction
 ------------
