@@ -99,9 +99,5 @@ How will applications be assessed?
 
 | Further details for the above criteria are included in the Application Form. 
 
-| Applications will be assessed by an appointed committee consisting of:
-
-- •Clinical advisors 
-- •Technical advisors
-- •Financial advisors
+| Applications will be assessed by expert peer reviewers and an appointed committee consisting of technical and clinical advisors.
 
