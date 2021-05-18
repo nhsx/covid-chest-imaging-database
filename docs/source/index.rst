@@ -1,17 +1,14 @@
 National COVID-19 Chest Image Database (NCCID)
 ==============================================
 
-The National COVID-19 Chest Imaging Database (NCCID) comprises chest X-ray,
-CT and MR images and other relevant information of patients with suspected
-COVID-19. The database has been created to enable the development and validation
-of automated analysis technologies that may prove effective in supporting COVID-19
-care pathways, and to accelerate research projects to better understand the disease.
+The National COVID-19 Chest Imaging Database (NCCID) is a centralised UK database containing Chest X-Ray (CXR), Computed Tomography (CT) and Magnetic Resonance (MR)  images from hospital patients across the country. This is to support a better understanding of the COVID-19 virus and develop technology which will enable the best care for patients hospitalised with a severe infection. It is a joint initiative established by NHSX, the British Society of Thoracic Imaging (BSTI), Royal Surrey NHS Foundation Trust and Faculty.
+The benefits of collecting chest imaging data are extensive. This data has the potential to enable faster patient assessment in Accident and Emergency (A&E), save Radiologists’ time, increase the safety and consistency of care across the country, and ultimately save lives.
 
 
 What data is collected
 ----------------------
 
-The NCCID collects processed digital chest X-ray, CT and MR images as well as DICOM
+The NCCID collects processed digital chest X-ray, CT and MR images as well as Digital Imaging and Communication in Medicine (DICOM)
 header information (de-identified). Associated clinical data (de-identified) from
 the collection sites is also gathered. Data will be collected for all COVID-19
 positively-swabbed patients, and a smaller sample of COVID-19 negatively-swabbed
