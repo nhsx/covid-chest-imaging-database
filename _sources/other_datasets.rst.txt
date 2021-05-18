@@ -44,7 +44,7 @@ This consortium is responding to the current COVID-19 outbreak by creating tools
 
 The CCP sets out how data and biological samples from patients with COVID-19 should be collected, regardless of where in the world they are. It’s the product of many years of discussion among international investigators from a wide range of scientific and medical disciplines. Work to develop this protocol started in response to Middle Eastern Respiratory Syndrome coronavirus (MERS-CoV) in 2012-2013, Influenza H7N9 in 2013, viral haemorrhagic fever (Ebolavirus) in 2014, Monkeypox & MERS-CoV in 2018 and Tick-borne encephalitis virus (TBEV) in 2019. It is now being used for COVID-19 .
 
-ISARIC-4C will augment the aforementioned datasets, which have played a central role in the UK’s research response to COVID-19, with imaging data from the NCCID. This will support improvements in the understanding, diagnosis and prognosis of the disease through the availability of data that comprises a wide range of variables such as clinical measurements, ‘omics’ assays, and radiology scans. For example, the linkage facilitated by this Agreement may lead to the development of a COVID-19 risk score that extends the one developed by the ISARIC consortium through the use of chest-imaging data.
+ISARIC-4C will augment the aforementioned datasets, which have played a central role in the UK’s research response to COVID-19, with imaging data from the NCCID. This will support improvements in the understanding, diagnosis and prognosis of the disease through the availability of data that comprises a wide range of variables such as clinical measurements, ‘omics’ assays, and radiology scans.
 
 
 .. # define a hard line break for HTML
