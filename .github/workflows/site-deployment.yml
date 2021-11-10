@@ -4,8 +4,8 @@ on:
   push:
     branches: [master]
     paths:
-      - 'docs/**'
-      - '.github/workflows/site-deployment.yml'
+      - "docs/**"
+      - ".github/workflows/site-deployment.yml"
 
 jobs:
   build:
@@ -42,7 +42,7 @@ jobs:
 
       - name: Add .nojekyll file
         run: touch ./out/.nojekyll
-        
+
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@4.1.1
         with:

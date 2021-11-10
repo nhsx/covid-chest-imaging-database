@@ -3,8 +3,8 @@ name: Build and Preview Docs
 on:
   pull_request:
     paths:
-      - 'docs/**'
-      - '.github/workflows/site-preview.yml'
+      - "docs/**"
+      - ".github/workflows/site-preview.yml"
 
 jobs:
   preview:
@@ -49,11 +49,12 @@ jobs:
           curl -H "Accept: application/vnd.github.flash-preview+json" -H "Authorization: token ${{ github.token }}" -X POST -H 'Content-Type: application/json' -d '{"state": "in_progress"}' ${{ steps.deployment.outputs.statuses_url }}
 
       - name: Upload S3
-      - uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_DOCS_PREVIEW_BUCKET_REGION }}
+
       - run: aws s3 sync --delete out s3://${{ secrets.AWS_DOCS_PREVIEW_BUCKET }}/${{ github.event.pull_request.head.sha }}/
 
       - name: Update deployment status (success)
