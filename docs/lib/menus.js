@@ -1,7 +1,7 @@
 export const techNavigation = [
    { name: 'Accessing the NCCID data', href: '/data-access' },
    { name: 'Resources for data users', href: '/resources' },
-   { name: 'Operating point chart', href: '/operating-point' },
+   // { name: 'Operating point chart', href: '/operating-point' },
 ]
 
 export const otherNavigation = [
@@ -22,7 +22,7 @@ export const footerNavigation = [
    { name: 'Overview', href: '/' },
    { name: 'Accessing the NCCID data', href: '/data-access' },
    { name: 'Resources for data users', href: '/resources' },
-   { name: 'Operating point chart', href: '/operating-point' },
+   // { name: 'Operating point chart', href: '/operating-point' },
    { name: 'NCCID Collaborative', href: '/nccid-collaborative' },
    { name: 'NCCID project summaries', href: '/project-summaries' },
    { name: 'Performance Assessment Call', href: '/performance-assessment-call' },
