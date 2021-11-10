@@ -1,10 +1,37 @@
+import { useMemo } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import Introduction from 'components/Introduction'
 import PageLayout from 'components/layouts/PageLayout'
+import { posts } from 'cache/post-data'
 
-const posts = require('cache/post-data').posts
+export default function Search() {
 
-const Search = ({ results }) => {
+   // Access router
+   const router = useRouter()
+   const { q } = router.query
+
+   // Query cached posts 
+   const queryPosts = () => {
+      return posts.filter(
+         post => {
+            return (
+               post
+                  .title
+                  .toLowerCase()
+                  .includes(q.toLowerCase()) ||
+               post
+                  .content
+                  .toLowerCase()
+                  .includes(q.toLowerCase())
+            );
+         }
+      );
+   }
+
+   // Retrieve results when we have access to router
+   const results = useMemo(() => q && queryPosts(q), [q])
+
    return (
       <PageLayout noPagination>
          <Introduction title="Search Results" description={results ? `Your search returned ${results.length} results` : 'No results found'} />
@@ -25,36 +52,3 @@ const Search = ({ results }) => {
       </PageLayout>
    )
 }
-
-export async function getServerSideProps(context) {
-   const { q } = context.query
-   if (q) {
-      const results = posts.filter(
-         post => {
-            return (
-               post
-                  .title
-                  .toLowerCase()
-                  .includes(q.toLowerCase()) ||
-               post
-                  .content
-                  .toLowerCase()
-                  .includes(q.toLowerCase())
-            );
-         }
-      );
-      return {
-         props: {
-            results
-         }
-      }
-   }
-
-   // By default, return nothing 
-   return {
-      props: {},
-   }
-
-}
-
-export default Search
