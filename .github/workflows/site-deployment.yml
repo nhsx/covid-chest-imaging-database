@@ -2,47 +2,49 @@ name: Build and Deploy Docs
 
 on:
   push:
-    branches:
-      - master
+    branches: [master]
     paths:
       - 'docs/**'
       - '.github/workflows/site-deployment.yml'
 
 jobs:
-  deploy:
-    runs-on: ubuntu-18.04
+  build:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: docs
+
     env:
-      working-directory: ./docs
+      NEXT_PUBLIC_BASE_PATH: /covid-chest-imaging-database
+
+    strategy:
+      matrix:
+        node-version: [14.x]
+
     steps:
-      - uses: actions/checkout@v2
+      - name: Get files
+        uses: actions/checkout@v2
 
-      - name: Setup Python
-        uses: actions/setup-python@v1
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
         with:
-          python-version: '3.8'
-          architecture: 'x64'
+          node-version: ${{ matrix.node-version }}
 
-      - name: Cache dependencies
-        uses: actions/cache@v1
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+      - name: Install packages
+        run: npm ci
 
-      - name: Install dependencies
-        working-directory: ${{ env.working-directory }}
-        run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install -r ./requirements.txt
+      - name: Build project
+        run: npm run build
 
-      - name: Build
-        working-directory: ${{ env.working-directory }}
-        run: |
-          make html
+      - name: Export static files
+        run: npm run export
 
+      - name: Add .nojekyll file
+        run: touch ./out/.nojekyll
+        
       - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+        uses: JamesIves/github-pages-deploy-action@4.1.1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/build/html
+          branch: gh-pages
+          folder: out
