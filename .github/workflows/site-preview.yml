@@ -15,7 +15,7 @@ jobs:
         working-directory: docs
 
     env:
-      NEXT_PUBLIC_BASE_PATH: /covid-chest-imaging-database
+      NEXT_PUBLIC_BASE_PATH: /${{ github.event.pull_request.head.sha }}
 
     steps:
       - name: Get files
