@@ -16,6 +16,7 @@ jobs:
 
     env:
       NEXT_PUBLIC_BASE_PATH: /${{ github.event.pull_request.head.sha }}
+      NEXT_PUBLIC_TRAILING_SLASH: true
 
     steps:
       - name: Get files
