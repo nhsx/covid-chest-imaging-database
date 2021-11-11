@@ -63,7 +63,7 @@ const SearchBox = () => {
    const { q } = router.query
    return (
       <div className="flex-1 flex items-center space-x-6">
-         <form action={`${prefix}/search`} method="GET" className="flex-1 justify-stretch relative flex">
+         <form action={`${prefix}/search/`} method="GET" className="flex-1 justify-stretch relative flex">
             <div className="flex-1">
                <input type="text" name="q" placeholder="Search" className="w-full border-2 border-transparent focus:ring-nhsuk-focus focus:ring-4 rounded-tl rounded-bl sm:text-sm" defaultValue={q || ''} />
             </div>
