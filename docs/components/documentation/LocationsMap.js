@@ -7,28 +7,6 @@ const Map = dynamic(
    { ssr: false }
 )
 const position = { lat: 54.5, lng: -5 }
-const markers = [
-   {
-      title: 'Location 1',
-      lat: '52.429222',
-      lng: '-1.433558'
-   },
-   {
-      title: 'Location 2',
-      lat: '52.375599',
-      lng: '-0.892208'
-   },
-   {
-      title: 'Location 3',
-      lat: '51.426614',
-      lng: '-1.551828'
-   },
-   {
-      title: 'Location 4',
-      lat: '54.188155',
-      lng: '-0.716310'
-   },
-]
 
 export default function LocationsMap() {
 
