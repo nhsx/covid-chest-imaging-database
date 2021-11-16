@@ -1,28 +1,19 @@
 # National COVID-19 Chest Image Database (NCCID) Documentation / Website
 
-This [Sphinx](https://www.sphinx-doc.org/en/master/) based documentation contains
+This [Next.js](https://nextjs.org/docs) based documentation contains
 the source code of the website [deployed to GitHub Pages](https://nhsx.github.io/covid-chest-imaging-database/).
 
 ## Build the site locally
 
-Install the required Python dependencies
+First, run the development server:
 
-```shell
-pip install -r requirements.txt
+```bash
+npm run dev
+# or
+yarn dev
 ```
 
-and run the build with:
-
-```shell
-make html
-```
-
-If the site has already been built locally, you might want to clean the existing
-data and regenerate everything.
-
-```shell
-make clean & make html
-```
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 ## Deployment (testing and production)
 
@@ -36,3 +27,13 @@ for more info on the S3 bucket.
 
 Commits merged to master are automatically deployed using the GitHub Actions / GitHub Pages
 setup, using [this workflow](../.github/workflows/site-deployment.yml).
+
+## Statistics
+
+The statistics are automatically generated on a weekly bases and stored in the `/docs/public/data` folder.
+
+The hospital locations are also placed here but are updated manually. 
+
+## Content
+
+Content is stored in MDX format and can be found in `/docs/documentation`. To make a change, create a new PR with the required changes. 

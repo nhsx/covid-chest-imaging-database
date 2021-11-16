@@ -3,22 +3,29 @@ name: Build and Preview Docs
 on:
   pull_request:
     paths:
-      - 'docs/**'
-      - '.github/workflows/site-preview.yml'
+      - "docs/**"
+      - ".github/workflows/site-preview.yml"
 
 jobs:
   preview:
-    runs-on: ubuntu-18.04
-    env:
-      working-directory: ./docs
-    steps:
-      - uses: actions/checkout@v2
+    runs-on: ubuntu-latest
 
-      - name: Setup Python
-        uses: actions/setup-python@v1
+    defaults:
+      run:
+        working-directory: docs
+
+    env:
+      NEXT_PUBLIC_BASE_PATH: /${{ github.event.pull_request.head.sha }}
+      NEXT_PUBLIC_TRAILING_SLASH: true
+
+    steps:
+      - name: Get files
+        uses: actions/checkout@v2
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
         with:
-          python-version: '3.8'
-          architecture: 'x64'
+          node-version: ${{ matrix.node-version }}
 
       - name: Create deployment
         id: deployment
@@ -29,29 +36,30 @@ jobs:
           if [ "${STATUSES_URL}" = "null" ]; then echo "Invalid Statuses URL, stop here to avoid issues further down."; echo $API_RESPONSE | jq . ; exit 1; fi
           echo "::set-output name=statuses_url::$STATUSES_URL"
 
-      - name: Install dependencies
-        working-directory: ${{ env.working-directory }}
-        run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install -r ./requirements.txt
+      - name: Install packages
+        run: npm ci
 
-      - name: Build
-        working-directory: ${{ env.working-directory }}
-        run: |
-          make html
+      - name: Cache page data for search
+        run: npm run cache-posts
+
+      - name: Build project
+        run: npm run build
+
+      - name: Export static files
+        run: npm run export
 
       - name: Update deployment status (in_progress)
         run: |
           curl -H "Accept: application/vnd.github.flash-preview+json" -H "Authorization: token ${{ github.token }}" -X POST -H 'Content-Type: application/json' -d '{"state": "in_progress"}' ${{ steps.deployment.outputs.statuses_url }}
 
       - name: Upload S3
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        working-directory: ${{ env.working-directory }}
-        run: |
-          python3 -m pip install awscli
-          aws s3 sync --delete build/html s3://${{ secrets.AWS_DOCS_PREVIEW_BUCKET }}/${{ github.event.pull_request.head.sha }}/
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DOCS_PREVIEW_BUCKET_REGION }}
+
+      - run: aws s3 sync --delete out s3://${{ secrets.AWS_DOCS_PREVIEW_BUCKET }}/${{ github.event.pull_request.head.sha }}/
 
       - name: Update deployment status (success)
         if: success()
