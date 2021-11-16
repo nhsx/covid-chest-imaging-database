@@ -34,6 +34,9 @@ jobs:
       - name: Install packages
         run: npm ci
 
+      - name: Cache page data for search
+        run: npm run cache-posts
+
       - name: Build project
         run: npm run build
 
