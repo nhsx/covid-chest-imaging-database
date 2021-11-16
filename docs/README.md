@@ -27,3 +27,13 @@ for more info on the S3 bucket.
 
 Commits merged to master are automatically deployed using the GitHub Actions / GitHub Pages
 setup, using [this workflow](../.github/workflows/site-deployment.yml).
+
+## Statistics
+
+The statistics are automatically generated on a weekly bases and stored in the `/docs/public/data` folder.
+
+The hospital locations are also placed here but are updated manually. 
+
+## Content
+
+Content is stored in MDX format and can be found in `/docs/documentation`. To make a change, create a new PR with the required changes. 
