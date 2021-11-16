@@ -1,7 +1,6 @@
 export const techNavigation = [
    { name: 'Accessing the NCCID data', href: '/data-access' },
    { name: 'Resources for data users', href: '/resources' },
-   { name: 'Operating point chart', href: '/operating-point' },
 ]
 
 export const otherNavigation = [
@@ -16,6 +15,7 @@ export const mainNavigation = [
    { name: 'Overview', href: '/' },
    { name: 'Technical Documentation', href: '/data-access' },
    { name: 'Other Information', href: '/nccid-collaborative' },
+   { name: 'Statistics', href: '/statistics' },
 ]
 
 export const footerNavigation = [
