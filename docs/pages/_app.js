@@ -15,7 +15,9 @@ export default function MyApp({ Component, pageProps }) {
             />
          </Head>
          <RecoilRoot>
-            <Component {...pageProps} />
+            <div className="antialiased">
+               <Component {...pageProps} />
+            </div>
          </RecoilRoot>
       </>
    )
