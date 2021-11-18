@@ -2,6 +2,7 @@ export const mainNavigation = [
    { name: 'Overview', href: '/' },
    { name: 'Technical Documentation', href: '/data-access' },
    { name: 'Other Information', href: '/nccid-collaborative' },
+   { name: 'Experiments', href: '/experiments' },
 ]
 
 export const techNavigation = [

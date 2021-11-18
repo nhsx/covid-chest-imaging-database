@@ -1,8 +1,8 @@
 import Link from "next/link"
 
-export default function Button({ color, children, href, type, onClick = () => {} }) {
+export default function Button({ color, children, href, type, fullwidth, onClick = () => {} }) {
 
-   const baseClass = "inline-flex items-center px-4 py-3 text-lg duration-100 font-semibold rounded shadow-nhsuk-button focus:bg-nhsuk-focus focus:text-nhsuk-text active:shadow-none"
+   const baseClass = `flex-shrink-0 inline-flex justify-center items-center px-4 py-3 text-lg duration-100 font-semibold rounded shadow-nhsuk-button focus:bg-nhsuk-focus focus:text-nhsuk-text active:shadow-none ${fullwidth ? 'w-full' : ''}`
 
    let colorClass
    switch(color) {
@@ -14,7 +14,7 @@ export default function Button({ color, children, href, type, onClick = () => {}
          colorClass = 'bg-gray-500 text-white hover:bg-gray-600'
          break 
       case "white":
-         colorClass = 'bg-white text-nhsuk-text'
+         colorClass = 'bg-white text-nhsuk-text hover:bg-gray-100'
          break  
    }
 
