@@ -24,8 +24,8 @@ const Menu = ({ category }) => {
                >
                   <a
                      className={classNames(
-                        item.name === category ? 'border-white font-semibold' : 'border-transparent',
-                        'group flex items-center px-4 py-3 border-l-4 md:border-l-0 md:border-b-4 text-white hover:underline text-base focus:bg-nhsuk-yellow focus:text-black focus:border-black'
+                        item.name === category ? 'md:border-b-4 md:pb-3 border-white font-semibold' : 'border-transparent',
+                        'group flex items-center px-4 py-4 border-l-4 md:border-l-0 text-white hover:underline text-base focus:bg-nhsuk-yellow focus:text-black focus:border-black md:focus:border-b-4 md:focus:pb-3'
                      )}
                   >
                      {item.name}
