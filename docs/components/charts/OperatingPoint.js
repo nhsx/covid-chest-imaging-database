@@ -6,19 +6,21 @@ import ROCLineChart from 'components/charts/parts/ROCLineChart';
 import Modal from 'components/Modal';
 import Button from 'components/Button';
 import PieChart from './parts/PieChart';
+import Container from 'components/Container';
+import Introduction from 'components/Introduction';
 
 const ChartTitle = ({ children }) => (
-   <div className="flex justify-center lg:justify-start w-full mb-6">
-      <div className="bg-black bg-opacity-10 px-4 py-1 rounded-full shadow-inner">
-         <h3 className="text-white font-semibold text-center">{children}</h3>
+   <div className="flex justify-center w-full mb-6">
+      <div className="px-4 py-1">
+         <h3 className="text-nhsuk-text font-semibold text-center text-lg">{children}</h3>
       </div>
    </div>
 )
 
 const StatOutput = ({ title, value }) => (
-   <div className="px-6 py-3">
-      <dt className="text-sm font-medium text-blue-100 truncate">{title}</dt>
-      <dd className="text-lg font-semibold text-white">{parseFloat(value).toFixed(2)}%</dd>
+   <div className="px-4 py-2">
+      <dt className="text-sm font-medium text-gray-500 truncate mb-1">{title}</dt>
+      <dd className="text-lg font-semibold text-nhsuk-text">{parseFloat(value).toFixed(2)}%</dd>
    </div>
 )
 
@@ -39,7 +41,7 @@ const ControlRange = ({ step, min, max, value, onChange }) => (
       renderTrack={({ props, children }) => (
          <div
             {...props}
-            className="h-1 bg-blue-400 rounded-full"
+            className="h-1 bg-blue-400 rounded-full my-2"
          >
             {children}
          </div>
@@ -47,7 +49,7 @@ const ControlRange = ({ step, min, max, value, onChange }) => (
       renderThumb={({ props }) => (
          <div
             {...props}
-            className="w-4 h-4 bg-white shadow rounded-full"
+            className="w-6 h-6 bg-blue-500 shadow rounded-full"
          />
       )}
    />
@@ -59,7 +61,6 @@ export default function OperatingPoint() {
    const [percentage, setPercentage] = useState(5)
    const [operatingPoint, setOperatingPoint] = useState(0.4)
    const [rocData, setRocData] = useState(null)
-   const [statsOpen, setStatsOpen] = useState(false)
    const [glossaryOpen, setGlossaryOpen] = useState(false)
    const [breakdownOpen, setBreakdownOpen] = useState(false)
 
@@ -111,68 +112,79 @@ export default function OperatingPoint() {
       <>
 
          {/* Main panel */}
-         <div className="h-full flex flex-col items-center justify-center">
+         <div className="h-full flex flex-col items-center mx-auto">
 
-            <div className="mb-6 2xl:mb-12 text-center">
-               <h2 className="text-white text-xl sm:text-3xl xl:text-4xl 2xl:text-5xl font-bold"><span className="text-blue-200">Operating Point:</span> {parseFloat(operatingPoint).toFixed(2)}</h2>
-               <p className="text-lg text-blue-200 mt-4 px-6">Choose an Operating Point for the model and a prevalence of COVID in the population of interest then see the results below:</p>
-            </div>
+            <Container>
+               <div className="lg:mb-12">
+                  <Introduction title="Operating Point" description={(
+                     <>
+                        This page aims to highlight the role of the “operating point” selected by AI developers when building a new model, while also providing some baseline results for the National COVID-19 Chest Imaging Database (NCCID). The operating point allows AI developers to adjust the threshold used by AI models to make a binary decision. This means an AI tool could be made more conservative by giving a positive answer even when unsure, and vice versa.
+                        A Receiver Operating Characteristic (ROC) curve can be plotted to represent the relationship between the True Positives (TPs) correctly detected by an AI model against the True Negatives (TNs) in function of the operating point. Typically, the operating point in healthcare applications for automated diagnosis would be set by AI developers so it guarantees that as many symptomatic patients are detected earlier in the healthcare pathway while keeping the false positives as low as possible to keep triage efficient and avoid any unnecessary stress for the patients.
+                        <br /><br />
+                        Below, an AI model has been trained on the chest x-rays stored in the NCCID to predict whether a patient was COVID-positive or negative, using polymerase chain reaction (PCR) tests as a reference. This AI model has purely been built as a prototype for research and is not meant for real-world deployment. The model was tested using data from 4,872 patients (3,457 COVID-negative and 1,415 COVID-positive patients) held out from the NCCID training data.
+                     </>
+                  )} />
+               </div>
+            </Container>
 
             {/* Output */}
-            <div className="w-full sm:border sm:border-blue-600 sm:bg-white sm:bg-opacity-5 sm:rounded-xl sm:shadow-inner lg:max-w-[1600px] mx-auto mb-6">
-               <div className="flex flex-col sm:p-6 xl:flex-row xl:justify-between xl:items-center">
+            <div className="w-full max-w-7xl 2xl:max-w-[1600px] mx-auto mb-8 sm:mb-0 sm:px-6">
+               <div className="border shadow-xl bg-white border-gray-100">
+                  <div className="flex flex-col p-4 sm:p-6 xl:space-x-6 xl:flex-row xl:justify-between xl:items-center 2xl:space-x-12">
 
-                  {/* Controls */}
-                  <div className="grid sm:grid-cols-2 gap-6 text-white">
-                     <div>
-                        <div className="flex justify-between space-x-6 items-center mb-3">
-                           <div>
-                              <label className="font-medium">Operating point</label>
+                     {/* Controls */}
+                     <div className="grid sm:grid-cols-2 sm:flex-1 gap-6 text-nhsuk-text">
+                        <div>
+                           <div className="flex justify-between space-x-6 items-center mb-3">
+                              <div>
+                                 <label className="font-medium">Operating point</label>
+                              </div>
+                              <div>
+                                 <span className="text-sm text-gray-500">{parseFloat(operatingPoint).toFixed(2)}</span>
+                              </div>
                            </div>
-                           <div>
-                              <span className="text-sm text-blue-100">{parseFloat(operatingPoint).toFixed(2)}</span>
-                           </div>
+                           <ControlRange min={0} max={1} step={0.01} value={operatingPoint} onChange={(value) => setOperatingPoint(value || operatingPoint)} />
                         </div>
-                        <ControlRange min={0} max={1} step={0.01} value={operatingPoint} onChange={(value) => setOperatingPoint(value || operatingPoint)} />
-                     </div>
-                     <div>
-                        <div className="flex justify-between space-x-6 items-center mb-3">
-                           <div>
-                              <label className="font-medium">Prevalence <span className="text-sm text-blue-200">(% of population with COVID)</span>:</label>
+                        <div>
+                           <div className="flex justify-between space-x-6 items-center mb-3">
+                              <div>
+                                 <label className="font-medium">Prevalence <span className="text-sm text-gray-400">(% of population with COVID)</span>:</label>
+                              </div>
+                              <div>
+                                 <span className="text-sm text-gray-500">{percentage}%</span>
+                              </div>
                            </div>
-                           <div>
-                              <span className="text-sm text-blue-100">{percentage}%</span>
-                           </div>
+                           <ControlRange min={0} max={100} step={1} value={percentage} onChange={(value) => setPercentage(value || percentage)} />
                         </div>
-                        <ControlRange min={0} max={100} step={1} value={percentage} onChange={(value) => setPercentage(value || percentage)} />
                      </div>
-                  </div>
 
 
-                  {/* Helpers */}
-                  <div className="flex flex-col space-x-0 space-y-4 sm:flex-row sm:justify-center sm:space-x-4 sm:space-y-0 mt-10 xl:mt-0 xl:justify-end">
-                     <div className="flex-1 sm:flex-auto">
-                        <Button onClick={() => setBreakdownOpen(true)} fullwidth>
-                           What does this data mean?
-                        </Button>
+                     {/* Helpers */}
+                     <div className="flex flex-col space-x-0 space-y-4 sm:flex-row sm:justify-center sm:space-x-4 sm:space-y-0 mt-10 xl:mt-0 xl:justify-end">
+                        <div className="flex-1 xl:flex-auto">
+                           <Button onClick={() => setBreakdownOpen(true)} fullwidth>
+                              What does this data mean?
+                           </Button>
+                        </div>
+                        <div className="flex-1 xl:flex-auto">
+                           <Button color="secondary" onClick={() => setGlossaryOpen(true)} fullwidth>
+                              View glossary
+                           </Button>
+                        </div>
                      </div>
-                     <div className="flex-1 sm:flex-auto">
-                        <Button onClick={() => setGlossaryOpen(true)} color="white" fullwidth>
-                           View glossary
-                        </Button>
-                     </div>
+
                   </div>
 
                </div>
             </div>
 
 
-            <div className="flex flex-col w-full lg:max-w-[1600px] mx-auto sm:bg-black sm:bg-opacity-5 sm:rounded-xl sm:shadow-inner sm:overflow-hidden">
+            <div className="flex flex-col w-full lg:max-w-[1600px] mx-auto sm:overflow-hidden p-4 lg:p-0">
 
-               <div className="flex-1 grid lg:grid-cols-4 lg:divide-x lg:divide-blue-500">
+               <div className="flex-1 grid lg:grid-cols-4 xl:divide-x xl:divide-gray-200">
 
                   {/* ROC */}
-                  <div className="lg:col-span-4 xl:col-span-2 flex flex-col my-8 sm:px-8 sm:my-10 lg:mb-0 xl:my-10">
+                  <div className="lg:col-span-4 xl:col-span-2 flex flex-col pb-12 sm:px-8 sm:py-10 lg:pb-0 xl:py-10">
                      <div>
                         <ChartTitle>ROC Curve</ChartTitle>
                      </div>
@@ -182,9 +194,9 @@ export default function OperatingPoint() {
                   </div>
 
                   {/* Positive */}
-                  <div className="lg:col-span-2 xl:col-span-1 flex flex-col my-8 sm:px-8 sm:my-10">
+                  <div className="lg:col-span-2 xl:col-span-1 flex flex-col pb-12 sm:px-8 sm:py-10">
                      <div>
-                        <ChartTitle>Results in people with COVID</ChartTitle>
+                        <ChartTitle>Model predictions on COVID-positive patients</ChartTitle>
                      </div>
                      <div className="flex items-stretch flex-1">
                         <PieChart labels={['Negative', 'FN', 'TP']} values={[100 - tp_final - fn_final, fn_final, tp_final]} />
@@ -193,9 +205,9 @@ export default function OperatingPoint() {
                   </div>
 
                   {/* Negative */}
-                  <div className="lg:col-span-2 xl:col-span-1 flex flex-col my-8 sm:px-8 sm:my-10">
+                  <div className="lg:col-span-2 xl:col-span-1 flex flex-col pb-12 sm:px-8 sm:py-10">
                      <div>
-                        <ChartTitle>Results in people without COVID</ChartTitle>
+                        <ChartTitle>Model predictions on COVID-negative patients</ChartTitle>
                      </div>
                      <div className="flex items-stretch flex-1">
                         <PieChart labels={['Positive', 'FP', 'TN']} values={[100 - fp_final - tn_final, fp_final, tn_final]} />
@@ -206,8 +218,8 @@ export default function OperatingPoint() {
 
                </div>
 
-               <div className="flex justify-center bg-black bg-opacity-10 py-3">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 xl:w-auto xl:flex xl:flex-wrap">
+               <div className="flex justify-center py-6 border-t border-gray-200">
+                  <div className="grid gap-2 grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 xl:w-auto xl:flex xl:flex-wrap xl:space-x-2">
                      <StatOutput title="TP" value={tp_final} />
                      <StatOutput title="TN" value={tn_final} />
                      <StatOutput title="FP" value={fp_final} />

@@ -1,12 +1,12 @@
-import { Bar, Pie } from 'react-chartjs-2';
+import { Bar, Doughnut, Pie } from 'react-chartjs-2';
 
 export default function PieChart({ labels, values, colors }) {
 
    const gridColor = 'rgba(255,255,255,0)'
-   const labelColor = '#FFFFFF'
-   const positiveColor = '#70A5D7'
-   const negativeColor = '#003567'
-   const blankColor = '#FFFFFF'
+   const labelColor = '#212b32'
+   const positiveColor = '#005eb8'
+   const negativeColor = '#007f3b'
+   const blankColor = '#d2d8dc'
 
    const data = (canvas) => {
       return {
@@ -25,6 +25,16 @@ export default function PieChart({ labels, values, colors }) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
+         tooltip: {
+            callbacks: {
+               label: function (tooltipItem) {
+                  return ' ' + tooltipItem.formattedValue + '%'
+               },
+               title: function(tooltipItem) {
+                  return tooltipItem[0].label
+                }
+            }
+         },
          legend: {
             labels: {
                color: labelColor,
@@ -33,10 +43,10 @@ export default function PieChart({ labels, values, colors }) {
                   weight: 500
                }
             }
-         },
+         }
       },
    }
 
 
-   return <Pie className="flex-1" data={data} options={options} />
+   return <Doughnut className="flex-1" data={data} options={options} />
 }

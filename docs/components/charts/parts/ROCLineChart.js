@@ -2,11 +2,11 @@ import { Scatter } from 'react-chartjs-2'
 
 export default function ROCLineChart({ height, plotData, fp, tp }) {
 
-   const labelColor = '#FFFFFF'
+   const labelColor = '#212b32'
    const gridColor = 'rgba(255,255,255,0)'
-   const lineColor = '#FFFFFF'
-   const tickColor = '#FFFFFF'
-   const intersectColor = 'rgba(0,0,0,0.3)'
+   const lineColor = '#005eb8'
+   const tickColor = '#212b32'
+   const intersectColor = 'rgba(0, 94, 184, .3)'
 
    const plugins = [
       {
@@ -26,7 +26,7 @@ export default function ROCLineChart({ height, plotData, fp, tp }) {
                ctx.moveTo(x, topY);
                ctx.lineTo(x, bottomY);
                ctx.lineWidth = 1;
-               ctx.strokeStyle = '#FFFFFF';
+               ctx.strokeStyle = '#000000';
                ctx.stroke();
                ctx.restore();
             }
@@ -37,9 +37,9 @@ export default function ROCLineChart({ height, plotData, fp, tp }) {
    const data = (canvas) => {
 
       const ctx = canvas.getContext("2d");
-      const gradient = ctx.createLinearGradient(0, 0, 0, 800);
-      gradient.addColorStop(0, 'rgba(255,255,255,.2)');
-      gradient.addColorStop(1, 'rgba(255,255,255,.02)');
+      const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+      gradient.addColorStop(0, 'rgba(0, 94, 184, .2)');
+      gradient.addColorStop(1, 'rgba(0, 94, 184, 0)');
 
       return {
          datasets: [
@@ -60,6 +60,16 @@ export default function ROCLineChart({ height, plotData, fp, tp }) {
                data: [{ x: 0, y: tp }, { x: 1, y: tp }],
                borderColor: intersectColor,
                borderWidth: 2,
+            },
+            {
+               label: 'Chance',
+               fill: false,
+               showLine: true,
+               pointRadius: 0,
+               data: [{ x: 0, y: 0 }, { x: 1, y: 1 }],
+               borderColor: intersectColor,
+               borderWidth: 2,
+               borderDash: [10, 4],
             },
             {
                label: 'ROC Curve',
