@@ -12,7 +12,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ./docs/source
+        working-directory: ./docs/scripts
 
     steps:
       - uses: actions/checkout@v2
