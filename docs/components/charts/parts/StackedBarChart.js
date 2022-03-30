@@ -9,27 +9,24 @@ export default function StackedBarChart({ height, percentage, correct, incorrect
    const positiveColor = '#70A5D7'
    const negativeColor = '#003567'
 
-   const data = (canvas) => {
-
-      return {
-         labels: [label],
-         datasets: [
-            {
-               label: 'False results',
-               data: [incorrect],
-               backgroundColor: negativeColor,
-               borderColor: '#FFFFFF',
-               fill: 'start'
-            },
-            {
-               label: 'True results',
-               data: [correct],
-               backgroundColor: positiveColor,
-               borderColor: '#FFFFFF',
-               fill: 'start',
-            },
-         ]
-      }
+   const data = {
+      labels: [label],
+      datasets: [
+         {
+            label: 'False results',
+            data: [incorrect],
+            backgroundColor: negativeColor,
+            borderColor: '#FFFFFF',
+            fill: 'start'
+         },
+         {
+            label: 'True results',
+            data: [correct],
+            backgroundColor: positiveColor,
+            borderColor: '#FFFFFF',
+            fill: 'start',
+         },
+      ]
    }
 
    const options = {

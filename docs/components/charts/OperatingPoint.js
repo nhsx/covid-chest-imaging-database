@@ -189,7 +189,7 @@ export default function OperatingPoint() {
                         <ChartTitle>ROC Curve</ChartTitle>
                      </div>
                      <div className="flex items-stretch flex-1">
-                        <ROCLineChart plotData={rocData} fp={fp} tp={tp} />
+                        {rocData && <ROCLineChart plotData={rocData} fp={fp} tp={tp} />}
                      </div>
                   </div>
 

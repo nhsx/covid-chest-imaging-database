@@ -1,7 +1,8 @@
 import Annotation from 'chartjs-plugin-annotation'
-import { Bar, Chart } from 'react-chartjs-2'
+import { Bar } from 'react-chartjs-2'
+import { Chart as ChartJS } from 'chart.js';
 
-Chart.register(Annotation)
+ChartJS.register(Annotation)
 
 export default function AccuracyChart({ barData, barLabels, lineData, xLabel, yLabel }) {
 
@@ -11,21 +12,19 @@ export default function AccuracyChart({ barData, barLabels, lineData, xLabel, yL
    const barColour = 'rgba(255,255,255,0.5)'
    const borderColor = '#FFFFFF'
 
-   const data = (canvas) => {
-      return {
-         labels: barLabels,
-         datasets: [
-            {
-               label: xLabel,
-               data: barData,
-               backgroundColor: barColour,
-               borderColor: borderColor,
-               borderWidth: 2
-            },
-         ],
-      }
+   const data = {
+      labels: barLabels,
+      datasets: [
+         {
+            label: xLabel,
+            data: barData,
+            backgroundColor: barColour,
+            borderColor: borderColor,
+            borderWidth: 2
+         },
+      ],
    }
-
+   
    const options = {
       responsive: true,
       maintainAspectRatio: false,

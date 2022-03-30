@@ -1,4 +1,4 @@
-import { Bar, Doughnut, Pie } from 'react-chartjs-2';
+import { Doughnut } from 'react-chartjs-2';
 
 export default function PieChart({ labels, values, colors }) {
 
@@ -8,17 +8,15 @@ export default function PieChart({ labels, values, colors }) {
    const negativeColor = '#007f3b'
    const blankColor = '#d2d8dc'
 
-   const data = (canvas) => {
-      return {
-         labels,
-         datasets: [
-            {
-               label: 'Results with Covid',
-               data: values,
-               backgroundColor: [blankColor, negativeColor, positiveColor]
-            },
-         ]
-      }
+   const data = {
+      labels,
+      datasets: [
+         {
+            label: 'Results with Covid',
+            data: values,
+            backgroundColor: [blankColor, negativeColor, positiveColor]
+         },
+      ]
    }
 
    const options = {
@@ -30,9 +28,9 @@ export default function PieChart({ labels, values, colors }) {
                label: function (tooltipItem) {
                   return ' ' + tooltipItem.formattedValue + '%'
                },
-               title: function(tooltipItem) {
+               title: function (tooltipItem) {
                   return tooltipItem[0].label
-                }
+               }
             }
          },
          legend: {
