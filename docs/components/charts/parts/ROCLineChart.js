@@ -1,12 +1,78 @@
+import { useEffect, useRef, useState } from "react"
 import { Scatter } from 'react-chartjs-2'
+import 'chart.js/auto';
 
 export default function ROCLineChart({ height, plotData, fp, tp }) {
 
+   // Colors 
    const labelColor = '#212b32'
    const gridColor = 'rgba(255,255,255,0)'
    const lineColor = '#005eb8'
    const tickColor = '#212b32'
    const intersectColor = 'rgba(0, 94, 184, .3)'
+
+   // Load chart data into state so we can update later 
+   const chartRef = useRef(null)
+   const [chartData, setChartData] = useState({
+      datasets: []
+   })
+
+   /**
+    * On load, set gradient
+    */
+   useEffect(() => {
+      const chart = chartRef.current;
+      if (chart) {
+         const gradient = chart.ctx.createLinearGradient(0, 0, 0, 300);
+         gradient.addColorStop(0, 'rgba(0, 94, 184, .2)');
+         gradient.addColorStop(1, 'rgba(0, 94, 184, 0)');
+         setChartData({
+            datasets: [
+               {
+                  label: 'X',
+                  fill: false,
+                  showLine: true,
+                  pointRadius: 0,
+                  data: [{ x: fp, y: 0 }, { x: fp, y: 1 }],
+                  borderColor: intersectColor,
+                  borderWidth: 2
+               },
+               {
+                  label: 'Y',
+                  fill: false,
+                  showLine: true,
+                  pointRadius: 0,
+                  data: [{ x: 0, y: tp }, { x: 1, y: tp }],
+                  borderColor: intersectColor,
+                  borderWidth: 2,
+               },
+               {
+                  label: 'Chance',
+                  fill: false,
+                  showLine: true,
+                  pointRadius: 0,
+                  data: [{ x: 0, y: 0 }, { x: 1, y: 1 }],
+                  borderColor: intersectColor,
+                  borderWidth: 2,
+                  borderDash: [10, 4],
+               },
+               {
+                  label: 'ROC Curve',
+                  data: plotData,
+                  fill: 'start',
+                  showLine: true,
+                  pointRadius: 0,
+                  interpolate: true,
+                  borderColor: lineColor,
+                  backgroundColor: gradient,
+                  cubicInterpolationMode: 'monotone',
+                  tension: 0.4
+               },
+            ],
+         });
+      }
+   }, [tp, fp]);
+
 
    const plugins = [
       {
@@ -34,60 +100,7 @@ export default function ROCLineChart({ height, plotData, fp, tp }) {
       },
    ];
 
-   const data = (canvas) => {
-
-      const ctx = canvas.getContext("2d");
-      const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-      gradient.addColorStop(0, 'rgba(0, 94, 184, .2)');
-      gradient.addColorStop(1, 'rgba(0, 94, 184, 0)');
-
-      return {
-         datasets: [
-            {
-               label: 'X',
-               fill: false,
-               showLine: true,
-               pointRadius: 0,
-               data: [{ x: fp, y: 0 }, { x: fp, y: 1 }],
-               borderColor: intersectColor,
-               borderWidth: 2
-            },
-            {
-               label: 'Y',
-               fill: false,
-               showLine: true,
-               pointRadius: 0,
-               data: [{ x: 0, y: tp }, { x: 1, y: tp }],
-               borderColor: intersectColor,
-               borderWidth: 2,
-            },
-            {
-               label: 'Chance',
-               fill: false,
-               showLine: true,
-               pointRadius: 0,
-               data: [{ x: 0, y: 0 }, { x: 1, y: 1 }],
-               borderColor: intersectColor,
-               borderWidth: 2,
-               borderDash: [10, 4],
-            },
-            {
-               label: 'ROC Curve',
-               data: plotData,
-               fill: 'start',
-               showLine: true,
-               pointRadius: 0,
-               interpolate: true,
-               borderColor: lineColor,
-               backgroundColor: gradient,
-               cubicInterpolationMode: 'monotone',
-               tension: 0.4
-            },
-         ],
-      }
-   }
-
-   const options = {
+   const chartOptions = {
       responsive: true,
       maintainAspectRatio: false,
       interaction: {
@@ -168,5 +181,5 @@ export default function ROCLineChart({ height, plotData, fp, tp }) {
    }
 
 
-   return <Scatter className="flex-1" data={data} options={options} plugins={plugins} />
+   return <Scatter ref={chartRef} className="flex-1" data={chartData} options={chartOptions} plugins={plugins} />
 }
